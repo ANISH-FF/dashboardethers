@@ -3,7 +3,14 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Ethers — F&B Ops Suite",
-  description: "Internal AI-powered menu, reports & marketing tool"
+  description: "Internal AI-powered menu, reports & marketing tool",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon.png", type: "image/png" }
+    ],
+    apple: "/icon.png"
+  }
 };
 
 export default function RootLayout({
