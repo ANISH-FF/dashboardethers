@@ -5,11 +5,8 @@ export const metadata: Metadata = {
   title: "Ethers — F&B Ops Suite",
   description: "Internal AI-powered menu, reports & marketing tool",
   icons: {
-    icon: [
-      { url: "/icon.svg", type: "image/svg+xml" },
-      { url: "/icon.png", type: "image/png" }
-    ],
-    apple: "/icon.png"
+    icon: "/favicon.png",
+    apple: "/favicon.png"
   }
 };
 
