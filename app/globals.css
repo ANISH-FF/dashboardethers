@@ -1,0 +1,94 @@
+@import url('https://fonts.googleapis.com/css2?family=Rouge+Script&family=Satisfy&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --ink: 243 244 246;
+    --paper: 9 9 11;
+    --ink-light: 161 161 170;
+    --paper-dark: 24 24 27;
+    --accent: 39 39 42;
+    --line: 39 39 42;
+    --line-dark: 63 63 70;
+  }
+
+  body {
+    @apply bg-paper text-ink antialiased selection:bg-ink selection:text-paper;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-ink text-paper hover:bg-ink/90 active:scale-[0.98] shadow-sm;
+  }
+  .btn-secondary {
+    @apply btn border border-line bg-paper text-ink hover:bg-paper-dark active:scale-[0.98];
+  }
+  .btn-ghost {
+    @apply btn bg-transparent text-ink hover:bg-paper-dark active:scale-[0.98];
+  }
+  .card {
+    @apply rounded-xl border border-line bg-paper p-6 shadow-sm transition-shadow hover:shadow-md;
+  }
+  .input {
+    @apply w-full rounded-lg border border-line-dark bg-paper-dark px-4 py-2.5 text-sm outline-none transition-all placeholder:text-ink/40 focus:border-ink focus:ring-1 focus:ring-ink;
+  }
+  .label {
+    @apply text-xs font-semibold uppercase tracking-wider text-ink/60 mb-1.5 block;
+  }
+  .glass {
+    @apply bg-paper/80 backdrop-blur-md border border-line/50;
+  }
+}
+
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+@media print {
+  html, body {
+    background: white !important;
+    color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: visible !important;
+  }
+
+  header, footer, nav, aside, .print\:hidden {
+    display: none !important;
+  }
+
+  .printable-area {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 10mm !important;
+    box-sizing: border-box !important;
+    background: white !important;
+    overflow: visible !important;
+    z-index: 99999 !important;
+  }
+
+  .printable-certificate {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 270mm !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    box-sizing: border-box !important;
+  }
+}

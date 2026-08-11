@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ethers Pictures</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <main class="container">
+        <!-- 1. INPUT SECTION -->
+        <section id="input-section" class="card active">
+            <h2>Automated Food Image Extraction</h2>
+            <p class="subtitle">Enter your food items to automatically fetch high-res images from Swiggy or Zomato.</p>
+            
+            <div class="form-group">
+                <label for="items-text">Food Items (one per line) OR <a href="#" id="upload-link" style="color: var(--accent);">Upload File</a></label>
+                <input type="file" id="file-upload" accept=".xlsx,.xls,.csv,.txt" style="display:none;" onchange="uploadFile()">
+                <textarea id="items-text" placeholder="Paneer Butter Masala&#10;Chicken Tikka&#10;Mushroom Risotto"></textarea>
+            </div>
+
+            <div class="row">
+                <div class="form-group full">
+                    <label for="brand-name">Brand / Folder Name</label>
+                    <input type="text" id="brand-name" value="brand" placeholder="e.g. MyRestaurant">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="count-slider">Images per item: <span id="count-val">5</span></label>
+                <input type="range" id="count-slider" min="1" max="20" value="5" oninput="document.getElementById('count-val').innerText = this.value">
+            </div>
+
+            <button id="generate-btn" class="btn-primary" onclick="startScraping()">
+                Start Extraction
+            </button>
+        </section>
+
+        <!-- 2. LOADING SECTION -->
+        <section id="loading-section" class="card hidden">
+            <div class="loader-container">
+                <div class="spinner"></div>
+                <h2>Magic in Progress...</h2>
+                <p class="subtitle">Fetching high-res food photos in background</p>
+                <div class="timer-badge">
+                    Elapsed Time: <span id="timer-val">00:00</span>
+                </div>
+            </div>
+            
+            <div class="log-container">
+                <pre id="log-output"></pre>
+            </div>
+        </section>
+
+        <!-- 3. GALLERY SECTION -->
+        <section id="gallery-section" class="card hidden full-width">
+            <div class="gallery-header">
+                <div class="gallery-title-group">
+                    <h2>Review Images</h2>
+                    <p class="subtitle">Uncheck images to exclude them. Click edit to rename.</p>
+                </div>
+                <button id="zip-btn" class="btn-primary" onclick="createZip()">
+                    Package to ZIP
+                </button>
+            </div>
+            
+            <div id="image-grid" class="image-grid">
+                <!-- Images injected here via JS -->
+            </div>
+        </section>
+        
+        <!-- 4. DONE SECTION -->
+        <section id="done-section" class="card hidden text-center">
+            <div class="success-badge">Completed</div>
+            <h2>Download Ready</h2>
+            <p class="subtitle">Your packaged ZIP file has been created successfully.</p>
+            <div class="action-buttons">
+                <a id="download-link" href="#" class="btn-primary" download>
+                    Download ZIP
+                </a>
+                <button class="btn-secondary" onclick="saveToDrive()">
+                    Save to Google Drive
+                </button>
+            </div>
+            <br>
+            <button class="btn-text" onclick="location.reload()">Start New Batch</button>
+        </section>
+    </main>
+
+
+
+    <script>
+        let currentBrandSlug = "";
+        let timerInterval = null;
+
+        function showSection(id) {
+            document.querySelectorAll('main > section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('main > section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+            document.getElementById(id).classList.add('active');
+        }
+
+        async function startScraping() {
+            const itemsText = document.getElementById('items-text').value;
+            if (!itemsText.trim()) {
+                alert("Please enter at least one food item.");
+                return;
+            }
+
+            const platform_el = document.querySelector('input[name="platform"]:checked');
+            const platform = platform_el ? platform_el.value : 'google';
+            const brand = document.getElementById('brand-name').value;
+            const count = document.getElementById('count-slider').value;
+            const clientId = "client_" + Math.random().toString(36).substr(2, 9);
+
+            showSection('loading-section');
+            document.getElementById('log-output').innerHTML = "Initializing...\n";
+            document.getElementById('timer-val').innerText = "00:00";
+
+            // Start Timer
+            if (timerInterval) clearInterval(timerInterval);
+            const startTime = Date.now();
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+                const secs = String(elapsed % 60).padStart(2, '0');
+                document.getElementById('timer-val').innerText = `${mins}:${secs}`;
+            }, 1000);
+
+            try {
+                const res = await fetch('/api/scrape', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        items_text: itemsText,
+                        platform: platform,
+                        count: count,
+                        brand: brand,
+                        client_id: clientId
+                    })
+                });
+                
+                const data = await res.json();
+                currentBrandSlug = data.brand_slug;
+                
+                // Start listening to SSE logs
+                const source = new EventSource(`/api/stream_logs/${clientId}`);
+                source.onmessage = function(event) {
+                    if (event.data === "__DONE__") {
+                        source.close();
+                        if (timerInterval) clearInterval(timerInterval);
+                        loadGallery(currentBrandSlug);
+                    } else {
+                        const logBox = document.getElementById('log-output');
+                        logBox.innerHTML += event.data + "\n";
+                        logBox.scrollTop = logBox.scrollHeight;
+                    }
+                };
+            } catch (err) {
+                if (timerInterval) clearInterval(timerInterval);
+                alert("Error starting scrape: " + err);
+                showSection('input-section');
+            }
+        }
+
+        document.getElementById('upload-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('file-upload').click();
+        });
+
+        async function uploadFile() {
+            const fileInput = document.getElementById('file-upload');
+            if (fileInput.files.length === 0) return;
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            try {
+                const res = await fetch('/api/parse_file', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.items) {
+                    const ta = document.getElementById('items-text');
+                    const existing = ta.value.trim();
+                    const additions = data.items.join('\n');
+                    ta.value = existing ? existing + '\n' + additions : additions;
+                } else {
+                    alert("Error: " + data.error);
+                }
+            } catch (err) {
+                alert("Upload failed: " + err);
+            }
+            fileInput.value = ""; // reset
+        }
+
+        async function loadGallery(brandSlug) {
+            const res = await fetch(`/api/get_images?brand_slug=${brandSlug}`);
+            const data = await res.json();
+            
+            const gridContainer = document.getElementById('image-grid');
+            gridContainer.innerHTML = '';
+            
+            // Group images by folder
+            const grouped = {};
+            data.images.forEach(img => {
+                const parts = img.rel_path.replace(/\\/g, '/').split('/');
+                const folder = parts.length > 1 ? parts[0] : 'Other';
+                if (!grouped[folder]) {
+                    grouped[folder] = [];
+                }
+                grouped[folder].push(img);
+            });
+            
+            for (const [folder, images] of Object.entries(grouped)) {
+                // Create a section for each food item
+                const section = document.createElement('div');
+                section.className = 'food-section';
+                section.innerHTML = `<h3 class="food-header">${folder.replace(/_/g, ' ').toUpperCase()}</h3>`;
+                
+                const grid = document.createElement('div');
+                grid.className = 'inner-grid';
+                
+                images.forEach(img => {
+                    const card = document.createElement('div');
+                    card.className = 'img-card';
+                    card.innerHTML = `
+                        <div class="img-wrapper">
+                            <img src="${img.url}" alt="${img.original_name}">
+                            <label class="checkbox-container">
+                                <input type="checkbox" class="img-checkbox" checked data-original="${img.original_name}" data-rel="${img.rel_path}">
+                                <span class="checkmark"></span>
+                            </label>
+                        </div>
+                        <div class="img-details">
+                            <input type="text" class="img-name-input" value="${img.original_name}" disabled>
+                            <button class="edit-btn" onclick="toggleEdit(this)">Edit</button>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+                
+                section.appendChild(grid);
+                gridContainer.appendChild(section);
+            }
+            
+            showSection('gallery-section');
+        }
+
+        function toggleEdit(btn) {
+            const input = btn.previousElementSibling;
+            if (input.disabled) {
+                input.disabled = false;
+                input.focus();
+                btn.innerText = "Save";
+                btn.classList.add('saving');
+            } else {
+                input.disabled = true;
+                btn.innerText = "Edit";
+                btn.classList.remove('saving');
+            }
+        }
+
+        function saveToDrive() {
+            const zipUrl = document.getElementById('download-link').href;
+            if (!zipUrl || zipUrl === '#' || zipUrl.endsWith('#')) {
+                alert("ZIP file is not ready yet.");
+                return;
+            }
+            // Open Google Drive in new tab for direct upload/import
+            window.open("https://drive.google.com/drive/my-drive", "_blank");
+        }
+
+        async function createZip() {
+            const btn = document.getElementById('zip-btn');
+            btn.innerHTML = "Processing...";
+            btn.disabled = true;
+
+            const cards = document.querySelectorAll('.img-card');
+            const images = [];
+            
+            cards.forEach(card => {
+                const checkbox = card.querySelector('.img-checkbox');
+                if (checkbox.checked) {
+                    const originalName = checkbox.getAttribute('data-original');
+                    const relPath = checkbox.getAttribute('data-rel');
+                    let newName = card.querySelector('.img-name-input').value.trim();
+                    if (!newName) newName = originalName;
+                    
+                    const extMatch = originalName.match(/\.[0-9a-z]+$/i);
+                    const ext = extMatch ? extMatch[0] : '.jpg';
+                    if (!newName.endsWith(ext)) {
+                        newName += ext;
+                    }
+                    
+                    images.push({ original: originalName, new: newName, rel_path: relPath });
+                }
+            });
+
+            if (images.length === 0) {
+                alert("Please select at least one image.");
+                btn.innerHTML = "Package to ZIP";
+                btn.disabled = false;
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/zip', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        brand_slug: currentBrandSlug,
+                        images: images
+                    })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    document.getElementById('download-link').href = data.download_url;
+                    showSection('done-section');
+                }
+            } catch (err) {
+                alert("Error creating zip: " + err);
+                btn.innerHTML = "Package to ZIP";
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

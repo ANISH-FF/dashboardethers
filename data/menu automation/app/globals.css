@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+:root {
+  --bg-primary:    #0a0a0a;
+  --bg-secondary:  #111111;
+  --bg-card:       #161616;
+  --bg-hover:      #1c1c1c;
+  --bg-input:      #0f0f0f;
+  --border:        #272727;
+  --border-subtle: #1a1a1a;
+  --text-primary:  #f5f5f5;
+  --text-secondary:#a3a3a3;
+  --text-muted:    #555555;
+  --green:         #4ade80;
+  --red:           #f87171;
+  --orange:        #fb923c;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+  font-size: 14.5px; /* Increased base font size */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+input[type="number"] { -moz-appearance: textfield; }
+
+input, select, textarea {
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: inherit;
+}
+input::placeholder, textarea::placeholder { color: var(--text-muted); }
+
+select option { background: var(--bg-card); color: var(--text-primary); }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-secondary); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+input[type="checkbox"] {
+  accent-color: #fff;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}

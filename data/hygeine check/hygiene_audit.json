@@ -1,0 +1,1229 @@
+{
+  "restaurant_info": {
+    "name": "Novelty Multicuisine Restaurant",
+    "cuisines": "Chinese, North Indian, Mughlai, Sichuan",
+    "dining_rating": "4.1* (555 reviews)",
+    "delivery_rating": "4.2* (58.6K reviews)",
+    "url": "https://www.zomato.com/jamshedpur/novelty-multicuisine-restaurant-bistupur/order"
+  },
+  "hygiene_scorecard": {
+    "overall_hygiene_score": 64,
+    "total_dishes_audited": 288,
+    "photo_coverage_pct": 38.2,
+    "dishes_with_photos": 110,
+    "dishes_missing_photos": 178,
+    "desc_coverage_pct": 92.0,
+    "dishes_with_descs": 265,
+    "dishes_missing_descs": 23
+  },
+  "category_breakdown": [
+    {
+      "menu_group": "Starters",
+      "category_name": "",
+      "total_items": 8,
+      "photos_present": 0,
+      "photos_missing": 8,
+      "photos_missing_items": [
+        "Novelty Fried Crispy Chicken Strips",
+        "Fried Chicken 65",
+        "Crunchy Chicken Popcorn",
+        "Dum Khas Tangri",
+        "Fish Amritsari",
+        "Goan Chilli Chicken",
+        "Cheese Jalapeno Cigars",
+        "Fried Paneer 65"
+      ],
+      "descs_present": 8,
+      "descs_missing": 0,
+      "descs_missing_items": []
+    },
+    {
+      "menu_group": "Main Course",
+      "category_name": "Non Veg Main Course",
+      "total_items": 37,
+      "photos_present": 14,
+      "photos_missing": 23,
+      "photos_missing_items": [
+        "Dum Khas Tangri Masala",
+        "Gosht Rogan Josh",
+        "Murgh Tikka Tawa Masala",
+        "Murgh Bharta",
+        "Fish Tomato Curry",
+        "Mangalorean Fish Curry",
+        "Prawns Masala",
+        "Prawns Curry",
+        "Kukkad Junglee Bhatti",
+        "Murgh Taka Tak",
+        "Murgh Adraki Chaap",
+        "Prawns Tawa Masala",
+        "Ghost Malwani Masala",
+        "Murgh Rara",
+        "Murgh Muradabadi Musallam",
+        "Gosht Tawa Masala",
+        "Murgh Angeethi Masala",
+        "Egg Masala",
+        "Machi Tarkari",
+        "Gosht Boti Masala",
+        "Egg Do Pyaaza",
+        "Murgh Patiala",
+        "Boneless Lahori Chicken"
+      ],
+      "descs_present": 37,
+      "descs_missing": 0,
+      "descs_missing_items": []
+    },
+    {
+      "menu_group": "Main Course",
+      "category_name": "Veg Main Course",
+      "total_items": 36,
+      "photos_present": 17,
+      "photos_missing": 19,
+      "photos_missing_items": [
+        "Veg Jalfrezi",
+        "Birbal Handi Subji",
+        "Kadai Kofta Sabji",
+        "Paneer Dhaniya Adraki",
+        "Banarasi Dum Aloo",
+        "Matar Mushroom Methi ki Theri",
+        "Maratha Veg Kofta",
+        "Veg Bhuna",
+        "Aloo Gobhi",
+        "Paneer Taka Tak",
+        "Kolhapuri Dal Tadka",
+        "Rogani Dum Aloo",
+        "Aloo Matar",
+        "Aloo Jeera",
+        "Paneer Makhani",
+        "Paneer Kalonji",
+        "Paneer Bhojpuri Tadka",
+        "Maratha Kadai Vegetable",
+        "Original Butter Paneer"
+      ],
+      "descs_present": 35,
+      "descs_missing": 1,
+      "descs_missing_items": [
+        "Paneer Lazeez"
+      ]
+    },
+    {
+      "menu_group": "Rice and Biryani",
+      "category_name": "Biryani",
+      "total_items": 7,
+      "photos_present": 6,
+      "photos_missing": 1,
+      "photos_missing_items": [
+        "Boneless Mutton Biryani"
+      ],
+      "descs_present": 6,
+      "descs_missing": 1,
+      "descs_missing_items": [
+        "Boneless Mutton Biryani"
+      ]
+    },
+    {
+      "menu_group": "Rice and Biryani",
+      "category_name": "Rice",
+      "total_items": 5,
+      "photos_present": 3,
+      "photos_missing": 2,
+      "photos_missing_items": [
+        "Veg Pulao",
+        "Kashmiri Pulao"
+      ],
+      "descs_present": 4,
+      "descs_missing": 1,
+      "descs_missing_items": [
+        "Veg Pulao"
+      ]
+    },
+    {
+      "menu_group": "Tandoori Starters",
+      "category_name": "Tandoori Non Veg Starters",
+      "total_items": 16,
+      "photos_present": 9,
+      "photos_missing": 7,
+      "photos_missing_items": [
+        "Murgh Seekh Kebab",
+        "Chicken Lasooni Kebab",
+        "Murgh Pahadi Kebab",
+        "Gosht Seekh Kebab",
+        "Chicken Mastana Kebab",
+        "Lehsuni Kebab",
+        "Mastana Kebab"
+      ],
+      "descs_present": 14,
+      "descs_missing": 2,
+      "descs_missing_items": [
+        "Lehsuni Kebab",
+        "Mastana Kebab"
+      ]
+    },
+    {
+      "menu_group": "Tandoori Starters",
+      "category_name": "Tandoori Veg Starters",
+      "total_items": 9,
+      "photos_present": 5,
+      "photos_missing": 4,
+      "photos_missing_items": [
+        "Paneer Khash Tikka",
+        "Paneer Shashlik Tikka",
+        "Paneer Bhuna Mirch Tikka",
+        "Hyderabadi Seek Sabji"
+      ],
+      "descs_present": 9,
+      "descs_missing": 0,
+      "descs_missing_items": []
+    },
+    {
+      "menu_group": "Chinese",
+      "category_name": "Chinese Veg",
+      "total_items": 28,
+      "photos_present": 10,
+      "photos_missing": 18,
+      "photos_missing_items": [
+        "Mushroom Chilli Dry",
+        "Crispy Chilli Potato",
+        "Mushroom Salt and Pepper",
+        "Classic Veg Manchurian",
+        "Assorted Veg in Chilli Basil Sauce",
+        "Paneer in Chilli Bean Sauce",
+        "Garlic Paneer Dry",
+        "American Chilli Corn",
+        "Paneer in Assorted Pepper",
+        "Paneer Manchurian Dry",
+        "Chilli Potato Dry",
+        "Ginger Paneer Dry",
+        "Paneer Salt Pepper",
+        "Kung Pao Chilli Paneer",
+        "Paneer in Schezwan Sauce",
+        "Chilli Potato",
+        "Paneer in Black Bean Sauce",
+        "Assorted Veg in Black Bean Sauce"
+      ],
+      "descs_present": 27,
+      "descs_missing": 1,
+      "descs_missing_items": [
+        "Mushroom Chilli Dry"
+      ]
+    },
+    {
+      "menu_group": "Chinese",
+      "category_name": "Non Veg Chinese",
+      "total_items": 31,
+      "photos_present": 9,
+      "photos_missing": 22,
+      "photos_missing_items": [
+        "Garlic Chicken",
+        "Pan Fried Chilli Fish",
+        "Chilli Prawns Dry",
+        "Chicken Wings in Sweet Chilli Sauce",
+        "Prawns Salt and Pepper",
+        "Chilli Prawns Gravy",
+        "Chicken in Hot Garlic Sauce",
+        "Garlic Chicken Dry",
+        "Garlic Fish Dry",
+        "Chilli Fish Dry",
+        "Sliced Chicken in Black Pepper Sauce",
+        "Schezwan Chicken Dry",
+        "Hunan Chicken",
+        "Shanghai Chicken",
+        "Basil Chilli Chicken",
+        "Ginger Chicken Dry",
+        "Chicken Salt and Pepper",
+        "Chicken in Assorted Pepper",
+        "Schezwan Chicken",
+        "Ginger Chicken",
+        "Classic Chicken Manchurian",
+        "Diced Chicken in Hunan Sauce"
+      ],
+      "descs_present": 29,
+      "descs_missing": 2,
+      "descs_missing_items": [
+        "Basil Chilli Chicken",
+        "Classic Chicken Manchurian"
+      ]
+    },
+    {
+      "menu_group": "Breads",
+      "category_name": "",
+      "total_items": 15,
+      "photos_present": 6,
+      "photos_missing": 9,
+      "photos_missing_items": [
+        "Rotiyon ki Tokri",
+        "Paneer Kulcha",
+        "Stuffed Paratha",
+        "Cheese Kulcha",
+        "Plain Kulcha",
+        "Garlic Plain Naan",
+        "Garlic Butter Naan",
+        "Missi Roti",
+        "Kashmiri Naan"
+      ],
+      "descs_present": 15,
+      "descs_missing": 0,
+      "descs_missing_items": []
+    },
+    {
+      "menu_group": "Fried Rice and Noodles",
+      "category_name": "Fried Rice",
+      "total_items": 25,
+      "photos_present": 8,
+      "photos_missing": 17,
+      "photos_missing_items": [
+        "Prawns Fried Rice",
+        "Mixed Kimchi Fried Rice",
+        "Chicken Nasi Goreng Rice",
+        "Chicken Burnt Garlic Fried Rice",
+        "Mixed Nasi Goreng Rice",
+        "Veg Burnt Garlic Fried Rice",
+        "Mixed Burnt Garlic Fried Rice",
+        "Chicken Kimchi Fried Rice",
+        "Chicken Shanghai Fried Rice",
+        "Veg Shanghai Fried Rice",
+        "Egg Shanghai Fried Rice",
+        "Egg Kimchi Fried Rice",
+        "Veg Kimchi Fried Rice",
+        "Veg Moon Fan Rice",
+        "Chicken Moon Fan Rice",
+        "Non Veg Shanghai Fried Rice",
+        "Mix Mou Fan Fried Rice"
+      ],
+      "descs_present": 23,
+      "descs_missing": 2,
+      "descs_missing_items": [
+        "Egg Shanghai Fried Rice",
+        "Mix Mou Fan Fried Rice"
+      ]
+    },
+    {
+      "menu_group": "Fried Rice and Noodles",
+      "category_name": "Noodles",
+      "total_items": 30,
+      "photos_present": 6,
+      "photos_missing": 24,
+      "photos_missing_items": [
+        "Chicken Mee Goreng Noodles",
+        "American Chop Suey",
+        "Mix Chowmein Gravy",
+        "Mix Pan Fried Noodles",
+        "Veg Hakka Noodles",
+        "Mixed Mee Goreng Noodles",
+        "Chicken Chopsuey",
+        "Chicken Pan Fried Noodles",
+        "Chicken Chowmein with gerevy",
+        "Veg Schezwan Bean Noodles",
+        "Veg Pan Fried Noodles",
+        "Veg Chowmein Gravy",
+        "Mixed Thai Green Noodles",
+        "Veg Thai Green Noodles",
+        "Egg Chopsuey",
+        "Egg Pan Fried Noodles",
+        "Egg Schezwan Bean Noodle",
+        "Egg Chowmein gerevy",
+        "Egg Mee Goerang Noodles",
+        "Egg Thai Green Noodles",
+        "Chicken Thai Green Noodles",
+        "Chicken Schezwan Bean Noodles",
+        "Mix Schezwan Bean Noodles",
+        "Mix Choupsuey"
+      ],
+      "descs_present": 17,
+      "descs_missing": 13,
+      "descs_missing_items": [
+        "Mix Chowmein Gravy",
+        "Mix Pan Fried Noodles",
+        "Veg Hakka Noodles",
+        "Chicken Pan Fried Noodles",
+        "Veg Pan Fried Noodles",
+        "Veg Chowmein Gravy",
+        "Egg Chopsuey",
+        "Egg Pan Fried Noodles",
+        "Egg Schezwan Bean Noodle",
+        "Egg Mee Goerang Noodles",
+        "Egg Thai Green Noodles",
+        "Mix Schezwan Bean Noodles",
+        "Mix Choupsuey"
+      ]
+    },
+    {
+      "menu_group": "Pizza",
+      "category_name": "",
+      "total_items": 9,
+      "photos_present": 0,
+      "photos_missing": 9,
+      "photos_missing_items": [
+        "Chicken Tikka Pizza [Serves 1, 6 inches]",
+        "Chicken Hawaiian Pizza [Serves 1, 6 inches]",
+        "Chicken Seek Pizza [Serves 1, 6 inches]",
+        "Paneer Tikka Pizza [Serves 1, 6 inches]",
+        "Veggie Lover Pizza [Serves 1, 6 inches]",
+        "Maghrita Pizza [Serves 1, 6 inches]",
+        "Chilli Paneer Pizza [Serves 1, 6 inches]",
+        "Veg Hawaiian Pizza [Serves 1, 6 inches]",
+        "Butter Chicken Pizza [Serves 1, 6 inches]"
+      ],
+      "descs_present": 9,
+      "descs_missing": 0,
+      "descs_missing_items": []
+    },
+    {
+      "menu_group": "Snacks",
+      "category_name": "",
+      "total_items": 2,
+      "photos_present": 1,
+      "photos_missing": 1,
+      "photos_missing_items": [
+        "Fish Finger"
+      ],
+      "descs_present": 2,
+      "descs_missing": 0,
+      "descs_missing_items": []
+    },
+    {
+      "menu_group": "Momos",
+      "category_name": "",
+      "total_items": 8,
+      "photos_present": 8,
+      "photos_missing": 0,
+      "photos_missing_items": [],
+      "descs_present": 8,
+      "descs_missing": 0,
+      "descs_missing_items": []
+    },
+    {
+      "menu_group": "Soups",
+      "category_name": "",
+      "total_items": 22,
+      "photos_present": 8,
+      "photos_missing": 14,
+      "photos_missing_items": [
+        "Veg Talumein Soup",
+        "Veg Noodles Soup",
+        "Novelty Special Veg Soup",
+        "Veg Tom Yum Soup",
+        "Veg Eight Treasure Soup",
+        "Veg Pepper Lemon Soup",
+        "Veg Peking Soup",
+        "Chicken Novelty Special Soup",
+        "Chicken Talumein Soup",
+        "Chicken Noodles Soup",
+        "Chicken Tom Yum Soup",
+        "Chicken Eight Treasure Soup",
+        "Chicken Pepper Lemon Soup",
+        "Chicken Pecking Soup"
+      ],
+      "descs_present": 22,
+      "descs_missing": 0,
+      "descs_missing_items": []
+    }
+  ],
+  "missing_photos_all": [
+    {
+      "category": "",
+      "dish": "Novelty Fried Crispy Chicken Strips"
+    },
+    {
+      "category": "",
+      "dish": "Fried Chicken 65"
+    },
+    {
+      "category": "",
+      "dish": "Crunchy Chicken Popcorn"
+    },
+    {
+      "category": "",
+      "dish": "Dum Khas Tangri"
+    },
+    {
+      "category": "",
+      "dish": "Fish Amritsari"
+    },
+    {
+      "category": "",
+      "dish": "Goan Chilli Chicken"
+    },
+    {
+      "category": "",
+      "dish": "Cheese Jalapeno Cigars"
+    },
+    {
+      "category": "",
+      "dish": "Fried Paneer 65"
+    },
+    {
+      "category": "Non Veg Main Course",
+      "dish": "Dum Khas Tangri Masala"
+    },
+    {
+      "category": "Non Veg Main Course",
+      "dish": "Gosht Rogan Josh"
+    },
+    {
+      "category": "Non Veg Main Course",
+      "dish": "Murgh Tikka Tawa Masala"
+    },
+    {
+      "category": "Non Veg Main Course",
+      "dish": "Murgh Bharta"
+    },
+    {
+      "category": "Non Veg Main Course",
+      "dish": "Fish Tomato Curry"
+    },
+    {
+      "category": "Non Veg Main Course",
+      "dish": "Mangalorean Fish Curry"
+    },
+    {
+      "category": "Non Veg Main Course",
+      "dish": "Prawns Masala"
+    },
+    {
+      "category": "Non Veg Main Course",
+      "dish": "Prawns Curry"
+    },
+    {
+      "category": "Non Veg Main Course",
+      "dish": "Kukkad Junglee Bhatti"
+    },
+    {
+      "category": "Non Veg Main Course",
+      "dish": "Murgh Taka Tak"
+    },
+    {
+      "category": "Non Veg Main Course",
+      "dish": "Murgh Adraki Chaap"
+    },
+    {
+      "category": "Non Veg Main Course",
+      "dish": "Prawns Tawa Masala"
+    },
+    {
+      "category": "Non Veg Main Course",
+      "dish": "Ghost Malwani Masala"
+    },
+    {
+      "category": "Non Veg Main Course",
+      "dish": "Murgh Rara"
+    },
+    {
+      "category": "Non Veg Main Course",
+      "dish": "Murgh Muradabadi Musallam"
+    },
+    {
+      "category": "Non Veg Main Course",
+      "dish": "Gosht Tawa Masala"
+    },
+    {
+      "category": "Non Veg Main Course",
+      "dish": "Murgh Angeethi Masala"
+    },
+    {
+      "category": "Non Veg Main Course",
+      "dish": "Egg Masala"
+    },
+    {
+      "category": "Non Veg Main Course",
+      "dish": "Machi Tarkari"
+    },
+    {
+      "category": "Non Veg Main Course",
+      "dish": "Gosht Boti Masala"
+    },
+    {
+      "category": "Non Veg Main Course",
+      "dish": "Egg Do Pyaaza"
+    },
+    {
+      "category": "Non Veg Main Course",
+      "dish": "Murgh Patiala"
+    },
+    {
+      "category": "Non Veg Main Course",
+      "dish": "Boneless Lahori Chicken"
+    },
+    {
+      "category": "Veg Main Course",
+      "dish": "Veg Jalfrezi"
+    },
+    {
+      "category": "Veg Main Course",
+      "dish": "Birbal Handi Subji"
+    },
+    {
+      "category": "Veg Main Course",
+      "dish": "Kadai Kofta Sabji"
+    },
+    {
+      "category": "Veg Main Course",
+      "dish": "Paneer Dhaniya Adraki"
+    },
+    {
+      "category": "Veg Main Course",
+      "dish": "Banarasi Dum Aloo"
+    },
+    {
+      "category": "Veg Main Course",
+      "dish": "Matar Mushroom Methi ki Theri"
+    },
+    {
+      "category": "Veg Main Course",
+      "dish": "Maratha Veg Kofta"
+    },
+    {
+      "category": "Veg Main Course",
+      "dish": "Veg Bhuna"
+    },
+    {
+      "category": "Veg Main Course",
+      "dish": "Aloo Gobhi"
+    },
+    {
+      "category": "Veg Main Course",
+      "dish": "Paneer Taka Tak"
+    },
+    {
+      "category": "Veg Main Course",
+      "dish": "Kolhapuri Dal Tadka"
+    },
+    {
+      "category": "Veg Main Course",
+      "dish": "Rogani Dum Aloo"
+    },
+    {
+      "category": "Veg Main Course",
+      "dish": "Aloo Matar"
+    },
+    {
+      "category": "Veg Main Course",
+      "dish": "Aloo Jeera"
+    },
+    {
+      "category": "Veg Main Course",
+      "dish": "Paneer Makhani"
+    },
+    {
+      "category": "Veg Main Course",
+      "dish": "Paneer Kalonji"
+    },
+    {
+      "category": "Veg Main Course",
+      "dish": "Paneer Bhojpuri Tadka"
+    },
+    {
+      "category": "Veg Main Course",
+      "dish": "Maratha Kadai Vegetable"
+    },
+    {
+      "category": "Veg Main Course",
+      "dish": "Original Butter Paneer"
+    },
+    {
+      "category": "Biryani",
+      "dish": "Boneless Mutton Biryani"
+    },
+    {
+      "category": "Rice",
+      "dish": "Veg Pulao"
+    },
+    {
+      "category": "Rice",
+      "dish": "Kashmiri Pulao"
+    },
+    {
+      "category": "Tandoori Non Veg Starters",
+      "dish": "Murgh Seekh Kebab"
+    },
+    {
+      "category": "Tandoori Non Veg Starters",
+      "dish": "Chicken Lasooni Kebab"
+    },
+    {
+      "category": "Tandoori Non Veg Starters",
+      "dish": "Murgh Pahadi Kebab"
+    },
+    {
+      "category": "Tandoori Non Veg Starters",
+      "dish": "Gosht Seekh Kebab"
+    },
+    {
+      "category": "Tandoori Non Veg Starters",
+      "dish": "Chicken Mastana Kebab"
+    },
+    {
+      "category": "Tandoori Non Veg Starters",
+      "dish": "Lehsuni Kebab"
+    },
+    {
+      "category": "Tandoori Non Veg Starters",
+      "dish": "Mastana Kebab"
+    },
+    {
+      "category": "Tandoori Veg Starters",
+      "dish": "Paneer Khash Tikka"
+    },
+    {
+      "category": "Tandoori Veg Starters",
+      "dish": "Paneer Shashlik Tikka"
+    },
+    {
+      "category": "Tandoori Veg Starters",
+      "dish": "Paneer Bhuna Mirch Tikka"
+    },
+    {
+      "category": "Tandoori Veg Starters",
+      "dish": "Hyderabadi Seek Sabji"
+    },
+    {
+      "category": "Chinese Veg",
+      "dish": "Mushroom Chilli Dry"
+    },
+    {
+      "category": "Chinese Veg",
+      "dish": "Crispy Chilli Potato"
+    },
+    {
+      "category": "Chinese Veg",
+      "dish": "Mushroom Salt and Pepper"
+    },
+    {
+      "category": "Chinese Veg",
+      "dish": "Classic Veg Manchurian"
+    },
+    {
+      "category": "Chinese Veg",
+      "dish": "Assorted Veg in Chilli Basil Sauce"
+    },
+    {
+      "category": "Chinese Veg",
+      "dish": "Paneer in Chilli Bean Sauce"
+    },
+    {
+      "category": "Chinese Veg",
+      "dish": "Garlic Paneer Dry"
+    },
+    {
+      "category": "Chinese Veg",
+      "dish": "American Chilli Corn"
+    },
+    {
+      "category": "Chinese Veg",
+      "dish": "Paneer in Assorted Pepper"
+    },
+    {
+      "category": "Chinese Veg",
+      "dish": "Paneer Manchurian Dry"
+    },
+    {
+      "category": "Chinese Veg",
+      "dish": "Chilli Potato Dry"
+    },
+    {
+      "category": "Chinese Veg",
+      "dish": "Ginger Paneer Dry"
+    },
+    {
+      "category": "Chinese Veg",
+      "dish": "Paneer Salt Pepper"
+    },
+    {
+      "category": "Chinese Veg",
+      "dish": "Kung Pao Chilli Paneer"
+    },
+    {
+      "category": "Chinese Veg",
+      "dish": "Paneer in Schezwan Sauce"
+    },
+    {
+      "category": "Chinese Veg",
+      "dish": "Chilli Potato"
+    },
+    {
+      "category": "Chinese Veg",
+      "dish": "Paneer in Black Bean Sauce"
+    },
+    {
+      "category": "Chinese Veg",
+      "dish": "Assorted Veg in Black Bean Sauce"
+    },
+    {
+      "category": "Non Veg Chinese",
+      "dish": "Garlic Chicken"
+    },
+    {
+      "category": "Non Veg Chinese",
+      "dish": "Pan Fried Chilli Fish"
+    },
+    {
+      "category": "Non Veg Chinese",
+      "dish": "Chilli Prawns Dry"
+    },
+    {
+      "category": "Non Veg Chinese",
+      "dish": "Chicken Wings in Sweet Chilli Sauce"
+    },
+    {
+      "category": "Non Veg Chinese",
+      "dish": "Prawns Salt and Pepper"
+    },
+    {
+      "category": "Non Veg Chinese",
+      "dish": "Chilli Prawns Gravy"
+    },
+    {
+      "category": "Non Veg Chinese",
+      "dish": "Chicken in Hot Garlic Sauce"
+    },
+    {
+      "category": "Non Veg Chinese",
+      "dish": "Garlic Chicken Dry"
+    },
+    {
+      "category": "Non Veg Chinese",
+      "dish": "Garlic Fish Dry"
+    },
+    {
+      "category": "Non Veg Chinese",
+      "dish": "Chilli Fish Dry"
+    },
+    {
+      "category": "Non Veg Chinese",
+      "dish": "Sliced Chicken in Black Pepper Sauce"
+    },
+    {
+      "category": "Non Veg Chinese",
+      "dish": "Schezwan Chicken Dry"
+    },
+    {
+      "category": "Non Veg Chinese",
+      "dish": "Hunan Chicken"
+    },
+    {
+      "category": "Non Veg Chinese",
+      "dish": "Shanghai Chicken"
+    },
+    {
+      "category": "Non Veg Chinese",
+      "dish": "Basil Chilli Chicken"
+    },
+    {
+      "category": "Non Veg Chinese",
+      "dish": "Ginger Chicken Dry"
+    },
+    {
+      "category": "Non Veg Chinese",
+      "dish": "Chicken Salt and Pepper"
+    },
+    {
+      "category": "Non Veg Chinese",
+      "dish": "Chicken in Assorted Pepper"
+    },
+    {
+      "category": "Non Veg Chinese",
+      "dish": "Schezwan Chicken"
+    },
+    {
+      "category": "Non Veg Chinese",
+      "dish": "Ginger Chicken"
+    },
+    {
+      "category": "Non Veg Chinese",
+      "dish": "Classic Chicken Manchurian"
+    },
+    {
+      "category": "Non Veg Chinese",
+      "dish": "Diced Chicken in Hunan Sauce"
+    },
+    {
+      "category": "",
+      "dish": "Rotiyon ki Tokri"
+    },
+    {
+      "category": "",
+      "dish": "Paneer Kulcha"
+    },
+    {
+      "category": "",
+      "dish": "Stuffed Paratha"
+    },
+    {
+      "category": "",
+      "dish": "Cheese Kulcha"
+    },
+    {
+      "category": "",
+      "dish": "Plain Kulcha"
+    },
+    {
+      "category": "",
+      "dish": "Garlic Plain Naan"
+    },
+    {
+      "category": "",
+      "dish": "Garlic Butter Naan"
+    },
+    {
+      "category": "",
+      "dish": "Missi Roti"
+    },
+    {
+      "category": "",
+      "dish": "Kashmiri Naan"
+    },
+    {
+      "category": "Fried Rice",
+      "dish": "Prawns Fried Rice"
+    },
+    {
+      "category": "Fried Rice",
+      "dish": "Mixed Kimchi Fried Rice"
+    },
+    {
+      "category": "Fried Rice",
+      "dish": "Chicken Nasi Goreng Rice"
+    },
+    {
+      "category": "Fried Rice",
+      "dish": "Chicken Burnt Garlic Fried Rice"
+    },
+    {
+      "category": "Fried Rice",
+      "dish": "Mixed Nasi Goreng Rice"
+    },
+    {
+      "category": "Fried Rice",
+      "dish": "Veg Burnt Garlic Fried Rice"
+    },
+    {
+      "category": "Fried Rice",
+      "dish": "Mixed Burnt Garlic Fried Rice"
+    },
+    {
+      "category": "Fried Rice",
+      "dish": "Chicken Kimchi Fried Rice"
+    },
+    {
+      "category": "Fried Rice",
+      "dish": "Chicken Shanghai Fried Rice"
+    },
+    {
+      "category": "Fried Rice",
+      "dish": "Veg Shanghai Fried Rice"
+    },
+    {
+      "category": "Fried Rice",
+      "dish": "Egg Shanghai Fried Rice"
+    },
+    {
+      "category": "Fried Rice",
+      "dish": "Egg Kimchi Fried Rice"
+    },
+    {
+      "category": "Fried Rice",
+      "dish": "Veg Kimchi Fried Rice"
+    },
+    {
+      "category": "Fried Rice",
+      "dish": "Veg Moon Fan Rice"
+    },
+    {
+      "category": "Fried Rice",
+      "dish": "Chicken Moon Fan Rice"
+    },
+    {
+      "category": "Fried Rice",
+      "dish": "Non Veg Shanghai Fried Rice"
+    },
+    {
+      "category": "Fried Rice",
+      "dish": "Mix Mou Fan Fried Rice"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Chicken Mee Goreng Noodles"
+    },
+    {
+      "category": "Noodles",
+      "dish": "American Chop Suey"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Mix Chowmein Gravy"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Mix Pan Fried Noodles"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Veg Hakka Noodles"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Mixed Mee Goreng Noodles"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Chicken Chopsuey"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Chicken Pan Fried Noodles"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Chicken Chowmein with gerevy"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Veg Schezwan Bean Noodles"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Veg Pan Fried Noodles"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Veg Chowmein Gravy"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Mixed Thai Green Noodles"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Veg Thai Green Noodles"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Egg Chopsuey"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Egg Pan Fried Noodles"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Egg Schezwan Bean Noodle"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Egg Chowmein gerevy"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Egg Mee Goerang Noodles"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Egg Thai Green Noodles"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Chicken Thai Green Noodles"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Chicken Schezwan Bean Noodles"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Mix Schezwan Bean Noodles"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Mix Choupsuey"
+    },
+    {
+      "category": "",
+      "dish": "Chicken Tikka Pizza [Serves 1, 6 inches]"
+    },
+    {
+      "category": "",
+      "dish": "Chicken Hawaiian Pizza [Serves 1, 6 inches]"
+    },
+    {
+      "category": "",
+      "dish": "Chicken Seek Pizza [Serves 1, 6 inches]"
+    },
+    {
+      "category": "",
+      "dish": "Paneer Tikka Pizza [Serves 1, 6 inches]"
+    },
+    {
+      "category": "",
+      "dish": "Veggie Lover Pizza [Serves 1, 6 inches]"
+    },
+    {
+      "category": "",
+      "dish": "Maghrita Pizza [Serves 1, 6 inches]"
+    },
+    {
+      "category": "",
+      "dish": "Chilli Paneer Pizza [Serves 1, 6 inches]"
+    },
+    {
+      "category": "",
+      "dish": "Veg Hawaiian Pizza [Serves 1, 6 inches]"
+    },
+    {
+      "category": "",
+      "dish": "Butter Chicken Pizza [Serves 1, 6 inches]"
+    },
+    {
+      "category": "",
+      "dish": "Fish Finger"
+    },
+    {
+      "category": "",
+      "dish": "Veg Talumein Soup"
+    },
+    {
+      "category": "",
+      "dish": "Veg Noodles Soup"
+    },
+    {
+      "category": "",
+      "dish": "Novelty Special Veg Soup"
+    },
+    {
+      "category": "",
+      "dish": "Veg Tom Yum Soup"
+    },
+    {
+      "category": "",
+      "dish": "Veg Eight Treasure Soup"
+    },
+    {
+      "category": "",
+      "dish": "Veg Pepper Lemon Soup"
+    },
+    {
+      "category": "",
+      "dish": "Veg Peking Soup"
+    },
+    {
+      "category": "",
+      "dish": "Chicken Novelty Special Soup"
+    },
+    {
+      "category": "",
+      "dish": "Chicken Talumein Soup"
+    },
+    {
+      "category": "",
+      "dish": "Chicken Noodles Soup"
+    },
+    {
+      "category": "",
+      "dish": "Chicken Tom Yum Soup"
+    },
+    {
+      "category": "",
+      "dish": "Chicken Eight Treasure Soup"
+    },
+    {
+      "category": "",
+      "dish": "Chicken Pepper Lemon Soup"
+    },
+    {
+      "category": "",
+      "dish": "Chicken Pecking Soup"
+    }
+  ],
+  "missing_descs_all": [
+    {
+      "category": "Veg Main Course",
+      "dish": "Paneer Lazeez"
+    },
+    {
+      "category": "Biryani",
+      "dish": "Boneless Mutton Biryani"
+    },
+    {
+      "category": "Rice",
+      "dish": "Veg Pulao"
+    },
+    {
+      "category": "Tandoori Non Veg Starters",
+      "dish": "Lehsuni Kebab"
+    },
+    {
+      "category": "Tandoori Non Veg Starters",
+      "dish": "Mastana Kebab"
+    },
+    {
+      "category": "Chinese Veg",
+      "dish": "Mushroom Chilli Dry"
+    },
+    {
+      "category": "Non Veg Chinese",
+      "dish": "Basil Chilli Chicken"
+    },
+    {
+      "category": "Non Veg Chinese",
+      "dish": "Classic Chicken Manchurian"
+    },
+    {
+      "category": "Fried Rice",
+      "dish": "Egg Shanghai Fried Rice"
+    },
+    {
+      "category": "Fried Rice",
+      "dish": "Mix Mou Fan Fried Rice"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Mix Chowmein Gravy"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Mix Pan Fried Noodles"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Veg Hakka Noodles"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Chicken Pan Fried Noodles"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Veg Pan Fried Noodles"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Veg Chowmein Gravy"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Egg Chopsuey"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Egg Pan Fried Noodles"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Egg Schezwan Bean Noodle"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Egg Mee Goerang Noodles"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Egg Thai Green Noodles"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Mix Schezwan Bean Noodles"
+    },
+    {
+      "category": "Noodles",
+      "dish": "Mix Choupsuey"
+    }
+  ]
+}

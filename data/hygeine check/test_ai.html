@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qwen2.5-VL 3B Chat Interface</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f3f4f6; color: #1f2937; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .chat-container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); width: 100%; max-width: 600px; }
+        h1 { margin-top: 0; font-size: 24px; color: #111827; }
+        .input-group { margin-bottom: 20px; }
+        label { display: block; font-weight: 500; margin-bottom: 8px; color: #374151; }
+        input[type="text"], input[type="file"] { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; margin-bottom: 10px; }
+        button { background: #3b82f6; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; width: 100%; transition: background 0.2s; }
+        button:hover { background: #2563eb; }
+        button:disabled { background: #9ca3af; cursor: not-allowed; }
+        #preview { max-width: 100%; max-height: 300px; margin-bottom: 20px; border-radius: 8px; display: none; }
+        .chat-log { margin-top: 20px; padding: 15px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; min-height: 100px; white-space: pre-wrap; font-family: monospace; }
+        .bot-msg { color: #059669; font-weight: bold; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <h1>🤖 Qwen2.5-VL Chatbot</h1>
+    <p style="color: #6b7280; margin-bottom: 25px;">Upload an image or paste a screenshot, then ask any question about it.</p>
+    
+    <div class="input-group">
+        <label>Upload Image or Paste (Ctrl+V)</label>
+        <input type="file" id="imageUpload" accept="image/*">
+        <img id="preview" src="" alt="Preview">
+    </div>
+
+    <div class="input-group">
+        <label>Your Question</label>
+        <input type="text" id="promptInput" placeholder="What is in this image? Is it healthy?">
+    </div>
+
+    <button id="askBtn" onclick="askQwen()">Ask Qwen</button>
+
+    <div class="chat-log" id="chatLog">
+        <em>Output will appear here...</em>
+    </div>
+</div>
+
+<script>
+    let currentImageBase64 = null;
+    const preview = document.getElementById('preview');
+    const imageUpload = document.getElementById('imageUpload');
+
+    // Handle File Upload
+    imageUpload.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                currentImageBase64 = event.target.result;
+                preview.src = currentImageBase64;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Handle Paste (Ctrl+V)
+    window.addEventListener('paste', e => {
+        const items = e.clipboardData.items;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf('image') !== -1) {
+                const file = items[i].getAsFile();
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    currentImageBase64 = event.target.result;
+                    preview.src = currentImageBase64;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+    });
+
+    async function askQwen() {
+        const prompt = document.getElementById('promptInput').value;
+        if (!currentImageBase64 && !prompt) {
+            alert('Please either upload an image or type a question!');
+            return;
+        }
+        const btn = document.getElementById('askBtn');
+        const log = document.getElementById('chatLog');
+        
+        btn.disabled = true;
+        btn.innerText = '🤔 Qwen is thinking...';
+        log.innerHTML = `<em>Thinking...</em>`;
+
+        try {
+            const payload = {
+                prompt: prompt,
+                image: currentImageBase64 || ''
+            };
+            const response = await fetch('http://localhost:8001/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+            if (data.error) {
+                log.innerHTML = `<span style="color:red">Error: ${data.error}</span>`;
+            } else {
+                log.innerHTML = `<div class="bot-msg">Qwen says:</div>${data.response}`;
+            }
+        } catch (err) {
+            log.innerHTML = `<span style="color:red">Connection Failed. Is the AI server running?</span>`;
+        }
+
+        btn.disabled = false;
+        btn.innerText = 'Ask Qwen';
+    }
+</script>
+
+</body>
+</html>
