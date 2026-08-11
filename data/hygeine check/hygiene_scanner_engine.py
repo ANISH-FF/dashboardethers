@@ -144,25 +144,26 @@ def find_restaurant_urls(name, location):
 
     def search_zomato():
         try:
-            with DDGS() as ddgs:
-                z_matches = []
-                for r in ddgs.text(f"site:zomato.com {name} {location}", max_results=5):
-                    score, valid_url = validate_and_score_result(r, name, location)
-                    if valid_url and score > 0:
-                        z_matches.append((score, valid_url))
-                if z_matches:
-                    z_matches.sort(key=lambda x: x[0], reverse=True)
-                    return z_matches[0][1]
+            ddgs = DDGS()
+            z_matches = []
+            for r in ddgs.text(f"zomato {name} {location}", max_results=5):
+                score, valid_url = validate_and_score_result(r, name, location)
+                if valid_url and score > 0:
+                    z_matches.append((score, valid_url))
+            if z_matches:
+                z_matches.sort(key=lambda x: x[0], reverse=True)
+                return z_matches[0][1]
         except Exception as e:
             print(f"Zomato DDGS Search Error: {e}")
 
         try:
-            for url in search(f"site:zomato.com {name} {location}", num_results=5):
-                if "zomato.com" in url:
-                    r = {'href': url, 'title': url, 'body': url}
-                    score, valid_url = validate_and_score_result(r, name, location)
-                    if valid_url:
-                        return valid_url
+            if search:
+                for url in search(f"site:zomato.com {name} {location}", num_results=5):
+                    if "zomato.com" in url:
+                        r = {'href': url, 'title': url, 'body': url}
+                        score, valid_url = validate_and_score_result(r, name, location)
+                        if valid_url:
+                            return valid_url
         except Exception as e:
             print(f"Zomato Google Search Fallback Error: {e}")
 
@@ -170,27 +171,28 @@ def find_restaurant_urls(name, location):
 
     def search_swiggy():
         try:
-            with DDGS() as ddgs:
-                s_matches = []
-                for r in ddgs.text(f"site:swiggy.com {name} {location}", max_results=5):
-                    url = r.get('href', '')
-                    if "dineout" not in url:
-                        score, valid_url = validate_and_score_result(r, name, location)
-                        if valid_url and score > 0:
-                            s_matches.append((score, valid_url))
-                if s_matches:
-                    s_matches.sort(key=lambda x: x[0], reverse=True)
-                    return s_matches[0][1]
+            ddgs = DDGS()
+            s_matches = []
+            for r in ddgs.text(f"swiggy {name} {location}", max_results=5):
+                url = r.get('href', '')
+                if "dineout" not in url:
+                    score, valid_url = validate_and_score_result(r, name, location)
+                    if valid_url and score > 0:
+                        s_matches.append((score, valid_url))
+            if s_matches:
+                s_matches.sort(key=lambda x: x[0], reverse=True)
+                return s_matches[0][1]
         except Exception as e:
             print(f"Swiggy DDGS Search Error: {e}")
 
         try:
-            for url in search(f"site:swiggy.com {name} {location}", num_results=5):
-                if "swiggy.com" in url and "dineout" not in url:
-                    r = {'href': url, 'title': url, 'body': url}
-                    score, valid_url = validate_and_score_result(r, name, location)
-                    if valid_url:
-                        return valid_url
+            if search:
+                for url in search(f"site:swiggy.com {name} {location}", num_results=5):
+                    if "swiggy.com" in url and "dineout" not in url:
+                        r = {'href': url, 'title': url, 'body': url}
+                        score, valid_url = validate_and_score_result(r, name, location)
+                        if valid_url:
+                            return valid_url
         except Exception as e:
             print(f"Swiggy Google Search Fallback Error: {e}")
 
@@ -198,27 +200,28 @@ def find_restaurant_urls(name, location):
 
     def search_swiggy_dineout():
         try:
-            with DDGS() as ddgs:
-                sd_matches = []
-                for r in ddgs.text(f"site:swiggy.com/restaurants {name} {location} dineout", max_results=5):
-                    url = r.get('href', '')
-                    if "dineout" in url:
-                        score, valid_url = validate_and_score_result(r, name, location)
-                        if valid_url and score > 0:
-                            sd_matches.append((score, valid_url))
-                if sd_matches:
-                    sd_matches.sort(key=lambda x: x[0], reverse=True)
-                    return sd_matches[0][1]
+            ddgs = DDGS()
+            sd_matches = []
+            for r in ddgs.text(f"swiggy {name} {location} dineout", max_results=5):
+                url = r.get('href', '')
+                if "dineout" in url:
+                    score, valid_url = validate_and_score_result(r, name, location)
+                    if valid_url and score > 0:
+                        sd_matches.append((score, valid_url))
+            if sd_matches:
+                sd_matches.sort(key=lambda x: x[0], reverse=True)
+                return sd_matches[0][1]
         except Exception as e:
             print(f"Swiggy Dineout DDGS Search Error: {e}")
 
         try:
-            for url in search(f"site:swiggy.com/restaurants {name} {location} dineout", num_results=5):
-                if "swiggy.com/restaurants" in url and "dineout" in url:
-                    r = {'href': url, 'title': url, 'body': url}
-                    score, valid_url = validate_and_score_result(r, name, location)
-                    if valid_url:
-                        return valid_url
+            if search:
+                for url in search(f"site:swiggy.com/restaurants {name} {location} dineout", num_results=5):
+                    if "swiggy.com/restaurants" in url and "dineout" in url:
+                        r = {'href': url, 'title': url, 'body': url}
+                        score, valid_url = validate_and_score_result(r, name, location)
+                        if valid_url:
+                            return valid_url
         except Exception as e:
             print(f"Swiggy Dineout Google Search Fallback Error: {e}")
 
@@ -235,7 +238,6 @@ def find_restaurant_urls(name, location):
         raw_sd = fsd.result()
 
     # Zomato logic per zomatoswiggyhygeine spec:
-    # Normalize raw Zomato search URL to clean base URL
     z_base = normalize_zomato_base_url(raw_z) if raw_z else None
     z_dineout = z_base if (z_base and verify_live_url(z_base)) else None
     z_delivery = f"{z_base}/order" if z_base else None
@@ -243,7 +245,6 @@ def find_restaurant_urls(name, location):
         z_delivery = None
 
     # Swiggy logic per zomatoswiggyhygeine spec:
-    # Swiggy delivery and dineout are searched independently. Never convert one to another.
     s_delivery = raw_s if (raw_s and verify_live_url(raw_s)) else None
     s_dineout = raw_sd if (raw_sd and verify_live_url(raw_sd)) else None
 
