@@ -410,14 +410,14 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
 
                     {/* Date Row */}
                     <div className="flex items-center justify-end text-sm sm:text-base font-sans font-bold text-[#2C322C] pt-3 pb-4 border-b border-[#989B5F]/50 relative z-10">
-                      <div>Date: {doc.issueDate}</div>
+                      <div>Date: 31-July-2026</div>
                     </div>
                   </div>
 
                   {/* Official Certificate Body Paragraphs */}
                   <div className="text-sm sm:text-base font-serif text-[#2C322C] leading-[2.1] text-left space-y-5 py-6 relative z-10 max-w-3xl mx-auto">
                     <p>
-                      This is to certify that <strong className="text-[#2F3119] font-bold">"{doc.employeeName}"</strong>, was working in our company from <strong className="text-[#2F3119] font-bold">{doc.joiningDate || "10-March-2016"}</strong> to <strong className="text-[#2F3119] font-bold">{doc.issueDate}</strong> as <strong className="text-[#2F3119] font-bold">“{doc.designation}.”</strong>
+                      This is to certify that <strong className="text-[#2F3119] font-sans font-bold">"Mr. Varun Kharbanda"</strong>, was working in our company from <strong className="text-[#2F3119] font-sans font-bold">{doc.joiningDate || "5-April-2026"}</strong> to <strong className="text-[#2F3119] font-sans font-bold">31-July-2026</strong> as <strong className="text-[#2F3119] font-sans font-bold">“{doc.designation || "Growth & LinkedIn Branding Consultant"}.”</strong>
                     </p>
 
                     <p>
