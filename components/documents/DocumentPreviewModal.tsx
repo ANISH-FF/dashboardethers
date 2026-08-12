@@ -1,7 +1,7 @@
 "use client";
 
 import { EmployeeDocument } from "@/lib/documents";
-import { X, Printer, Award, FileText, CheckCircle2, ShieldCheck, TrendingUp } from "lucide-react";
+import { X, Printer, Award, FileText, CheckCircle2, ShieldCheck, TrendingUp, UserCheck, FileCheck } from "lucide-react";
 
 interface ModalProps {
   document: EmployeeDocument | null;
@@ -33,7 +33,7 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
           <div className="flex items-center gap-2">
             <button
               onClick={handlePrint}
-              className="btn btn-secondary text-xs flex items-center gap-1.5 font-bold"
+              className="btn btn-secondary text-xs flex items-center gap-1.5 font-bold bg-emerald-600 hover:bg-emerald-700 text-white border-none shadow-md"
             >
               <Printer className="w-3.5 h-3.5" /> Print / Download PDF
             </button>
@@ -49,7 +49,7 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
         {/* Printable Document Area */}
         <div className="p-4 sm:p-8 bg-white text-zinc-900 overflow-y-auto flex-1 font-sans printable-area no-scrollbar">
           
-          {/* Classy #989B5F Double Frame Container (Identical to Employment Certificate) */}
+          {/* Classy #989B5F Double Frame Container */}
           <div className="bg-white border-[5px] border-solid border-[#989B5F] p-2.5 rounded-sm shadow-md printable-certificate">
             <div className="border-2 border-solid border-[#989B5F] p-6 sm:p-12 text-center space-y-6 bg-white text-[#2C322C] relative overflow-hidden flex flex-col justify-between min-h-[750px]">
               
@@ -105,38 +105,48 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
                 </div>
               )}
 
-              {/* ---------------- 2. OFFER LETTER OF EMPLOYMENT ---------------- */}
+              {/* ---------------- 2. OFFER LETTER OF EMPLOYMENT (FORMAL PROSE) ---------------- */}
               {doc.type === "offer_letter" && (
-                <div className="text-xs sm:text-sm font-serif text-[#2C322C] leading-[1.9] text-left space-y-3 py-2 relative z-10 max-w-3xl mx-auto">
-                  <div className="p-3 bg-amber-50/50 border border-[#989B5F]/40 rounded-lg text-xs space-y-1 font-sans">
-                    <p className="font-bold text-[#2F3119] uppercase tracking-wider text-[11px]">Private & Confidential</p>
-                    <p>To: <strong className="font-bold text-zinc-900">{doc.employeeName}</strong> ({doc.employeeEmail})</p>
-                    <p>Position Offered: <strong className="font-bold text-zinc-900">{doc.designation}</strong></p>
+                <div className="text-xs sm:text-sm font-serif text-[#2C322C] leading-[1.95] text-left space-y-3.5 py-2 relative z-10 max-w-3xl mx-auto">
+                  <div className="font-sans text-xs space-y-0.5 pb-2 border-b border-zinc-200">
+                    <p className="font-bold text-[#2F3119] uppercase tracking-wider text-[10px]">Private & Confidential</p>
+                    <p><strong className="font-bold text-zinc-900">{doc.employeeName}</strong> ({doc.employeeEmail})</p>
+                    <p className="text-zinc-600">Sub: Offer for Employment as <strong className="font-bold text-zinc-900">{doc.designation}</strong></p>
                   </div>
 
                   <p>Dear <strong className="font-sans font-bold">{doc.employeeName}</strong>,</p>
 
                   <p>
-                    We are thrilled to invite you to join Ethers Consultancy as our new <strong className="font-sans font-bold">{doc.designation}</strong>. At Ethers, we focus on building a high-caliber team, and we are certain your contributions will be vital to our continued success. We look forward to providing you with a rewarding experience that is both rich in learning and professional growth.
+                    We are thrilled to invite you to join Ethers Consultancy as our new <strong className="font-sans font-bold">{doc.designation}</strong>. At Ethers Consultancy, we focus on building a high-caliber team, and we are certain your contributions will be vital to our continued success. We look forward to providing you with a rewarding experience that is both rich in learning and professional growth.
                   </p>
 
                   <p>
                     <strong className="font-sans font-bold text-[#2F3119]">Role & Responsibilities:</strong> Your role at Ethers Consultancy will involve optimizing menus and pricing strategies, managing accounts for partner restaurants and cloud kitchens, and contributing to marketing initiatives to boost visibility on platforms like Swiggy and Zomato. You will also assist in analyzing performance reports, identifying improvement areas, and collaborating with partners to strengthen their digital presence.
                   </p>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-sans">
-                    <div><span className="text-zinc-500">Joining Date:</span> <p className="font-bold text-zinc-900">{doc.joiningDate || doc.issueDate}</p></div>
-                    <div><span className="text-zinc-500">Fixed Monthly Payout:</span> <p className="font-bold font-mono text-emerald-800">₹{(doc.salaryDetails?.netSalary || 5000).toLocaleString("en-IN")}</p></div>
-                    <div><span className="text-zinc-500">Working Module:</span> <p className="font-bold text-zinc-900">Hybrid (3 Days On-site / WFH)</p></div>
-                  </div>
+                  <p>
+                    <strong className="font-sans font-bold text-[#2F3119]">Duration & Commitment:</strong> This tenure begins on <strong className="font-sans font-bold">{doc.joiningDate || doc.issueDate}</strong>, in Kolkata, with a mandatory minimum commitment of <strong className="font-sans font-bold">{doc.probationMonths || 6} months</strong> for successful completion.
+                  </p>
 
                   <p>
-                    <strong className="font-sans font-bold text-[#2F3119]">Terms of Engagement:</strong> A mandatory commitment of <strong className="font-sans font-bold">{doc.probationMonths || 6} months</strong> is required. A notice period of <strong className="font-sans font-bold">{doc.noticePeriodDays || 30} days</strong> applies to either party. Sick leave is provided (medical certificate required). We are excited about the potential contributions you will make to our team!
+                    <strong className="font-sans font-bold text-[#2F3119]">Working Module (Hybrid):</strong> You will operate on a hybrid schedule, working 3 days a week on-site from our office and 3 days a week from home (WFH). Specific days will be coordinated with your reporting manager.
+                  </p>
+
+                  <p>
+                    <strong className="font-sans font-bold text-[#2F3119]">Compensation & Benefits:</strong> You will receive a fixed monthly payout of <strong className="font-sans font-bold font-mono text-zinc-900">Rs. {(doc.salaryDetails?.netSalary || 5000).toLocaleString("en-IN")}/-</strong>. Additionally, you are eligible for performance incentives attributed to your work, processed upon payment receipt.
+                  </p>
+
+                  <p>
+                    <strong className="font-sans font-bold text-[#2F3119]">Terms of Engagement:</strong> A notice period of <strong className="font-sans font-bold">{doc.noticePeriodDays || 30} days</strong> is required by either party. Sick leave is provided (medical certificate required), and bereavement leave is granted per company policy. A Letter of Recommendation will be awarded upon successful completion of the tenure based on performance.
+                  </p>
+
+                  <p>
+                    We look forward to having you on board as we continue to grow Ethers Consultancy, and we are excited about the potential contributions you will make to our team!
                   </p>
                 </div>
               )}
 
-              {/* ---------------- 3. EMPLOYMENT AGREEMENT & TERMS ---------------- */}
+              {/* ---------------- 3. EMPLOYMENT AGREEMENT & TERMS (WITH CLAUSE 5) ---------------- */}
               {doc.type === "employment_terms" && (
                 <div className="text-xs sm:text-sm font-serif text-[#2C322C] leading-[1.9] text-left space-y-3 py-2 relative z-10 max-w-3xl mx-auto">
                   <div className="p-3 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-sans space-y-1">
@@ -152,7 +162,7 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
 
                     <div className="p-3 bg-white border border-zinc-200 rounded-lg">
                       <p className="font-bold text-[#2F3119] text-xs">2. Compensation & Salary Schedule</p>
-                      <p className="text-zinc-700 mt-0.5">Fixed monthly net payout is set to <strong className="font-mono text-emerald-800">₹{(doc.salaryDetails?.netSalary || 0).toLocaleString("en-IN")} / month</strong>, payable on or before the 5th of every calendar month via Direct Bank Transfer.</p>
+                      <p className="text-zinc-700 mt-0.5">Fixed monthly net payout is set to <strong className="font-mono text-zinc-900">₹{(doc.salaryDetails?.netSalary || 0).toLocaleString("en-IN")} / month</strong>, payable on or before the 5th of every calendar month via Direct Bank Transfer.</p>
                     </div>
 
                     <div className="p-3 bg-white border border-zinc-200 rounded-lg">
@@ -168,13 +178,18 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
                       <p className="font-bold text-[#2F3119] text-xs">4. Confidentiality & Non-Disclosure (NDA)</p>
                       <p className="text-zinc-700 mt-0.5">The employee agrees to maintain strict confidentiality regarding Ethers Consultancy partner brand metrics, proprietary pricing strategies, algorithms, and trade secrets during and after employment tenure.</p>
                     </div>
+
+                    <div className="p-3 bg-white border border-zinc-200 rounded-lg">
+                      <p className="font-bold text-[#2F3119] text-xs">5. Data Protection, Security & Legal Remedies</p>
+                      <p className="text-zinc-700 mt-0.5">The employee agrees that any unauthorized data access, breach of confidential client information, trade secret leak, or intentional misconduct will result in immediate termination of service and strict legal proceedings under applicable Cyber Laws and statutory legal remedies.</p>
+                    </div>
                   </div>
                 </div>
               )}
 
               {/* ---------------- 4. SALARY INCREMENT & REVISION LETTER ---------------- */}
               {doc.type === "increment_letter" && (
-                <div className="text-xs sm:text-sm font-serif text-[#2C322C] leading-[1.9] text-left space-y-3 py-2 relative z-10 max-w-3xl mx-auto">
+                <div className="text-xs sm:text-sm font-serif text-[#2C322C] leading-[1.95] text-left space-y-3.5 py-3 relative z-10 max-w-3xl mx-auto">
                   <p>To: <strong className="font-sans font-bold">{doc.employeeName}</strong> ({doc.designation})</p>
 
                   <p>Dear <strong className="font-sans font-bold">{doc.employeeName}</strong>,</p>
@@ -183,21 +198,21 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
                     We wish to confirm that your performance for the recent appraisal tenure has been assessed as <strong className="font-sans font-bold text-[#2F3119]">“EE — Exceeds Expectation”</strong>. In view of your outstanding performance and contribution to meeting our organizational objectives, your compensation has been revised with effect from <strong className="font-sans font-bold">{doc.effectiveDate || doc.issueDate}</strong>.
                   </p>
 
-                  {/* Revision Table */}
-                  <div className="p-4 bg-gradient-to-r from-amber-50 to-emerald-50 border border-[#989B5F]/40 rounded-xl space-y-2 font-sans">
+                  {/* Revision Matrix */}
+                  <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-xl space-y-2 font-sans my-2">
                     <p className="font-bold text-[#2F3119] text-xs uppercase tracking-wider">Annual & Monthly CTC Revision Matrix:</p>
                     <div className="grid grid-cols-3 gap-3 text-center">
                       <div className="p-2.5 bg-white rounded-lg border border-zinc-200">
                         <p className="text-zinc-500 text-[10px] uppercase font-bold">Previous Monthly CTC</p>
-                        <p className="text-sm font-black font-mono text-zinc-700">₹{(doc.oldSalary || 45000).toLocaleString("en-IN")}</p>
+                        <p className="text-xs sm:text-sm font-black font-mono text-zinc-700">₹{(doc.oldSalary || 45000).toLocaleString("en-IN")}</p>
                       </div>
-                      <div className="p-2.5 bg-white rounded-lg border border-emerald-300 shadow-sm">
-                        <p className="text-emerald-800 text-[10px] uppercase font-bold">Revised Monthly CTC</p>
-                        <p className="text-sm font-black font-mono text-emerald-800">₹{(doc.newSalary || 55000).toLocaleString("en-IN")}</p>
+                      <div className="p-2.5 bg-white rounded-lg border border-zinc-300 shadow-sm">
+                        <p className="text-zinc-900 text-[10px] uppercase font-bold">Revised Monthly CTC</p>
+                        <p className="text-xs sm:text-sm font-black font-mono text-zinc-900">₹{(doc.newSalary || 55000).toLocaleString("en-IN")}</p>
                       </div>
-                      <div className="p-2.5 bg-white rounded-lg border border-amber-300">
-                        <p className="text-amber-800 text-[10px] uppercase font-bold">Hike Percentage</p>
-                        <p className="text-sm font-black font-mono text-amber-800">
+                      <div className="p-2.5 bg-white rounded-lg border border-zinc-300">
+                        <p className="text-zinc-900 text-[10px] uppercase font-bold">Hike Percentage</p>
+                        <p className="text-xs sm:text-sm font-black font-mono text-zinc-900">
                           +{doc.oldSalary && doc.newSalary ? (((doc.newSalary - doc.oldSalary) / doc.oldSalary) * 100).toFixed(1) : 22.2}%
                         </p>
                       </div>
@@ -212,7 +227,7 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
 
               {/* ---------------- 5. LETTER OF RECOMMENDATION (LOR) ---------------- */}
               {doc.type === "recommendation_letter" && (
-                <div className="text-xs sm:text-sm font-serif text-[#2C322C] leading-[2.0] text-left space-y-4 py-2 relative z-10 max-w-3xl mx-auto">
+                <div className="text-xs sm:text-sm font-serif text-[#2C322C] leading-[2.0] text-left space-y-4 py-4 relative z-10 max-w-3xl mx-auto">
                   <p className="font-sans font-bold text-xs uppercase tracking-wider text-zinc-500">To Whom It May Concern</p>
 
                   <p>
@@ -228,44 +243,52 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
                   </p>
 
                   <p>
+                    Should you require any further information or detailed verification regarding their performance and conduct during their tenure with us, please feel free to contact the undersigned authority at <strong className="font-sans font-bold text-[#2F3119]">contact@ethers.in</strong>.
+                  </p>
+
+                  <p>
                     I endorse <strong className="font-sans font-bold">{doc.employeeName}</strong> without reservation for any future professional endeavors or leadership opportunities.
                   </p>
                 </div>
               )}
 
-              {/* ---------------- 6. LETTER OF COMPLETION ---------------- */}
+              {/* ---------------- 6. LETTER OF COMPLETION (NO BLUE BOX) ---------------- */}
               {doc.type === "completion_letter" && (
-                <div className="text-xs sm:text-sm font-serif text-[#2C322C] leading-[2.0] text-left space-y-4 py-3 relative z-10 max-w-3xl mx-auto">
-                  <div className="p-3 bg-blue-50/50 border border-blue-200 rounded-lg font-sans text-xs space-y-1">
-                    <p className="font-bold text-blue-900 uppercase tracking-wider text-[11px]">Confirmation of Employment & Service Completion</p>
-                    <p>TO WHOM IT MAY CONCERN</p>
+                <div className="text-xs sm:text-sm font-serif text-[#2C322C] leading-[2.0] text-left space-y-4 py-4 relative z-10 max-w-3xl mx-auto">
+                  <div className="pb-2 border-b border-zinc-200 font-sans text-xs space-y-0.5">
+                    <p className="font-bold text-[#2F3119] uppercase tracking-wider text-[11px]">Confirmation of Employment & Service Completion</p>
+                    <p className="font-bold text-zinc-900 text-sm">TO WHOM IT MAY CONCERN</p>
                   </div>
 
                   <p>
-                    This letter serves to confirm that <strong className="font-sans font-bold text-[#2F3119]">"{doc.employeeName}"</strong> was associated with <strong className="font-sans font-bold">ETHERS CONSULTANCY</strong> from <strong className="font-sans font-bold">{doc.joiningDate || "5-April-2026"}</strong> to <strong className="font-sans font-bold">{doc.issueDate || "31-July-2026"}</strong> as <strong className="font-sans font-bold">“{doc.designation}.”</strong>
+                    This letter serves to formally confirm that <strong className="font-sans font-bold text-[#2F3119]">"{doc.employeeName}"</strong> was associated with <strong className="font-sans font-bold">ETHERS CONSULTANCY</strong> from <strong className="font-sans font-bold">{doc.joiningDate || "5-April-2026"}</strong> to <strong className="font-sans font-bold">{doc.issueDate || "31-July-2026"}</strong> as <strong className="font-sans font-bold">“{doc.designation}.”</strong>
                   </p>
 
                   <p>
-                    During this tenure, they successfully completed all assigned deliverables, operational audits, and client projects in accordance with company quality benchmarks.
+                    During their tenure, <strong className="font-sans font-bold">{doc.employeeName}</strong> led core F&B consulting projects, menu engineering, and operational analytics with high dedication and professional excellence. All assigned deliverables and client audits were completed in full accordance with company quality benchmarks.
                   </p>
 
                   <p>
-                    Should you have any queries regarding their service record, please do not hesitate to contact the undersigned. We truly appreciate their valuable contribution and wish <strong className="font-sans font-bold">{doc.employeeName}</strong> all the very best in their future career endeavors!
+                    Should you require any further information or official background verification regarding their employment record and service tenure, please feel free to reach out to our HR department or the undersigned authority at <strong className="font-sans font-bold text-[#2F3119]">contact@ethers.in</strong>.
+                  </p>
+
+                  <p>
+                    We sincerely appreciate their devoted service and wish <strong className="font-sans font-bold">{doc.employeeName}</strong> continued success in all their future professional endeavors!
                   </p>
                 </div>
               )}
 
               {/* ---------------- 7. MONTHLY PAYSLIP ---------------- */}
               {doc.type === "payslip" && (
-                <div className="text-xs font-sans text-[#2C322C] space-y-4 py-2 relative z-10 max-w-3xl mx-auto text-left">
+                <div className="text-xs font-sans text-[#2C322C] space-y-4 py-3 relative z-10 max-w-3xl mx-auto text-left">
                   {/* Employee Info Grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 bg-zinc-50 border border-zinc-200 rounded-lg">
-                    <div><span className="text-zinc-500 text-[11px]">Employee Name:</span> <p className="font-bold text-zinc-900">{doc.employeeName}</p></div>
-                    <div><span className="text-zinc-500 text-[11px]">Designation:</span> <p className="font-bold text-zinc-900">{doc.designation}</p></div>
-                    <div><span className="text-zinc-500 text-[11px]">Pay Period:</span> <p className="font-bold text-emerald-800 font-mono">{doc.monthYear || "July 2026"}</p></div>
-                    <div><span className="text-zinc-500 text-[11px]">Employee Email:</span> <p className="font-mono text-zinc-800">{doc.employeeEmail}</p></div>
-                    <div><span className="text-zinc-500 text-[11px]">Work Location:</span> <p className="font-medium text-zinc-800">Kolkata / Remote Hybrid</p></div>
-                    <div><span className="text-zinc-500 text-[11px]">Disbursement:</span> <p className="font-bold text-emerald-700">Direct Bank Transfer</p></div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 p-3 bg-zinc-50 border border-zinc-200 rounded-lg">
+                    <div><span className="text-zinc-500 text-[10px]">Employee Name:</span> <p className="font-bold text-zinc-900">{doc.employeeName}</p></div>
+                    <div><span className="text-zinc-500 text-[10px]">Designation:</span> <p className="font-bold text-zinc-900">{doc.designation}</p></div>
+                    <div><span className="text-zinc-500 text-[10px]">Pay Period:</span> <p className="font-bold text-zinc-900 font-mono">{doc.monthYear || "July 2026"}</p></div>
+                    <div><span className="text-zinc-500 text-[10px]">Employee Email:</span> <p className="font-mono text-zinc-800 text-[11px]">{doc.employeeEmail}</p></div>
+                    <div><span className="text-zinc-500 text-[10px]">Work Location:</span> <p className="font-medium text-zinc-800">Kolkata / Remote Hybrid</p></div>
+                    <div><span className="text-zinc-500 text-[10px]">Disbursement:</span> <p className="font-bold text-zinc-900">Direct Bank Transfer</p></div>
                   </div>
 
                   {/* Earnings & Deductions Table */}
@@ -279,7 +302,7 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
                           <th className="p-2.5 text-right">Amount (₹)</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-zinc-200 font-medium">
+                      <tbody className="divide-y divide-zinc-200 font-medium text-zinc-900">
                         <tr>
                           <td className="p-2.5">Basic Salary</td>
                           <td className="p-2.5 text-right font-mono">₹{(doc.salaryDetails?.basic || Math.round((doc.salaryDetails?.netSalary || 5000) * 0.5)).toLocaleString("en-IN")}</td>
@@ -296,11 +319,11 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
                           <td className="p-2.5">Special Allowance & Bonus</td>
                           <td className="p-2.5 text-right font-mono">₹{(doc.salaryDetails?.allowances || Math.round((doc.salaryDetails?.netSalary || 5000) * 0.2)).toLocaleString("en-IN")}</td>
                           <td className="p-2.5 border-l border-zinc-200 font-bold">Total Deductions</td>
-                          <td className="p-2.5 text-right font-mono font-bold text-rose-700">₹{(110 + (doc.salaryDetails?.deductions || 0)).toLocaleString("en-IN")}</td>
+                          <td className="p-2.5 text-right font-mono font-bold text-zinc-900">₹{(110 + (doc.salaryDetails?.deductions || 0)).toLocaleString("en-IN")}</td>
                         </tr>
-                        <tr className="bg-emerald-50/60 font-bold text-sm">
-                          <td className="p-3 text-emerald-900" colSpan={2}>Net Monthly Salary Disbursed</td>
-                          <td className="p-3 text-right text-emerald-800 font-mono" colSpan={2}>
+                        <tr className="bg-zinc-100 font-bold text-sm border-t-2 border-zinc-900">
+                          <td className="p-3 text-zinc-900" colSpan={2}>Net Monthly Salary Disbursed</td>
+                          <td className="p-3 text-right text-zinc-900 font-mono" colSpan={2}>
                             ₹{(doc.salaryDetails?.netSalary || 5000).toLocaleString("en-IN")}
                           </td>
                         </tr>
@@ -311,33 +334,33 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
                 </div>
               )}
 
-              {/* Bottom Footer Block — Dual Real Scanned Signatures for ALL Document Types */}
-              <div className="pt-8 relative z-10">
-                <div className="flex justify-between items-end w-full px-4 text-center">
-                  <div className="flex flex-col items-center w-72">
-                    <div className="relative w-full h-[90px] flex items-end justify-center">
+              {/* Bottom Footer Block — Dual Real Scanned Signatures */}
+              <div className="pt-6 relative z-10">
+                <div className="flex justify-between items-end w-full px-2 text-center">
+                  <div className="flex flex-col items-center w-60 sm:w-64">
+                    <div className="relative w-full h-[60px] flex items-end justify-center">
                       <img 
                         src="/uploads/Hemanyasignature.jpeg" 
                         alt="Hemanya Gupta Signature" 
-                        className="absolute -bottom-2 h-24 sm:h-28 w-auto object-contain z-10 mix-blend-multiply filter contrast-150 brightness-95"
+                        className="absolute -bottom-2 h-20 sm:h-24 w-auto object-contain z-10 mix-blend-multiply filter contrast-150 brightness-95"
                       />
-                      <div className="absolute bottom-[10px] w-full h-[1.5px] bg-[#2F3119] z-0" />
+                      <div className="absolute bottom-[12px] w-full h-[1.5px] bg-[#2F3119] z-0" />
                     </div>
-                    <p className="font-serif font-bold text-base text-[#2C322C] mt-2">Hemanya Gupta</p>
-                    <p className="font-serif text-xs text-zinc-600 font-medium mt-0.5">Co-Founder & Director</p>
+                    <p className="font-serif font-bold text-sm sm:text-base text-[#2C322C] mt-2">Hemanya Gupta</p>
+                    <p className="font-serif text-[11px] sm:text-xs text-zinc-600 font-medium mt-0.5">Co-Founder & Director</p>
                   </div>
 
-                  <div className="flex flex-col items-center w-72">
-                    <div className="relative w-full h-[90px] flex items-end justify-center">
+                  <div className="flex flex-col items-center w-60 sm:w-64">
+                    <div className="relative w-full h-[60px] flex items-end justify-center">
                       <img 
                         src="/uploads/tanishasignature.jpeg" 
                         alt="Tanisha Maity Signature" 
-                        className="absolute -bottom-2 h-24 sm:h-28 w-auto object-contain z-10 mix-blend-multiply filter contrast-150 brightness-95"
+                        className="absolute -bottom-2 h-20 sm:h-24 w-auto object-contain z-10 mix-blend-multiply filter contrast-150 brightness-95"
                       />
-                      <div className="absolute bottom-[10px] w-full h-[1.5px] bg-[#2F3119] z-0" />
+                      <div className="absolute bottom-[12px] w-full h-[1.5px] bg-[#2F3119] z-0" />
                     </div>
-                    <p className="font-serif font-bold text-base text-[#2C322C] mt-2">Tanisha Maity</p>
-                    <p className="font-serif text-xs text-zinc-600 font-medium mt-0.5">Co-Founder & Director</p>
+                    <p className="font-serif font-bold text-sm sm:text-base text-[#2C322C] mt-2">Tanisha Maity</p>
+                    <p className="font-serif text-[11px] sm:text-xs text-zinc-600 font-medium mt-0.5">Co-Founder & Director</p>
                   </div>
                 </div>
               </div>
@@ -345,7 +368,7 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
             </div>
           </div>
 
-          <div className="mt-4 text-center text-[10px] text-zinc-400 font-mono print:hidden">
+          <div className="mt-3 text-center text-[10px] text-zinc-400 font-mono print:hidden">
             This document is computer generated and officially issued by Ethers Consultancy.
           </div>
 

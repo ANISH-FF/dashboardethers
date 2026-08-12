@@ -3,6 +3,8 @@ import { getSession, getPublicEmployees } from "@/lib/auth";
 import fs from "fs";
 import path from "path";
 
+export const dynamic = "force-dynamic";
+
 const ACTIVITY_FILE = path.join(process.cwd(), "data", "activity.json");
 
 function ensureActivityFile() {

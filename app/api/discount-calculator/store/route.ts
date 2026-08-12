@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 
+export const dynamic = "force-dynamic";
+
 const DISCOUNT_STORE_FILE = path.join(process.cwd(), "data", "discount_calculator_store.json");
 
 function getStore(): Record<string, any> {

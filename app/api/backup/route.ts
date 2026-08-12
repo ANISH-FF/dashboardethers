@@ -3,6 +3,8 @@ import fs from "fs";
 import path from "path";
 import { getSession } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 const DATA_DIR = path.join(process.cwd(), "data");
 
 const DATA_FILES = [

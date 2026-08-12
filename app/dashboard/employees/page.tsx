@@ -21,6 +21,9 @@ import {
   FileCheck,
   UserPlus,
   RefreshCw,
+  Search,
+  CheckCircle2,
+  TrendingUp,
   X
 } from "lucide-react";
 
@@ -29,7 +32,8 @@ export default function EmployeeHubPage() {
   const [employees, setEmployees] = useState<any[]>([]);
   const [documents, setDocuments] = useState<EmployeeDocument[]>([]);
   const [loading, setLoading] = useState(true);
-  const [docFilter, setDocFilter] = useState<"payslip" | "certificate">("certificate");
+  const [docCategoryFilter, setDocCategoryFilter] = useState<"all" | "certificate" | "offer" | "increment" | "payslip">("all");
+  const [docSearchQuery, setDocSearchQuery] = useState("");
   const [selectedDoc, setSelectedDoc] = useState<EmployeeDocument | null>(null);
   
   // Modals state
@@ -252,12 +256,6 @@ export default function EmployeeHubPage() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-
-  const filteredDocs = documents.filter((d) => {
-    if (docFilter === "payslip") return d.type === "payslip";
-    if (docFilter === "certificate") return d.type !== "payslip";
-    return true;
-  });
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -538,81 +536,160 @@ export default function EmployeeHubPage() {
           </div>
 
           <div className="lg:col-span-2 space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-line pb-4">
-              <div className="flex items-center gap-2">
-                <FileCheck className="w-4 h-4 text-emerald-400" />
-                <h2 className="text-sm font-bold text-ink">Issued HR Documents</h2>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-paper border border-line text-ink/60">
-                  {filteredDocs.length} Documents
-                </span>
-              </div>
-
-              <div className="flex items-center gap-1.5 bg-paper p-1 rounded-lg border border-line text-xs">
-                <button
-                  onClick={() => setDocFilter("payslip")}
-                  className={`px-3 py-1 rounded font-medium transition-all ${
-                    docFilter === "payslip" ? "bg-paper-dark text-ink font-bold shadow-sm" : "text-ink/60 hover:text-ink"
-                  }`}
-                >
-                  Payslips
-                </button>
-                <button
-                  onClick={() => setDocFilter("certificate")}
-                  className={`px-3 py-1 rounded font-medium transition-all ${
-                    docFilter === "certificate" ? "bg-paper-dark text-ink font-bold shadow-sm" : "text-ink/60 hover:text-ink"
-                  }`}
-                >
-                  Certificates
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              {filteredDocs.length === 0 ? (
-                <div className="p-12 text-center card bg-paper-dark border-line space-y-2">
-                  <FileText className="w-8 h-8 text-ink/30 mx-auto" />
-                  <p className="text-sm font-bold text-ink">No HR Documents Issued</p>
-                  <p className="text-xs text-ink/50">
-                    {isAdmin ? "Click 'Issue Document' above to generate payslips or certificates." : "You have no issued documents yet."}
-                  </p>
+            {/* Header Row 1 & Row 2 */}
+            <div className="space-y-4 border-b border-line pb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FileCheck className="w-4 h-4 text-emerald-400" />
+                  <h2 className="text-sm font-bold text-ink">Issued HR Documents</h2>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-paper border border-line text-ink/60">
+                    {documents.length} Documents
+                  </span>
                 </div>
-              ) : (
-                filteredDocs.map((doc) => (
-                  <div 
-                    key={doc.id}
-                    className="p-4 rounded-xl card bg-paper-dark border-line flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-ink/30 transition-all"
+              </div>
+
+              {/* Row 2: Search Bar & 5 Category Filter Tabs */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <div className="relative w-full sm:w-72">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-ink/40" />
+                  <input
+                    type="text"
+                    placeholder="Search documents or staff..."
+                    value={docSearchQuery}
+                    onChange={(e) => setDocSearchQuery(e.target.value)}
+                    className="input pl-9 text-xs py-1.5 bg-paper-dark border-line/60 focus:border-emerald-500"
+                  />
+                  {docSearchQuery && (
+                    <button 
+                      onClick={() => setDocSearchQuery("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink/40 hover:text-ink"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1 bg-paper p-1 rounded-lg border border-line text-xs overflow-x-auto no-scrollbar">
+                  <button
+                    onClick={() => setDocCategoryFilter("all")}
+                    className={`px-2.5 py-1 rounded font-medium transition-all whitespace-nowrap ${
+                      docCategoryFilter === "all" ? "bg-paper-dark text-ink font-bold shadow-sm" : "text-ink/60 hover:text-ink"
+                    }`}
                   >
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 rounded-lg bg-paper border border-line text-emerald-400 mt-0.5">
-                        {doc.type === "payslip" && <FileText className="w-5 h-5" />}
-                        {doc.type === "offer_letter" && <FileCheck className="w-5 h-5 text-blue-400" />}
-                        {doc.type === "certificate" && <Award className="w-5 h-5 text-amber-400" />}
-                      </div>
-
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-ink text-sm">{doc.title}</span>
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-paper border border-line text-emerald-400">
-                            {doc.verificationCode || doc.id}
-                          </span>
-                        </div>
-                        <p className="text-xs text-ink/60">Issued to: <strong className="text-ink">{doc.employeeName}</strong> ({doc.employeeEmail})</p>
-                        <p className="text-[11px] text-ink/40">Issued Date: {doc.issueDate}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 self-end sm:self-center">
-                      <button
-                        onClick={() => setSelectedDoc(doc)}
-                        className="btn btn-secondary text-xs flex items-center gap-1.5"
-                      >
-                        <Eye className="w-3.5 h-3.5" /> View / Print PDF
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
+                    All Documents
+                  </button>
+                  <button
+                    onClick={() => setDocCategoryFilter("certificate")}
+                    className={`px-2.5 py-1 rounded font-medium transition-all whitespace-nowrap ${
+                      docCategoryFilter === "certificate" ? "bg-paper-dark text-ink font-bold shadow-sm" : "text-ink/60 hover:text-ink"
+                    }`}
+                  >
+                    Certificates
+                  </button>
+                  <button
+                    onClick={() => setDocCategoryFilter("offer")}
+                    className={`px-2.5 py-1 rounded font-medium transition-all whitespace-nowrap ${
+                      docCategoryFilter === "offer" ? "bg-paper-dark text-ink font-bold shadow-sm" : "text-ink/60 hover:text-ink"
+                    }`}
+                  >
+                    Offer & Contracts
+                  </button>
+                  <button
+                    onClick={() => setDocCategoryFilter("increment")}
+                    className={`px-2.5 py-1 rounded font-medium transition-all whitespace-nowrap ${
+                      docCategoryFilter === "increment" ? "bg-paper-dark text-ink font-bold shadow-sm" : "text-ink/60 hover:text-ink"
+                    }`}
+                  >
+                    Increment & LOR
+                  </button>
+                  <button
+                    onClick={() => setDocCategoryFilter("payslip")}
+                    className={`px-2.5 py-1 rounded font-medium transition-all whitespace-nowrap ${
+                      docCategoryFilter === "payslip" ? "bg-paper-dark text-ink font-bold shadow-sm" : "text-ink/60 hover:text-ink"
+                    }`}
+                  >
+                    Payslips
+                  </button>
+                </div>
+              </div>
             </div>
+
+            {/* Filtered Documents List */}
+            {(() => {
+              const q = docSearchQuery.toLowerCase().trim();
+              const filtered = documents.filter((doc) => {
+                // Category Filter
+                if (docCategoryFilter === "certificate" && doc.type !== "certificate") return false;
+                if (docCategoryFilter === "offer" && (doc.type !== "offer_letter" && doc.type !== "employment_terms")) return false;
+                if (docCategoryFilter === "increment" && (doc.type !== "increment_letter" && doc.type !== "recommendation_letter" && doc.type !== "completion_letter")) return false;
+                if (docCategoryFilter === "payslip" && doc.type !== "payslip") return false;
+
+                // Search Query Filter
+                if (q) {
+                  const matchName = doc.employeeName?.toLowerCase().includes(q);
+                  const matchEmail = doc.employeeEmail?.toLowerCase().includes(q);
+                  const matchTitle = doc.title?.toLowerCase().includes(q);
+                  const matchCode = doc.verificationCode?.toLowerCase().includes(q);
+                  return matchName || matchEmail || matchTitle || matchCode;
+                }
+                return true;
+              });
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="p-12 text-center card bg-paper-dark border-line space-y-2">
+                    <FileText className="w-8 h-8 text-ink/30 mx-auto" />
+                    <p className="text-sm font-bold text-ink">No Documents Found</p>
+                    <p className="text-xs text-ink/50">
+                      {q ? `No documents match "${docSearchQuery}".` : "No issued HR documents in this category."}
+                    </p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="space-y-3">
+                  {filtered.map((doc) => (
+                    <div 
+                      key={doc.id}
+                      className="p-4 rounded-xl card bg-paper-dark border-line flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-ink/30 transition-all"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-lg bg-paper border border-line mt-0.5">
+                          {doc.type === "certificate" && <Award className="w-5 h-5 text-amber-400" />}
+                          {doc.type === "offer_letter" && <FileCheck className="w-5 h-5 text-blue-400" />}
+                          {doc.type === "employment_terms" && <ShieldCheck className="w-5 h-5 text-emerald-400" />}
+                          {doc.type === "increment_letter" && <TrendingUp className="w-5 h-5 text-purple-400" />}
+                          {doc.type === "recommendation_letter" && <UserCheck className="w-5 h-5 text-indigo-400" />}
+                          {doc.type === "completion_letter" && <CheckCircle2 className="w-5 h-5 text-sky-400" />}
+                          {doc.type === "payslip" && <FileText className="w-5 h-5 text-emerald-400" />}
+                        </div>
+
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-ink text-sm">{doc.title}</span>
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-paper border border-line text-emerald-400">
+                              {doc.verificationCode || doc.id}
+                            </span>
+                          </div>
+                          <p className="text-xs text-ink/60">Issued to: <strong className="text-ink">{doc.employeeName}</strong> ({doc.employeeEmail})</p>
+                          <p className="text-[11px] text-ink/40">Issued Date: {doc.issueDate}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 self-end sm:self-center">
+                        <button
+                          onClick={() => setSelectedDoc(doc)}
+                          className="btn btn-secondary text-xs flex items-center gap-1.5"
+                        >
+                          <Eye className="w-3.5 h-3.5" /> View / Print PDF
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
