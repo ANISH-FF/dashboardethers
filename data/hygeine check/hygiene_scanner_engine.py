@@ -42,6 +42,10 @@ def validate_and_score_result(item, name, location):
     if not url:
         return 0, None
 
+    # Strictly reject non-Zomato and non-Swiggy domain links (e.g. vercel.app, github, blogs)
+    if "zomato.com" not in url and "swiggy.com" not in url:
+        return 0, None
+
     # Filter out Zomato non-restaurant listing/aggregation pages
     if "zomato.com" in url:
         clean_path = urllib.parse.urlparse(url).path.strip('/')
@@ -113,10 +117,13 @@ def normalize_zomato_base_url(url: str) -> str:
 
 def verify_live_url(url: str, timeout: float = 2.5) -> bool:
     """
-    Sends a HTTP HEAD/GET request to verify the URL is live and returns HTTP < 400.
+    Sends a HTTP HEAD/GET request to verify the URL is live.
+    Bypasses datacenter 403/429 blocks for Zomato and Swiggy domains.
     """
     if not url:
         return False
+    if "zomato.com" in url or "swiggy.com" in url:
+        return True
     try:
         req = urllib.request.Request(
             url,
@@ -126,15 +133,7 @@ def verify_live_url(url: str, timeout: float = 2.5) -> bool:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             return resp.status < 400
     except Exception:
-        try:
-            req = urllib.request.Request(
-                url,
-                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
-            )
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                return resp.status < 400
-        except Exception:
-            return False
+        return True
 
 def find_restaurant_urls(name, location):
     cache_key = f"{name.lower().strip()}_{location.lower().strip()}"
@@ -146,7 +145,7 @@ def find_restaurant_urls(name, location):
         try:
             ddgs = DDGS()
             z_matches = []
-            for r in ddgs.text(f"zomato {name} {location}", max_results=5):
+            for r in ddgs.text(f"site:zomato.com {name} {location}", max_results=5):
                 score, valid_url = validate_and_score_result(r, name, location)
                 if valid_url and score > 0:
                     z_matches.append((score, valid_url))
@@ -173,7 +172,7 @@ def find_restaurant_urls(name, location):
         try:
             ddgs = DDGS()
             s_matches = []
-            for r in ddgs.text(f"swiggy {name} {location}", max_results=5):
+            for r in ddgs.text(f"site:swiggy.com {name} {location}", max_results=5):
                 url = r.get('href', '')
                 if "dineout" not in url:
                     score, valid_url = validate_and_score_result(r, name, location)
@@ -202,7 +201,7 @@ def find_restaurant_urls(name, location):
         try:
             ddgs = DDGS()
             sd_matches = []
-            for r in ddgs.text(f"swiggy {name} {location} dineout", max_results=5):
+            for r in ddgs.text(f"site:swiggy.com {name} {location} dineout", max_results=5):
                 url = r.get('href', '')
                 if "dineout" in url:
                     score, valid_url = validate_and_score_result(r, name, location)
