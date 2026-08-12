@@ -9,4 +9,6 @@ data/*.json
 !data/menu.seed.json
 public/uploads/*
 !public/uploads/.gitkeep
-
+!public/uploads/logo.png
+!public/uploads/Hemanyasignature.jpeg
+!public/uploads/tanishasignature.jpeg
