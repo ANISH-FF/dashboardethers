@@ -438,10 +438,12 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
                     {/* Bottom Dual Signatures */}
                     <div className="flex justify-between items-end w-full px-4 text-center">
                       <div className="flex flex-col items-center w-64">
-                        <div className="relative w-full h-[60px] flex items-end justify-center">
-                          <div className="relative z-10 font-['Rouge_Script','Satisfy',cursive] text-4xl text-[#121408] whitespace-nowrap -rotate-1 pb-0.5">
-                            Hemanya Gupta
-                          </div>
+                        <div className="relative w-full h-[70px] flex items-end justify-center">
+                          <img 
+                            src="/uploads/Hemanyasignature.jpeg" 
+                            alt="Hemanya Gupta Signature" 
+                            className="absolute bottom-1 h-16 w-auto object-contain z-10 mix-blend-multiply filter contrast-125"
+                          />
                           <div className="absolute bottom-[12px] w-full h-[1.5px] bg-[#2F3119] z-0" />
                         </div>
                         <p className="font-serif font-bold text-base text-[#2C322C] mt-2">Hemanya Gupta</p>
@@ -449,10 +451,12 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
                       </div>
 
                       <div className="flex flex-col items-center w-64">
-                        <div className="relative w-full h-[60px] flex items-end justify-center">
-                          <div className="relative z-10 font-['Rouge_Script','Satisfy',cursive] text-4xl text-[#121408] whitespace-nowrap -rotate-1 pb-0.5">
-                            Tanisha Maity
-                          </div>
+                        <div className="relative w-full h-[70px] flex items-end justify-center">
+                          <img 
+                            src="/uploads/tanishasignature.jpeg" 
+                            alt="Tanisha Maity Signature" 
+                            className="absolute bottom-1 h-16 w-auto object-contain z-10 mix-blend-multiply filter contrast-125"
+                          />
                           <div className="absolute bottom-[12px] w-full h-[1.5px] bg-[#2F3119] z-0" />
                         </div>
                         <p className="font-serif font-bold text-base text-[#2C322C] mt-2">Tanisha Maity</p>
@@ -469,16 +473,16 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
             {doc.type !== "certificate" && (
               <div className="mt-12 pt-8 border-t border-zinc-200 grid grid-cols-2 gap-8 text-xs">
                 <div>
-                  <div className="h-10 border-b border-zinc-400 w-40 flex items-end pb-1 font-serif italic text-zinc-700 text-sm font-bold">
-                    Hemanya Gupta
+                  <div className="h-12 border-b border-zinc-400 w-44 flex items-end pb-1 relative">
+                    <img src="/uploads/Hemanyasignature.jpeg" alt="Hemanya Gupta Signature" className="h-14 w-auto object-contain mix-blend-multiply contrast-125 -mb-2" />
                   </div>
                   <p className="font-bold text-zinc-900 mt-1">Hemanya Gupta</p>
                   <p className="text-[11px] text-zinc-500">Co-Founder & Director</p>
                 </div>
 
                 <div className="text-right flex flex-col items-end">
-                  <div className="h-10 border-b border-zinc-400 w-40 flex items-end justify-end pb-1 font-serif italic text-zinc-700 text-sm font-bold">
-                    Tanisha Maity
+                  <div className="h-12 border-b border-zinc-400 w-44 flex items-end justify-end pb-1 relative">
+                    <img src="/uploads/tanishasignature.jpeg" alt="Tanisha Maity Signature" className="h-14 w-auto object-contain mix-blend-multiply contrast-125 -mb-2" />
                   </div>
                   <p className="font-bold text-zinc-900 mt-1">Tanisha Maity</p>
                   <p className="text-[11px] text-zinc-500">Co-Founder & Director</p>

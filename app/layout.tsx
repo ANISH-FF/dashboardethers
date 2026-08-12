@@ -1,5 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import InspectBlocker from "@/components/InspectBlocker";
 
 export const metadata: Metadata = {
   title: "Ethers — F&B Ops Suite",
@@ -18,6 +19,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className="bg-paper text-ink antialiased selection:bg-ink selection:text-paper">
+        <InspectBlocker />
         {children}
       </body>
     </html>
