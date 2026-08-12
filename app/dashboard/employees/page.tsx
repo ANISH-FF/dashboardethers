@@ -29,7 +29,7 @@ export default function EmployeeHubPage() {
   const [employees, setEmployees] = useState<any[]>([]);
   const [documents, setDocuments] = useState<EmployeeDocument[]>([]);
   const [loading, setLoading] = useState(true);
-  const [docFilter, setDocFilter] = useState<"all" | "payslip" | "offer_letter" | "certificate">("all");
+  const [docFilter, setDocFilter] = useState<"payslip" | "certificate">("certificate");
   const [selectedDoc, setSelectedDoc] = useState<EmployeeDocument | null>(null);
   
   // Modals state
@@ -254,8 +254,9 @@ export default function EmployeeHubPage() {
   };
 
   const filteredDocs = documents.filter((d) => {
-    if (docFilter === "all") return true;
-    return d.type === docFilter;
+    if (docFilter === "payslip") return d.type === "payslip";
+    if (docFilter === "certificate") return d.type !== "payslip";
+    return true;
   });
 
   return (
@@ -548,32 +549,16 @@ export default function EmployeeHubPage() {
 
               <div className="flex items-center gap-1.5 bg-paper p-1 rounded-lg border border-line text-xs">
                 <button
-                  onClick={() => setDocFilter("all")}
-                  className={`px-2.5 py-1 rounded font-medium transition-all ${
-                    docFilter === "all" ? "bg-paper-dark text-ink font-bold shadow-sm" : "text-ink/60 hover:text-ink"
-                  }`}
-                >
-                  All
-                </button>
-                <button
                   onClick={() => setDocFilter("payslip")}
-                  className={`px-2.5 py-1 rounded font-medium transition-all ${
+                  className={`px-3 py-1 rounded font-medium transition-all ${
                     docFilter === "payslip" ? "bg-paper-dark text-ink font-bold shadow-sm" : "text-ink/60 hover:text-ink"
                   }`}
                 >
                   Payslips
                 </button>
                 <button
-                  onClick={() => setDocFilter("offer_letter")}
-                  className={`px-2.5 py-1 rounded font-medium transition-all ${
-                    docFilter === "offer_letter" ? "bg-paper-dark text-ink font-bold shadow-sm" : "text-ink/60 hover:text-ink"
-                  }`}
-                >
-                  Offer Letters
-                </button>
-                <button
                   onClick={() => setDocFilter("certificate")}
-                  className={`px-2.5 py-1 rounded font-medium transition-all ${
+                  className={`px-3 py-1 rounded font-medium transition-all ${
                     docFilter === "certificate" ? "bg-paper-dark text-ink font-bold shadow-sm" : "text-ink/60 hover:text-ink"
                   }`}
                 >

@@ -239,7 +239,7 @@ export function BrandProposalModal({ brandName, proposal, mode, onClose, onSubmi
                   </div>
                 </div>
                 <div className="text-right text-xs text-zinc-600">
-                  <p className="font-bold text-zinc-900">Ethers Consultancy Pvt Ltd</p>
+                  <p className="font-bold text-zinc-900">Ethers Consultancy</p>
                   <p>20 Maharshi Debendra Road, Kolkata 700007</p>
                   <p>contact@ethers.in | www.ethers.in</p>
                 </div>

@@ -220,7 +220,7 @@ export default function SettingsPage() {
             </div>
             <div>
               <h2 className="text-base font-bold text-ink">Official Company Details</h2>
-              <p className="text-xs text-ink/50">Ethers Consultancy Pvt Ltd Headquarters & Profile</p>
+              <p className="text-xs text-ink/50">Ethers Consultancy Headquarters & Profile</p>
             </div>
           </div>
 
@@ -229,7 +229,7 @@ export default function SettingsPage() {
               <label className="label mb-1 block text-ink/70 font-medium">Company Legal Name</label>
               <input 
                 className="input text-xs font-semibold text-ink" 
-                value={settings.restaurantName || "Ethers Consultancy Pvt Ltd"} 
+                value={settings.restaurantName || "Ethers Consultancy"} 
                 onChange={(e) => setSettings({ ...settings, restaurantName: e.target.value })} 
               />
             </div>

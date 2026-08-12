@@ -23,7 +23,7 @@ export function BrandInvoiceModal({ brandName, invoice, mode, onClose, onSubmitI
     new Date(Date.now() + 15 * 86400000).toISOString().split("T")[0]
   );
   const [status, setStatus] = useState<"Paid" | "Pending" | "Overdue">("Pending");
-  const [notes, setNotes] = useState("Payable via NEFT/RTGS/UPI to Ethers Consultancy Pvt Ltd account.");
+  const [notes, setNotes] = useState("Payable via NEFT/RTGS/UPI to Ethers Consultancy account.");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -215,7 +215,7 @@ export function BrandInvoiceModal({ brandName, invoice, mode, onClose, onSubmitI
                   </div>
                 </div>
                 <div className="text-right text-xs text-zinc-600">
-                  <p className="font-bold text-zinc-900">Ethers Consultancy Pvt Ltd</p>
+                  <p className="font-bold text-zinc-900">Ethers Consultancy</p>
                   <p>20 Maharshi Debendra Road, Kolkata 700007</p>
                   <p>GSTIN: 19AAACE1234F1Z5</p>
                   <p>contact@ethers.in | www.ethers.in</p>
@@ -276,7 +276,7 @@ export function BrandInvoiceModal({ brandName, invoice, mode, onClose, onSubmitI
               <div className="grid grid-cols-2 gap-4 p-4 rounded-lg bg-zinc-50 border border-zinc-200 text-xs mb-8">
                 <div>
                   <p className="font-bold text-zinc-900 mb-1">Bank Remittance Account:</p>
-                  <p className="text-zinc-600 font-mono">Account Name: Ethers Consultancy Pvt Ltd</p>
+                  <p className="text-zinc-600 font-mono">Account Name: Ethers Consultancy</p>
                   <p className="text-zinc-600 font-mono">Bank: HDFC Bank (Burrabazar Branch)</p>
                   <p className="text-zinc-600 font-mono">A/C No: 50200088991122</p>
                   <p className="text-zinc-600 font-mono">IFSC Code: HDFC0000142</p>
@@ -296,7 +296,7 @@ export function BrandInvoiceModal({ brandName, invoice, mode, onClose, onSubmitI
                   <div className="h-10 border-b border-zinc-400 w-44 flex items-end justify-end pb-1 font-serif italic text-zinc-800 font-bold text-sm">
                     Authorized Signatory
                   </div>
-                  <p className="font-bold text-zinc-900 mt-1">Ethers Consultancy Pvt Ltd</p>
+                  <p className="font-bold text-zinc-900 mt-1">Ethers Consultancy</p>
                 </div>
               </div>
             </div>

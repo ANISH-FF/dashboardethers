@@ -57,7 +57,7 @@ export async function GET() {
     }
     const backupBundle: Record<string, any> = {
       meta: {
-        company: "Ethers Consultancy Pvt Ltd",
+        company: "Ethers Consultancy",
         exportedAt: new Date().toISOString(),
         version: "2.0.0",
         system: "Ethers F&B Operations Suite"

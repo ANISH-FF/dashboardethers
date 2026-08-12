@@ -393,7 +393,7 @@ export function createBrandInvoice(brandId: string, partial: Partial<BrandInvoic
     gstAmount,
     totalAmount,
     status: partial.status || "Pending",
-    notes: partial.notes || "Payable via NEFT/RTGS to Ethers Consultancy Pvt Ltd account.",
+    notes: partial.notes || "Payable via NEFT/RTGS to Ethers Consultancy account.",
     createdAt: now,
   };
 

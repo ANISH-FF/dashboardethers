@@ -88,7 +88,7 @@ export function IssueDocumentModal({ employees, onClose, onIssueDocument }: Issu
     } else if (type === "completion_letter") {
       setTitle("Project & Service Completion Certificate");
     } else {
-      setTitle("Certificate of Appreciation & Excellence");
+      setTitle("Employment Certificate");
     }
   };
 
@@ -145,7 +145,7 @@ export function IssueDocumentModal({ employees, onClose, onIssueDocument }: Issu
                 <option value="increment_letter">Increment & Revision Letter</option>
                 <option value="recommendation_letter">Letter of Recommendation (LOR)</option>
                 <option value="completion_letter">Letter of Completion</option>
-                <option value="certificate">Official Certificate</option>
+                <option value="certificate">Employment Certificate</option>
               </select>
             </div>
           </div>
@@ -218,7 +218,7 @@ export function IssueDocumentModal({ employees, onClose, onIssueDocument }: Issu
                   onChange={(e) => setCertificateType(e.target.value as any)}
                   className="input"
                 >
-                  <option value="appreciation">Certificate of Appreciation</option>
+                  <option value="appreciation">Employment Certificate</option>
                   <option value="experience">Experience Certificate</option>
                   <option value="internship">Internship Completion</option>
                 </select>
