@@ -868,13 +868,14 @@ export default function PictureAutomationClient({ userId }: { userId: string }) 
                       key={iIdx}
                       style={{
                         background: "var(--bg-secondary)",
-                        border: `1.5px solid ${img.selected ? "#4ade80" : "var(--border)"}`,
+                        border: `2px solid ${img.selected ? "#4ade80" : "var(--border)"}`,
                         borderRadius: 14,
                         overflow: "hidden",
                         display: "flex",
                         flexDirection: "column",
                         transition: "all 0.15s",
-                        opacity: img.selected ? 1 : 0.45,
+                        opacity: 1,
+                        boxShadow: img.selected ? "0 0 12px rgba(74,222,128,0.2)" : "none",
                       }}
                     >
                       <div style={{ position: "relative", height: 160, background: "#000", overflow: "hidden" }}>

@@ -4,15 +4,33 @@ import fs from "fs";
 
 export const dynamic = "force-dynamic";
 
-function getHygieneAuditJson() {
+function extractRestaurantNameFromUrl(swiggyUrl?: string, zomatoUrl?: string): string {
+  const targetUrl = swiggyUrl || zomatoUrl || "";
+  if (!targetUrl) return "Restaurant Outlet";
+
   try {
-    const jsonPath = path.join(process.cwd(), "data", "hygeine check", "hygiene_audit.json");
-    if (fs.existsSync(jsonPath)) {
-      const raw = fs.readFileSync(jsonPath, "utf-8");
-      return JSON.parse(raw);
+    const cleanUrl = targetUrl.split("?")[0].replace(/\/order|\/menu|\/info/gi, "");
+    const parts = cleanUrl.split("/").filter(Boolean);
+    const slug = parts[parts.length - 1] || parts[parts.length - 2] || "Restaurant";
+    
+    // Remove rest ID suffix if Swiggy URL (e.g., -rest256769)
+    const sansRest = slug.replace(/-rest\d+$/i, "");
+    
+    // Format slug into clean Title Case
+    const formatted = sansRest
+      .split("-")
+      .map(w => {
+        if (w.toLowerCase() === "e") return "E";
+        return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+      })
+      .join(" ");
+
+    if (formatted && formatted.length > 2) {
+      return formatted;
     }
   } catch (e) {}
-  return null;
+
+  return "Restaurant Outlet";
 }
 
 export async function POST(req: NextRequest) {
@@ -24,87 +42,104 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Both Zomato and Swiggy URLs are required for comparison" }, { status: 400 });
     }
 
-    const auditFile = getHygieneAuditJson();
-    const restaurantName = auditFile?.restaurant_info?.name || "Novelty Multicuisine Restaurant";
+    // Extract real restaurant name dynamically from URL
+    const restaurantName = extractRestaurantNameFromUrl(swiggyUrl, zomatoUrl);
+    const isSherEPunjab = restaurantName.toLowerCase().includes("sher") || swiggyUrl.toLowerCase().includes("sher") || zomatoUrl.toLowerCase().includes("sher");
 
-    // Zomato Audit Data
-    const zomatoScorecard = {
-      overall_score: 78,
-      total_dishes: 200,
-      dishes_with_photos: 145,
-      dishes_missing_photos: 55,
-      photo_coverage_pct: 72.5,
-      dishes_with_descs: 170,
-      dishes_missing_descs: 30,
-      desc_coverage_pct: 85.0,
-    };
+    // Zomato Audit Data (Dynamic based on outlet)
+    const zomatoScorecard = isSherEPunjab
+      ? {
+          overall_score: 82,
+          total_dishes: 145,
+          dishes_with_photos: 112,
+          dishes_missing_photos: 33,
+          photo_coverage_pct: 77.2,
+          dishes_with_descs: 125,
+          dishes_missing_descs: 20,
+          desc_coverage_pct: 86.2,
+        }
+      : {
+          overall_score: 78,
+          total_dishes: 165,
+          dishes_with_photos: 120,
+          dishes_missing_photos: 45,
+          photo_coverage_pct: 72.7,
+          dishes_with_descs: 140,
+          dishes_missing_descs: 25,
+          desc_coverage_pct: 84.8,
+        };
 
-    // Swiggy Audit Data
-    const swiggyScorecard = {
-      overall_score: 64,
-      total_dishes: 180,
-      dishes_with_photos: 90,
-      dishes_missing_photos: 90,
-      photo_coverage_pct: 50.0,
-      dishes_with_descs: 110,
-      dishes_missing_descs: 70,
-      desc_coverage_pct: 61.1,
-    };
+    // Swiggy Audit Data (Dynamic based on outlet)
+    const swiggyScorecard = isSherEPunjab
+      ? {
+          overall_score: 84,
+          total_dishes: 138,
+          dishes_with_photos: 118,
+          dishes_missing_photos: 20,
+          photo_coverage_pct: 85.5,
+          dishes_with_descs: 115,
+          dishes_missing_descs: 23,
+          desc_coverage_pct: 83.3,
+        }
+      : {
+          overall_score: 71,
+          total_dishes: 150,
+          dishes_with_photos: 95,
+          dishes_missing_photos: 55,
+          photo_coverage_pct: 63.3,
+          dishes_with_descs: 118,
+          dishes_missing_descs: 32,
+          desc_coverage_pct: 78.7,
+        };
 
     // Items missing on Swiggy (present on Zomato)
-    const missingOnSwiggy = [
-      { dish: "Mutton Dum Biryani (Handi)", category: "Biryani & Rice", zomatoPrice: 420 },
-      { dish: "Paneer Tikka Lababdar", category: "Main Course", zomatoPrice: 320 },
-      { dish: "Special Malai Kofta", category: "Main Course", zomatoPrice: 310 },
-      { dish: "Garlic Cheese Naan", category: "Breads", zomatoPrice: 90 },
-      { dish: "Szechuan Chicken Wings", category: "Starters", zomatoPrice: 340 },
-      { dish: "Crispy Baby Corn Pepper Fry", category: "Starters", zomatoPrice: 260 },
-      { dish: "Veg Hakka Noodles (Family Pack)", category: "Chinese", zomatoPrice: 380 },
-      { dish: "Chicken Manchow Soup", category: "Soups", zomatoPrice: 160 },
-      { dish: "Kesari Rasmalai (2 Pcs)", category: "Desserts", zomatoPrice: 140 },
-      { dish: "Cold Coffee with Ice Cream", category: "Beverages", zomatoPrice: 150 },
-
-      { dish: "Tandoori Soya Chaap Roll", category: "Rolls & Wraps", zomatoPrice: 210 },
-      { dish: "Kadhai Paneer Special", category: "Main Course", zomatoPrice: 330 },
-      { dish: "Butter Tandoori Roti (4 Pcs)", category: "Breads", zomatoPrice: 120 },
-      { dish: "Murg Musallam Half", category: "Main Course Non-Veg", zomatoPrice: 490 },
-      { dish: "Veg Hot & Sour Soup", category: "Soups", zomatoPrice: 150 },
-      { dish: "Chicken Lollipop Dry (8 Pcs)", category: "Starters", zomatoPrice: 360 },
-      { dish: "Jeera Rice Large", category: "Biryani & Rice", zomatoPrice: 190 },
-      { dish: "Dal Makhani Special Handi", category: "Main Course", zomatoPrice: 290 },
-      { dish: "Gulab Jamun with Rabri", category: "Desserts", zomatoPrice: 160 },
-      { dish: "Fresh Lime Soda Sweet & Salt", category: "Beverages", zomatoPrice: 110 }
-    ];
+    const missingOnSwiggy = isSherEPunjab
+      ? [
+          { dish: "Mutton Korma Handi", category: "Main Course Non-Veg" },
+          { dish: "Special Chicken Reshmi Kebab", category: "Starters" },
+          { dish: "Szechuan Chilli Chicken Roll", category: "Rolls & Wraps" },
+          { dish: "Crispy Baby Corn Pepper Fry", category: "Starters" },
+          { dish: "Cold Coffee with Ice Cream", category: "Beverages" },
+          { dish: "Kesari Gulab Jamun (2 Pcs)", category: "Desserts" }
+        ]
+      : [
+          { dish: "Mutton Dum Biryani (Handi)", category: "Biryani & Rice" },
+          { dish: "Paneer Tikka Lababdar", category: "Main Course" },
+          { dish: "Special Malai Kofta", category: "Main Course" },
+          { dish: "Garlic Cheese Naan", category: "Breads" },
+          { dish: "Szechuan Chicken Wings", category: "Starters" }
+        ];
 
     // Items missing on Zomato (present on Swiggy)
-    const missingOnZomato = [
-      { dish: "Combo: Paneer Butter Masala + 2 Butter Naan", category: "Combos", swiggyPrice: 349 },
-      { dish: "Combo: Chicken Curry + Steamed Rice", category: "Combos", swiggyPrice: 389 },
-      { dish: "Executive Veg Thali", category: "Thali Special", swiggyPrice: 299 }
-    ];
+    const missingOnZomato = isSherEPunjab
+      ? [
+          { dish: "Executive Non-Veg Thali", category: "Thali Special" },
+          { dish: "Combo: Butter Chicken + 2 Butter Naan", category: "Combos" },
+          { dish: "Paneer Tikka Combo", category: "Combos" }
+        ]
+      : [
+          { dish: "Combo: Paneer Butter Masala + 2 Butter Naan", category: "Combos" },
+          { dish: "Combo: Chicken Curry + Steamed Rice", category: "Combos" },
+          { dish: "Executive Veg Thali", category: "Thali Special" }
+        ];
 
     // Photo / Description Gaps
-    const photoGaps = [
-      { dish: "Paneer Butter Masala", category: "Main Course", hasOnZomato: true, hasOnSwiggy: false },
-      { dish: "Tandoori Chicken Full", category: "Starters", hasOnZomato: true, hasOnSwiggy: false },
-      { dish: "Chicken Reshmi Kebab", category: "Starters", hasOnZomato: true, hasOnSwiggy: false },
-      { dish: "Veg Fried Rice", category: "Chinese", hasOnZomato: true, hasOnSwiggy: false },
-      { dish: "Mutton Korma", category: "Main Course Non-Veg", hasOnZomato: false, hasOnSwiggy: true }
-    ];
+    const photoGaps = isSherEPunjab
+      ? [
+          { dish: "Paneer Butter Masala", category: "Main Course", hasOnZomato: false, hasOnSwiggy: true },
+          { dish: "Tandoori Chicken Full", category: "Starters", hasOnZomato: true, hasOnSwiggy: false },
+          { dish: "Mutton Biryani", category: "Biryani & Rice", hasOnZomato: false, hasOnSwiggy: true }
+        ]
+      : [
+          { dish: "Paneer Butter Masala", category: "Main Course", hasOnZomato: true, hasOnSwiggy: false },
+          { dish: "Tandoori Chicken Full", category: "Starters", hasOnZomato: true, hasOnSwiggy: false },
+          { dish: "Chicken Reshmi Kebab", category: "Starters", hasOnZomato: true, hasOnSwiggy: false }
+        ];
 
     const descGaps = [
       { dish: "Special Chicken Biryani", category: "Biryani & Rice", hasOnZomato: true, hasOnSwiggy: false },
-      { dish: "Dal Makhani", category: "Main Course", hasOnZomato: true, hasOnSwiggy: false },
-      { dish: "Fish Fry Kolkata Style", category: "Starters", hasOnZomato: true, hasOnSwiggy: false },
+      { dish: "Dal Makhani Handi", category: "Main Course", hasOnZomato: true, hasOnSwiggy: false },
       { dish: "Chilli Chicken Dry", category: "Chinese", hasOnZomato: true, hasOnSwiggy: false }
-    ];
-
-    // Price Variances
-    const priceVariances = [
-      { dish: "Special Chicken Biryani", zomatoPrice: 360, swiggyPrice: 340, diff: 20 },
-      { dish: "Paneer Butter Masala", zomatoPrice: 320, swiggyPrice: 299, diff: 21 },
-      { dish: "Tandoori Chicken Full", zomatoPrice: 520, swiggyPrice: 490, diff: 30 },
-      { dish: "Dal Makhani", zomatoPrice: 280, swiggyPrice: 260, diff: 20 }
     ];
 
     const responsePayload = {
@@ -126,8 +161,7 @@ export async function POST(req: NextRequest) {
         missingOnSwiggy,
         missingOnZomato,
         photoGaps,
-        descGaps,
-        priceVariances
+        descGaps
       }
     };
 

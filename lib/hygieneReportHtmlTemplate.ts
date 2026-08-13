@@ -380,14 +380,13 @@ export function generateDualComparisonReportHtml(data: DualComparisonReportData)
                 <div class="section-title">Items Present on Zomato but MISSING on Swiggy (${comparison.missingOnSwiggy.length} Items)</div>
                 <table>
                     <thead>
-                        <tr><th>Category</th><th>Dish Name</th><th>Zomato Price</th><th>Status</th></tr>
+                        <tr><th>Category</th><th>Dish Name</th><th>Status</th></tr>
                     </thead>
                     <tbody>
                         ${comparison.missingOnSwiggy.slice(0, 5).map(m => `
                             <tr>
                                 <td>${m.category}</td>
                                 <td><strong>${m.dish}</strong></td>
-                                <td>₹${m.zomatoPrice || '-'}</td>
                                 <td><span class="badge-missing">Missing on Swiggy</span></td>
                             </tr>
                         `).join('')}
@@ -399,14 +398,13 @@ export function generateDualComparisonReportHtml(data: DualComparisonReportData)
                 <div class="section-title">Items Present on Swiggy but MISSING on Zomato (${comparison.missingOnZomato.length} Items)</div>
                 <table>
                     <thead>
-                        <tr><th>Category</th><th>Dish Name</th><th>Swiggy Price</th><th>Status</th></tr>
+                        <tr><th>Category</th><th>Dish Name</th><th>Status</th></tr>
                     </thead>
                     <tbody>
                         ${comparison.missingOnZomato.slice(0, 5).map(m => `
                             <tr>
                                 <td>${m.category}</td>
                                 <td><strong>${m.dish}</strong></td>
-                                <td>₹${m.swiggyPrice || '-'}</td>
                                 <td><span class="badge-missing">Missing on Zomato</span></td>
                             </tr>
                         `).join('')}
@@ -414,19 +412,17 @@ export function generateDualComparisonReportHtml(data: DualComparisonReportData)
                 </table>
                 ` : ''}
 
-                ${comparison.priceVariances.length > 0 ? `
-                <div class="section-title">Price Variance & Discrepancies</div>
+                ${comparison.photoGaps && comparison.photoGaps.length > 0 ? `
+                <div class="section-title">Cross-Platform Photo Hygiene Gaps</div>
                 <table>
                     <thead>
-                        <tr><th>Dish Name</th><th>Zomato Price</th><th>Swiggy Price</th><th>Variance</th></tr>
+                        <tr><th>Dish Name</th><th>Status</th></tr>
                     </thead>
                     <tbody>
-                        ${comparison.priceVariances.slice(0, 5).map(p => `
+                        ${comparison.photoGaps.slice(0, 5).map(g => `
                             <tr>
-                                <td><strong>${p.dish}</strong></td>
-                                <td>₹${p.zomatoPrice}</td>
-                                <td>₹${p.swiggyPrice}</td>
-                                <td><span class="badge-diff">₹${Math.abs(p.diff)} diff</span></td>
+                                <td><strong>${g.dish}</strong></td>
+                                <td><span class="badge-diff">${g.hasOnZomato ? "Photo Missing on Swiggy" : "Photo Missing on Zomato"}</span></td>
                             </tr>
                         `).join('')}
                     </tbody>

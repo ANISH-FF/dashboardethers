@@ -1,7 +1,7 @@
 "use client";
 
 import { LeadItem, FollowUpStatus, LeadStatus } from "@/lib/db";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   X, 
   Phone, 
@@ -35,6 +35,17 @@ export function LeadDetailModal({ lead, onClose, onUpdateLead }: ModalProps) {
   const [status, setStatus] = useState<LeadStatus>(lead.status);
   const [scheduledMeeting, setScheduledMeeting] = useState(lead.scheduledMeeting || "");
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (lead) {
+      setComments(lead.comments || "");
+      setFollowUp1(lead.followUp1);
+      setFollowUp2(lead.followUp2);
+      setFollowUp3(lead.followUp3);
+      setStatus(lead.status);
+      setScheduledMeeting(lead.scheduledMeeting || "");
+    }
+  }, [lead.id, lead.followUp1, lead.followUp2, lead.followUp3, lead.status, lead.comments, lead.scheduledMeeting]);
 
   const cleanPhone = lead.ownerPhone.replace(/[^\d+]/g, "");
   const waUrl = cleanPhone ? `https://wa.me/${cleanPhone.replace("+", "")}` : "#";

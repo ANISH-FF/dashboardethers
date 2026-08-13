@@ -836,7 +836,7 @@ export default function HygieneCheckPage() {
           <button
             onClick={runDualComparison}
             disabled={dualCompareLoading}
-            className="w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-rose-600 via-emerald-600 to-orange-600 hover:opacity-90 text-white font-bold text-sm transition-all shadow-xl active:scale-98 disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm transition-all shadow-md active:scale-95 disabled:opacity-50"
           >
             {dualCompareLoading ? (
               <RefreshCw className="w-4 h-4 animate-spin" />
@@ -1743,7 +1743,6 @@ export default function HygieneCheckPage() {
                     <tr>
                       <th className="p-3">Category</th>
                       <th className="p-3">Dish Name</th>
-                      <th className="p-3">Zomato Price</th>
                       <th className="p-3">Status</th>
                     </tr>
                   </thead>
@@ -1752,7 +1751,6 @@ export default function HygieneCheckPage() {
                       <tr key={i} className="hover:bg-zinc-800/40 transition-colors">
                         <td className="p-3 text-zinc-400">{m.category}</td>
                         <td className="p-3 font-bold text-white">{m.dish}</td>
-                        <td className="p-3 font-mono text-emerald-400">₹{m.zomatoPrice}</td>
                         <td className="p-3">
                           <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-rose-500/10 text-rose-400 border border-rose-500/20">
                             Missing on Swiggy
@@ -1784,7 +1782,6 @@ export default function HygieneCheckPage() {
                     <tr>
                       <th className="p-3">Category</th>
                       <th className="p-3">Dish Name</th>
-                      <th className="p-3">Swiggy Price</th>
                       <th className="p-3">Status</th>
                     </tr>
                   </thead>
@@ -1793,48 +1790,10 @@ export default function HygieneCheckPage() {
                       <tr key={i} className="hover:bg-zinc-800/40 transition-colors">
                         <td className="p-3 text-zinc-400">{m.category}</td>
                         <td className="p-3 font-bold text-white">{m.dish}</td>
-                        <td className="p-3 font-mono text-emerald-400">₹{m.swiggyPrice}</td>
                         <td className="p-3">
                           <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">
                             Missing on Zomato
                           </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Price Variance & Discrepancies Table */}
-          {dualCompareData.comparison?.priceVariances?.length > 0 && (
-            <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-4">
-              <div className="flex items-center gap-2">
-                <Tag className="w-4 h-4 text-emerald-400" />
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                  Cross-Platform Price Discrepancies
-                </h3>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs text-left text-zinc-300">
-                  <thead className="bg-zinc-950 text-zinc-400 font-bold uppercase text-[10px] border-b border-zinc-800">
-                    <tr>
-                      <th className="p-3">Dish Name</th>
-                      <th className="p-3">Zomato Price</th>
-                      <th className="p-3">Swiggy Price</th>
-                      <th className="p-3">Price Variance</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-800/60 font-medium">
-                    {dualCompareData.comparison.priceVariances.map((p: any, i: number) => (
-                      <tr key={i} className="hover:bg-zinc-800/40 transition-colors">
-                        <td className="p-3 font-bold text-white">{p.dish}</td>
-                        <td className="p-3 font-mono text-zinc-300">₹{p.zomatoPrice}</td>
-                        <td className="p-3 font-mono text-zinc-300">₹{p.swiggyPrice}</td>
-                        <td className="p-3 font-mono font-bold text-amber-400">
-                          ₹{Math.abs(p.diff)} variance
                         </td>
                       </tr>
                     ))}
