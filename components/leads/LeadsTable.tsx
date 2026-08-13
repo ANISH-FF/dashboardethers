@@ -317,12 +317,14 @@ export function LeadsTable({ leads, loading, onUpdateLead, onDeleteLead, onBulkD
                   <td className="py-3 px-4">
                     <div className="relative">
                       <select 
-                        value={lead.followUp1}
+                        key={`${lead.id}-f1-${lead.followUp1}`}
+                        id={`${lead.id}-followUp1`}
+                        value={lead.followUp1 || "Pending"}
                         onChange={(e) => handleFollowUpChange(lead.id, "followUp1", e.target.value as FollowUpStatus)}
                         className={`w-full appearance-none rounded-lg border px-2.5 py-1.5 text-xs font-medium cursor-pointer outline-none transition-all pr-6 ${getFollowUpBadgeClass(lead.followUp1)}`}
                       >
                         {FOLLOW_UP_OPTIONS.map((opt) => (
-                          <option key={opt} value={opt} className="bg-paper-dark text-ink font-sans">
+                          <option key={`${lead.id}-f1-opt-${opt}`} value={opt} className="bg-paper-dark text-ink font-sans">
                             {opt}
                           </option>
                         ))}
@@ -335,12 +337,14 @@ export function LeadsTable({ leads, loading, onUpdateLead, onDeleteLead, onBulkD
                   <td className="py-3 px-4">
                     <div className="relative">
                       <select 
-                        value={lead.followUp2}
+                        key={`${lead.id}-f2-${lead.followUp2}`}
+                        id={`${lead.id}-followUp2`}
+                        value={lead.followUp2 || "Pending"}
                         onChange={(e) => handleFollowUpChange(lead.id, "followUp2", e.target.value as FollowUpStatus)}
                         className={`w-full appearance-none rounded-lg border px-2.5 py-1.5 text-xs font-medium cursor-pointer outline-none transition-all pr-6 ${getFollowUpBadgeClass(lead.followUp2)}`}
                       >
                         {FOLLOW_UP_OPTIONS.map((opt) => (
-                          <option key={opt} value={opt} className="bg-paper-dark text-ink font-sans">
+                          <option key={`${lead.id}-f2-opt-${opt}`} value={opt} className="bg-paper-dark text-ink font-sans">
                             {opt}
                           </option>
                         ))}
@@ -353,12 +357,14 @@ export function LeadsTable({ leads, loading, onUpdateLead, onDeleteLead, onBulkD
                   <td className="py-3 px-4">
                     <div className="relative">
                       <select 
-                        value={lead.followUp3}
+                        key={`${lead.id}-f3-${lead.followUp3}`}
+                        id={`${lead.id}-followUp3`}
+                        value={lead.followUp3 || "Pending"}
                         onChange={(e) => handleFollowUpChange(lead.id, "followUp3", e.target.value as FollowUpStatus)}
                         className={`w-full appearance-none rounded-lg border px-2.5 py-1.5 text-xs font-medium cursor-pointer outline-none transition-all pr-6 ${getFollowUpBadgeClass(lead.followUp3)}`}
                       >
                         {FOLLOW_UP_OPTIONS.map((opt) => (
-                          <option key={opt} value={opt} className="bg-paper-dark text-ink font-sans">
+                          <option key={`${lead.id}-f3-opt-${opt}`} value={opt} className="bg-paper-dark text-ink font-sans">
                             {opt}
                           </option>
                         ))}

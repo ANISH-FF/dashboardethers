@@ -54,20 +54,45 @@ export default function LeadsPage() {
   }, []);
 
   const handleUpdateLead = async (patch: Partial<LeadItem> & { id: string }) => {
-    // Optimistic UI update
+    // Optimistic UI update — strictly update only the explicitly provided patch keys
     setLeads((prev) =>
-      prev.map((l) => (l.id === patch.id ? { ...l, ...patch } : l))
+      prev.map((l) => {
+        if (l.id !== patch.id) return l;
+        const updated = { ...l };
+        for (const [key, val] of Object.entries(patch)) {
+          if (key !== "id" && val !== undefined) {
+            (updated as any)[key] = val;
+          }
+        }
+        return updated;
+      })
     );
+
     if (selectedLead && selectedLead.id === patch.id) {
-      setSelectedLead((prev) => (prev ? { ...prev, ...patch } : null));
+      setSelectedLead((prev) => {
+        if (!prev) return null;
+        const updatedModal = { ...prev };
+        for (const [key, val] of Object.entries(patch)) {
+          if (key !== "id" && val !== undefined) {
+            (updatedModal as any)[key] = val;
+          }
+        }
+        return updatedModal;
+      });
     }
 
     try {
-      await fetch("/api/leads", {
+      const res = await fetch("/api/leads", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(patch),
       });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.lead) {
+          setLeads((prev) => prev.map((l) => (l.id === patch.id ? { ...l, ...data.lead } : l)));
+        }
+      }
     } catch (err) {
       console.error("Failed to update lead:", err);
       fetchLeads(); // Revert on failure
