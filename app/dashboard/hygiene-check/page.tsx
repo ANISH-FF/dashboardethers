@@ -94,12 +94,25 @@ interface VisionResultItem {
 }
 
 export default function HygieneCheckPage() {
-  // Input states
+  // Mode selection: Single Platform vs Dual Platform Comparison
+  const [auditMode, setAuditMode] = useState<"single" | "dual">("single");
+
+  // Single Input states
   const [urlInput, setUrlInput] = useState("");
   const [nameInput, setNameInput] = useState("");
   const [locationInput, setLocationInput] = useState("");
   const [searchPlatform, setSearchPlatform] = useState<"zomato" | "swiggy">("zomato");
   const [searchMode, setSearchMode] = useState<"delivery" | "dining">("delivery");
+
+  // Dual Input states
+  const [zomatoUrlInput, setZomatoUrlInput] = useState("https://www.zomato.com/jamshedpur/novelty-multicuisine-restaurant-bistupur/order");
+  const [swiggyUrlInput, setSwiggyUrlInput] = useState("https://www.swiggy.com/city/jamshedpur/novelty-restaurant-bistupur-rest12034");
+  const [dualCompareLoading, setDualCompareLoading] = useState(false);
+  const [dualCompareData, setDualCompareData] = useState<any | null>(null);
+
+  // PDF Download States
+  const [isDownloadingSinglePdf, setIsDownloadingSinglePdf] = useState(false);
+  const [isDownloadingDualPdf, setIsDownloadingDualPdf] = useState(false);
 
   // Audit Data & Loading Status
   const [loading, setLoading] = useState(false);
@@ -239,6 +252,81 @@ export default function HygieneCheckPage() {
       setErrorMsg("Failed to complete auto-search. Please try pasting a direct listing URL.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Run Dual-Platform Comparison Audit
+  const runDualComparison = async () => {
+    if (!zomatoUrlInput.trim() || !swiggyUrlInput.trim()) {
+      setErrorMsg("Please enter both Zomato URL and Swiggy URL link for comparison.");
+      return;
+    }
+
+    setErrorMsg(null);
+    setDualCompareLoading(true);
+    try {
+      const res = await fetch("/api/hygiene-check/compare", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ zomatoUrl: zomatoUrlInput.trim(), swiggyUrl: swiggyUrlInput.trim() }),
+      });
+      if (!res.ok) throw new Error(`Status ${res.status}`);
+      const data = await res.json();
+      setDualCompareData(data);
+    } catch (err: any) {
+      console.error("Dual comparison error:", err);
+      setErrorMsg("Failed to complete dual-platform comparison.");
+    } finally {
+      setDualCompareLoading(false);
+    }
+  };
+
+  // PDF Audit Report Downloads
+  const downloadSinglePdfReport = async () => {
+    if (!auditData || isDownloadingSinglePdf) return;
+    setIsDownloadingSinglePdf(true);
+    try {
+      const res = await fetch("/api/hygiene-check/download-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "single", data: auditData }),
+      });
+      if (!res.ok) throw new Error("PDF generation failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${(auditData.restaurant_name || "Restaurant").replace(/\s+/g, "_")}_Hygiene_Audit.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("PDF Download error:", err);
+    } finally {
+      setIsDownloadingSinglePdf(false);
+    }
+  };
+
+  const downloadDualPdfReport = async () => {
+    if (!dualCompareData || isDownloadingDualPdf) return;
+    setIsDownloadingDualPdf(true);
+    try {
+      const res = await fetch("/api/hygiene-check/download-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "dual", data: dualCompareData }),
+      });
+      if (!res.ok) throw new Error("PDF generation failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${(dualCompareData.restaurant_name || "Restaurant").replace(/\s+/g, "_")}_Zomato_vs_Swiggy_Audit.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Dual PDF Download error:", err);
+    } finally {
+      setIsDownloadingDualPdf(false);
     }
   };
 
@@ -489,24 +577,61 @@ export default function HygieneCheckPage() {
         </div>
 
         {/* Action Controls Header */}
-        {auditData && (
-          <div className="flex items-center gap-2 self-end md:self-auto">
+        <div className="flex flex-wrap items-center gap-2 self-end md:self-auto">
+          {/* Mode Switcher Tabs */}
+          <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 p-1 rounded-xl text-xs">
             <button
-              onClick={downloadReportJson}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-700/80 transition-all shadow-md active:scale-95"
+              onClick={() => setAuditMode("single")}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
+                auditMode === "single"
+                  ? "bg-zinc-800 text-white shadow-sm"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
             >
-              <Download className="w-3.5 h-3.5 text-zinc-400" />
-              <span>Export Audit JSON</span>
+              Single Platform Audit
             </button>
             <button
-              onClick={() => runAuditByUrl()}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white text-zinc-950 hover:bg-zinc-200 transition-all shadow-md active:scale-95"
+              onClick={() => setAuditMode("dual")}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
+                auditMode === "dual"
+                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
             >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Re-Audit Listing</span>
+              Dual-Platform Comparison
             </button>
           </div>
-        )}
+
+          {auditMode === "single" && auditData && (
+            <button
+              onClick={downloadSinglePdfReport}
+              disabled={isDownloadingSinglePdf}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-md active:scale-95 disabled:opacity-50"
+            >
+              {isDownloadingSinglePdf ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Download className="w-3.5 h-3.5" />
+              )}
+              <span>Download Executive PDF Report</span>
+            </button>
+          )}
+
+          {auditMode === "dual" && dualCompareData && (
+            <button
+              onClick={downloadDualPdfReport}
+              disabled={isDownloadingDualPdf}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-md active:scale-95 disabled:opacity-50"
+            >
+              {isDownloadingDualPdf ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Download className="w-3.5 h-3.5" />
+              )}
+              <span>Download Dual Comparison PDF</span>
+            </button>
+          )}
+        </div>
       </motion.div>
 
       {/* Marquee Info Bar */}
@@ -520,151 +645,208 @@ export default function HygieneCheckPage() {
       </div>
 
       {/* Main Search & Audit Control Box */}
-      <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-6 shadow-2xl backdrop-blur-md space-y-6"
-      >
-        {/* Direct URL Input */}
-        <div className="space-y-3">
-          <label className="flex items-center gap-2 text-sm font-semibold text-zinc-200">
-            <LinkIcon className="w-4 h-4 text-emerald-400" />
-            <span>Enter Zomato or Swiggy Restaurant URL Link</span>
-          </label>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <input
-              type="text"
-              value={urlInput}
-              onChange={(e) => setUrlInput(e.target.value)}
-              placeholder="Paste link e.g. https://www.zomato.com/jamshedpur/novelty-multicuisine-restaurant-bistupur/order"
-              onKeyDown={(e) => e.key === "Enter" && runAuditByUrl()}
-              className="flex-1 bg-zinc-950/80 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 transition-all"
-            />
-            <button
-              onClick={() => runAuditByUrl()}
-              disabled={loading}
-              className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-sm transition-all shadow-lg active:scale-95 disabled:opacity-50 shrink-0"
-            >
-              {loading ? (
-                <RefreshCw className="w-4 h-4 animate-spin" />
-              ) : (
-                <Zap className="w-4 h-4 fill-current" />
-              )}
-              <span>Audit Live Listing</span>
-            </button>
-          </div>
-        </div>
-
-        <div className="relative flex items-center justify-center my-2">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-zinc-800/80"></div>
-          </div>
-          <span className="relative bg-zinc-900 px-4 text-[11px] font-bold uppercase tracking-widest text-zinc-500">
-            Or Auto-Search by Restaurant Name and Location
-          </span>
-        </div>
-
-        {/* Auto Search Form */}
-        <div className="space-y-4">
-          <div className="flex flex-wrap gap-4 items-center">
-            <div className="flex items-center gap-2 bg-zinc-950/80 border border-zinc-800 rounded-xl p-1.5 text-xs">
-              <span className="text-zinc-400 font-medium px-2 uppercase text-[10px] tracking-wider">Platform:</span>
+      {auditMode === "single" ? (
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-6 shadow-2xl backdrop-blur-md space-y-6"
+        >
+          {/* Direct URL Input */}
+          <div className="space-y-3">
+            <label className="flex items-center gap-2 text-sm font-semibold text-zinc-200">
+              <LinkIcon className="w-4 h-4 text-emerald-400" />
+              <span>Enter Zomato or Swiggy Restaurant URL Link</span>
+            </label>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="text"
+                value={urlInput}
+                onChange={(e) => setUrlInput(e.target.value)}
+                placeholder="Paste link e.g. https://www.zomato.com/jamshedpur/novelty-multicuisine-restaurant-bistupur/order"
+                onKeyDown={(e) => e.key === "Enter" && runAuditByUrl()}
+                className="flex-1 bg-zinc-950/80 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 transition-all"
+              />
               <button
-                type="button"
-                onClick={() => setSearchPlatform("zomato")}
-                className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
-                  searchPlatform === "zomato"
-                    ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
+                onClick={() => runAuditByUrl()}
+                disabled={loading}
+                className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-sm transition-all shadow-lg active:scale-95 disabled:opacity-50 shrink-0"
               >
-                Zomato
-              </button>
-              <button
-                type="button"
-                onClick={() => setSearchPlatform("swiggy")}
-                className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
-                  searchPlatform === "swiggy"
-                    ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                Swiggy
-              </button>
-            </div>
-
-            <div className="flex items-center gap-2 bg-zinc-950/80 border border-zinc-800 rounded-xl p-1.5 text-xs">
-              <span className="text-zinc-400 font-medium px-2 uppercase text-[10px] tracking-wider">Mode:</span>
-              <button
-                type="button"
-                onClick={() => setSearchMode("delivery")}
-                className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
-                  searchMode === "delivery"
-                    ? "bg-zinc-800 text-white border border-zinc-700"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                Delivery
-              </button>
-              <button
-                type="button"
-                onClick={() => setSearchMode("dining")}
-                className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
-                  searchMode === "dining"
-                    ? "bg-indigo-500/20 text-indigo-400 border border-indigo-500/30"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                Dining
+                {loading ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Zap className="w-4 h-4 fill-current" />
+                )}
+                <span>Audit Live Listing</span>
               </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <input
-              type="text"
-              value={nameInput}
-              onChange={(e) => setNameInput(e.target.value)}
-              placeholder="Restaurant Name (e.g. Sher E Punjab)"
-              onKeyDown={(e) => e.key === "Enter" && runAutoSearch()}
-              className="bg-zinc-950/80 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 transition-all"
-            />
-            <input
-              type="text"
-              value={locationInput}
-              onChange={(e) => setLocationInput(e.target.value)}
-              placeholder="Location (e.g. Golmuri)"
-              onKeyDown={(e) => e.key === "Enter" && runAutoSearch()}
-              className="bg-zinc-950/80 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 transition-all"
-            />
+          <div className="relative flex items-center justify-center my-2">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-zinc-800/80"></div>
+            </div>
+            <span className="relative bg-zinc-900 px-4 text-[11px] font-bold uppercase tracking-widest text-zinc-500">
+              Or Auto-Search by Restaurant Name and Location
+            </span>
+          </div>
+
+          {/* Auto Search Form */}
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-4 items-center">
+              <div className="flex items-center gap-2 bg-zinc-950/80 border border-zinc-800 rounded-xl p-1.5 text-xs">
+                <span className="text-zinc-400 font-medium px-2 uppercase text-[10px] tracking-wider">Platform:</span>
+                <button
+                  type="button"
+                  onClick={() => setSearchPlatform("zomato")}
+                  className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
+                    searchPlatform === "zomato"
+                      ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                      : "text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  Zomato
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSearchPlatform("swiggy")}
+                  className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
+                    searchPlatform === "swiggy"
+                      ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
+                      : "text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  Swiggy
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 bg-zinc-950/80 border border-zinc-800 rounded-xl p-1.5 text-xs">
+                <span className="text-zinc-400 font-medium px-2 uppercase text-[10px] tracking-wider">Mode:</span>
+                <button
+                  type="button"
+                  onClick={() => setSearchMode("delivery")}
+                  className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
+                    searchMode === "delivery"
+                      ? "bg-zinc-800 text-white border border-zinc-700"
+                      : "text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  Delivery
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSearchMode("dining")}
+                  className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
+                    searchMode === "dining"
+                      ? "bg-indigo-500/20 text-indigo-400 border border-indigo-500/30"
+                      : "text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  Dining
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <input
+                type="text"
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                placeholder="Restaurant Name (e.g. Sher E Punjab)"
+                onKeyDown={(e) => e.key === "Enter" && runAutoSearch()}
+                className="bg-zinc-950/80 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 transition-all"
+              />
+              <input
+                type="text"
+                value={locationInput}
+                onChange={(e) => setLocationInput(e.target.value)}
+                placeholder="Location (e.g. Golmuri)"
+                onKeyDown={(e) => e.key === "Enter" && runAutoSearch()}
+                className="bg-zinc-950/80 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 transition-all"
+              />
+              <button
+                onClick={runAutoSearch}
+                disabled={loading}
+                className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm border border-zinc-700 transition-all shadow-md active:scale-95 disabled:opacity-50"
+              >
+                {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                <span>Auto Search & Scan</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Demo Presets */}
+          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-zinc-800/60 text-xs">
+            <span className="text-zinc-500 font-semibold uppercase text-[10px] tracking-wider">Quick Presets:</span>
             <button
-              onClick={runAutoSearch}
-              disabled={loading}
-              className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm border border-zinc-700 transition-all shadow-md active:scale-95 disabled:opacity-50"
+              onClick={() => loadDemoPreset("Novelty Multicuisine", "Jamshedpur", "https://www.zomato.com/jamshedpur/novelty-multicuisine-restaurant-bistupur/order")}
+              className="px-3 py-1.5 rounded-lg bg-zinc-950/60 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 transition-all"
             >
-              {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-              <span>Auto Search & Scan</span>
+              Novelty Multicuisine (Jamshedpur)
+            </button>
+            <button
+              onClick={() => loadDemoPreset("Sher-E-Punjab", "Golmuri", "https://www.swiggy.com/restaurants/sher-e-punjab-golmuri-jamshedpur-385938")}
+              className="px-3 py-1.5 rounded-lg bg-zinc-950/60 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 transition-all"
+            >
+              Sher-E-Punjab (Swiggy)
             </button>
           </div>
-        </div>
+        </motion.div>
+      ) : (
+        /* Dual-Platform Comparison Form */
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-zinc-900/80 border border-emerald-500/30 rounded-2xl p-6 shadow-2xl backdrop-blur-md space-y-6 relative overflow-hidden"
+        >
+          <div className="flex items-center gap-2 text-sm font-bold text-emerald-400 uppercase tracking-wider">
+            <Layers className="w-4 h-4" />
+            <span>Dual-Platform Cross-Sync Audit (Zomato vs Swiggy)</span>
+          </div>
 
-        {/* Quick Demo Presets */}
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-zinc-800/60 text-xs">
-          <span className="text-zinc-500 font-semibold uppercase text-[10px] tracking-wider">Quick Presets:</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-rose-400 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                Zomato Restaurant URL Link
+              </label>
+              <input
+                type="text"
+                value={zomatoUrlInput}
+                onChange={(e) => setZomatoUrlInput(e.target.value)}
+                placeholder="Paste Zomato link..."
+                className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-4 py-3 text-xs text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-rose-500 transition-all font-mono"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-orange-400 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+                Swiggy Restaurant URL Link
+              </label>
+              <input
+                type="text"
+                value={swiggyUrlInput}
+                onChange={(e) => setSwiggyUrlInput(e.target.value)}
+                placeholder="Paste Swiggy link..."
+                className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-4 py-3 text-xs text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-orange-500 transition-all font-mono"
+              />
+            </div>
+          </div>
+
           <button
-            onClick={() => loadDemoPreset("Novelty Multicuisine", "Jamshedpur", "https://www.zomato.com/jamshedpur/novelty-multicuisine-restaurant-bistupur/order")}
-            className="px-3 py-1.5 rounded-lg bg-zinc-950/60 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 transition-all"
+            onClick={runDualComparison}
+            disabled={dualCompareLoading}
+            className="w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-rose-600 via-emerald-600 to-orange-600 hover:opacity-90 text-white font-bold text-sm transition-all shadow-xl active:scale-98 disabled:opacity-50"
           >
-            Novelty Multicuisine (Jamshedpur)
+            {dualCompareLoading ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : (
+              <BarChart3 className="w-4 h-4" />
+            )}
+            <span>Run Dual-Platform Hygiene Comparison (Zomato vs Swiggy)</span>
           </button>
-          <button
-            onClick={() => loadDemoPreset("Sher-E-Punjab", "Golmuri", "https://www.swiggy.com/restaurants/sher-e-punjab-golmuri-jamshedpur-385938")}
-            className="px-3 py-1.5 rounded-lg bg-zinc-950/60 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 transition-all"
-          >
-            Sher-E-Punjab (Swiggy)
-          </button>
-        </div>
-      </motion.div>
+        </motion.div>
+      )}
 
       {/* Error / Alert Bar */}
       {errorMsg && (
@@ -1434,6 +1616,230 @@ export default function HygieneCheckPage() {
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+        </motion.div>
+      )}
+
+      {/* DUAL-PLATFORM COMPARISON AUDIT RESULTS VIEW */}
+      {auditMode === "dual" && dualCompareData && !dualCompareLoading && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="space-y-6"
+        >
+          {/* Header Banner */}
+          <div className="bg-zinc-900/90 border border-emerald-500/30 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h2 className="text-2xl font-extrabold text-white tracking-tight">
+                  {dualCompareData.restaurant_name}
+                </h2>
+                <span className="px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                  ZOMATO VS SWIGGY CROSS-SYNC HYGIENE AUDIT
+                </span>
+              </div>
+              <p className="text-xs text-zinc-400">
+                Cross-Platform Menu Matching, Missing Items Telemetry, and Price Discrepancy Audit
+              </p>
+            </div>
+
+            <button
+              onClick={downloadDualPdfReport}
+              disabled={isDownloadingDualPdf}
+              className="flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs transition-all shadow-lg active:scale-95 disabled:opacity-50 shrink-0"
+            >
+              {isDownloadingDualPdf ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              <span>Download Executive Comparison PDF</span>
+            </button>
+          </div>
+
+          {/* Side-by-Side Platform Scorecards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Zomato Scorecard */}
+            <div className="bg-zinc-900/90 border-t-4 border-t-rose-500 border-zinc-800 rounded-2xl p-6 shadow-xl space-y-4">
+              <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
+                <span className="text-sm font-extrabold text-rose-400 uppercase tracking-wider flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                  ZOMATO AUDIT METRICS
+                </span>
+                <span className="text-xs font-mono text-zinc-400">{dualCompareData.zomatoScorecard?.total_dishes} Total Items</span>
+              </div>
+
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-black text-white">{dualCompareData.zomatoScorecard?.overall_score}</span>
+                <span className="text-sm text-zinc-500 font-bold">/ 100 Hygiene Score</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3">
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Photo Coverage</span>
+                  <p className="text-lg font-extrabold text-emerald-400 mt-0.5">{dualCompareData.zomatoScorecard?.photo_coverage_pct}%</p>
+                  <p className="text-[10px] text-zinc-500">{dualCompareData.zomatoScorecard?.dishes_with_photos} / {dualCompareData.zomatoScorecard?.total_dishes} photos</p>
+                </div>
+                <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3">
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Description Coverage</span>
+                  <p className="text-lg font-extrabold text-emerald-400 mt-0.5">{dualCompareData.zomatoScorecard?.desc_coverage_pct}%</p>
+                  <p className="text-[10px] text-zinc-500">{dualCompareData.zomatoScorecard?.dishes_with_descs} / {dualCompareData.zomatoScorecard?.total_dishes} descs</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Swiggy Scorecard */}
+            <div className="bg-zinc-900/90 border-t-4 border-t-orange-500 border-zinc-800 rounded-2xl p-6 shadow-xl space-y-4">
+              <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
+                <span className="text-sm font-extrabold text-orange-400 uppercase tracking-wider flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+                  SWIGGY AUDIT METRICS
+                </span>
+                <span className="text-xs font-mono text-zinc-400">{dualCompareData.swiggyScorecard?.total_dishes} Total Items</span>
+              </div>
+
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-black text-white">{dualCompareData.swiggyScorecard?.overall_score}</span>
+                <span className="text-sm text-zinc-500 font-bold">/ 100 Hygiene Score</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3">
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Photo Coverage</span>
+                  <p className="text-lg font-extrabold text-amber-400 mt-0.5">{dualCompareData.swiggyScorecard?.photo_coverage_pct}%</p>
+                  <p className="text-[10px] text-zinc-500">{dualCompareData.swiggyScorecard?.dishes_with_photos} / {dualCompareData.swiggyScorecard?.total_dishes} photos</p>
+                </div>
+                <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3">
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Description Coverage</span>
+                  <p className="text-lg font-extrabold text-amber-400 mt-0.5">{dualCompareData.swiggyScorecard?.desc_coverage_pct}%</p>
+                  <p className="text-[10px] text-zinc-500">{dualCompareData.swiggyScorecard?.dishes_with_descs} / {dualCompareData.swiggyScorecard?.total_dishes} descs</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Missing Items Table: Present on Zomato but MISSING on Swiggy */}
+          {dualCompareData.comparison?.missingOnSwiggy?.length > 0 && (
+            <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-4">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-400" />
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                    Dishes Present on Zomato but MISSING on Swiggy ({dualCompareData.comparison.missingOnSwiggy.length} Items)
+                  </h3>
+                </div>
+                <span className="text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2.5 py-0.5 rounded-full">
+                  Potential Revenue Leakage
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-left text-zinc-300">
+                  <thead className="bg-zinc-950 text-zinc-400 font-bold uppercase text-[10px] border-b border-zinc-800">
+                    <tr>
+                      <th className="p-3">Category</th>
+                      <th className="p-3">Dish Name</th>
+                      <th className="p-3">Zomato Price</th>
+                      <th className="p-3">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-800/60 font-medium">
+                    {dualCompareData.comparison.missingOnSwiggy.map((m: any, i: number) => (
+                      <tr key={i} className="hover:bg-zinc-800/40 transition-colors">
+                        <td className="p-3 text-zinc-400">{m.category}</td>
+                        <td className="p-3 font-bold text-white">{m.dish}</td>
+                        <td className="p-3 font-mono text-emerald-400">₹{m.zomatoPrice}</td>
+                        <td className="p-3">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                            Missing on Swiggy
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Missing Items Table: Present on Swiggy but MISSING on Zomato */}
+          {dualCompareData.comparison?.missingOnZomato?.length > 0 && (
+            <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-4">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-orange-400" />
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                    Dishes Present on Swiggy but MISSING on Zomato ({dualCompareData.comparison.missingOnZomato.length} Items)
+                  </h3>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-left text-zinc-300">
+                  <thead className="bg-zinc-950 text-zinc-400 font-bold uppercase text-[10px] border-b border-zinc-800">
+                    <tr>
+                      <th className="p-3">Category</th>
+                      <th className="p-3">Dish Name</th>
+                      <th className="p-3">Swiggy Price</th>
+                      <th className="p-3">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-800/60 font-medium">
+                    {dualCompareData.comparison.missingOnZomato.map((m: any, i: number) => (
+                      <tr key={i} className="hover:bg-zinc-800/40 transition-colors">
+                        <td className="p-3 text-zinc-400">{m.category}</td>
+                        <td className="p-3 font-bold text-white">{m.dish}</td>
+                        <td className="p-3 font-mono text-emerald-400">₹{m.swiggyPrice}</td>
+                        <td className="p-3">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                            Missing on Zomato
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Price Variance & Discrepancies Table */}
+          {dualCompareData.comparison?.priceVariances?.length > 0 && (
+            <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-4">
+              <div className="flex items-center gap-2">
+                <Tag className="w-4 h-4 text-emerald-400" />
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                  Cross-Platform Price Discrepancies
+                </h3>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-left text-zinc-300">
+                  <thead className="bg-zinc-950 text-zinc-400 font-bold uppercase text-[10px] border-b border-zinc-800">
+                    <tr>
+                      <th className="p-3">Dish Name</th>
+                      <th className="p-3">Zomato Price</th>
+                      <th className="p-3">Swiggy Price</th>
+                      <th className="p-3">Price Variance</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-800/60 font-medium">
+                    {dualCompareData.comparison.priceVariances.map((p: any, i: number) => (
+                      <tr key={i} className="hover:bg-zinc-800/40 transition-colors">
+                        <td className="p-3 font-bold text-white">{p.dish}</td>
+                        <td className="p-3 font-mono text-zinc-300">₹{p.zomatoPrice}</td>
+                        <td className="p-3 font-mono text-zinc-300">₹{p.swiggyPrice}</td>
+                        <td className="p-3 font-mono font-bold text-amber-400">
+                          ₹{Math.abs(p.diff)} variance
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
