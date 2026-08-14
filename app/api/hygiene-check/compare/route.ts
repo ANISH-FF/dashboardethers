@@ -68,8 +68,12 @@ async function ensureHygieneServerRunning() {
   }
 }
 
-function normalizeDishName(name: string): string {
-  return (name || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+// Smart dish title sanitization for cross-platform matching (stripping portion size brackets like [500ml], (Half), [6 Pcs], etc.)
+function sanitizeDishName(name: string): string {
+  if (!name) return "";
+  let clean = name.replace(/\[.*?\]|\(.*?\)/g, "");
+  clean = clean.replace(/\b(serves?\s*\d+|\d+\s*pcs?|\d+\s*pieces?|\d+\s*ml|\d+\s*gms?|half|full)\b/gi, "");
+  return clean.toLowerCase().replace(/[^a-z0-9]+/g, "");
 }
 
 function extractDishesFromAudit(auditData: any): Array<{ dish: string; category: string; hasPhoto: boolean; hasDesc: boolean }> {
@@ -230,21 +234,33 @@ export async function POST(req: NextRequest) {
     const sDishes = extractDishesFromAudit(swiggyAudit);
 
     const sDishMap = new Map<string, typeof sDishes[0]>();
-    sDishes.forEach(d => sDishMap.set(normalizeDishName(d.dish), d));
+    sDishes.forEach(d => {
+      const sKey = sanitizeDishName(d.dish);
+      if (sKey) sDishMap.set(sKey, d);
+    });
 
     const zDishMap = new Map<string, typeof zDishes[0]>();
-    zDishes.forEach(d => zDishMap.set(normalizeDishName(d.dish), d));
+    zDishes.forEach(d => {
+      const zKey = sanitizeDishName(d.dish);
+      if (zKey) zDishMap.set(zKey, d);
+    });
 
-    // Dynamic missing items
+    // Dynamic missing items (using smart sanitized matching)
     const missingOnSwiggy = zDishes
-      .filter(d => !sDishMap.has(normalizeDishName(d.dish)))
+      .filter(d => {
+        const key = sanitizeDishName(d.dish);
+        return !key || !sDishMap.has(key);
+      })
       .map(d => ({ dish: d.dish, category: d.category }));
 
     const missingOnZomato = sDishes
-      .filter(d => !zDishMap.has(normalizeDishName(d.dish)))
+      .filter(d => {
+        const key = sanitizeDishName(d.dish);
+        return !key || !zDishMap.has(key);
+      })
       .map(d => ({ dish: d.dish, category: d.category }));
 
-    // Dynamic Photo and Description Gaps
+    // Dynamic Photo and Description Gaps (Smart side-by-side comparison for dishes on both platforms)
     const photoGaps: Array<{ dish: string; category: string; hasOnZomato: boolean; hasOnSwiggy: boolean }> = [];
     const descGaps: Array<{ dish: string; category: string; hasOnZomato: boolean; hasOnSwiggy: boolean }> = [];
 
