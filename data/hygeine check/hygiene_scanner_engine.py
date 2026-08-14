@@ -710,9 +710,6 @@ class ZomatoHygieneAuditor:
                     if clean_hm and clean_hm not in offers and len(clean_hm) < 120:
                         offers.append(clean_hm)
 
-            dining_info['offers'] = offers
-                    
-            import json, re
             photos = []
             try:
                 urls = re.findall(r'https://b\.zmtcdn\.com/data/pictures/.*?\.jpg', json.dumps(res_data))
