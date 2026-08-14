@@ -137,6 +137,10 @@ export default function HygieneCheckPage() {
   const [diningReportText, setDiningReportText] = useState<string | null>(null);
   const [loadingDiningReport, setLoadingDiningReport] = useState(false);
 
+  // Dual Audit Breakdown Tab States
+  const [zomatoTab, setZomatoTab] = useState<"photos" | "descs">("photos");
+  const [swiggyTab, setSwiggyTab] = useState<"photos" | "descs">("photos");
+
   // Run Direct Audit by URL
   const runAuditByUrl = async (urlToAudit?: string) => {
     let targetUrl = urlToAudit || urlInput.trim();
@@ -1661,14 +1665,14 @@ export default function HygieneCheckPage() {
             </button>
           </div>
 
-          {/* Side-by-Side Platform Scorecards */}
+          {/* Side-by-Side Platform Scorecards & Single Hygiene Audits (TOP SECTION) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Zomato Scorecard */}
-            <div className="bg-zinc-900/90 border-t-4 border-t-rose-500 border-zinc-800 rounded-2xl p-6 shadow-xl space-y-4">
+            {/* Zomato Single Hygiene Audit Column */}
+            <div className="bg-zinc-900/90 border-t-4 border-t-rose-500 border-zinc-800 rounded-2xl p-6 shadow-xl space-y-5">
               <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
                 <span className="text-sm font-extrabold text-rose-400 uppercase tracking-wider flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
-                  ZOMATO AUDIT METRICS
+                  ZOMATO HYGIENE AUDIT
                 </span>
                 <span className="text-xs font-mono text-zinc-400">{dualCompareData.zomatoScorecard?.total_dishes} Total Items</span>
               </div>
@@ -1678,26 +1682,91 @@ export default function HygieneCheckPage() {
                 <span className="text-sm text-zinc-500 font-bold">/ 100 Hygiene Score</span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3">
                   <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Photo Coverage</span>
-                  <p className="text-lg font-extrabold text-emerald-400 mt-0.5">{dualCompareData.zomatoScorecard?.photo_coverage_pct}%</p>
+                  <p className="text-lg font-extrabold text-rose-400 mt-0.5">{dualCompareData.zomatoScorecard?.photo_coverage_pct}%</p>
                   <p className="text-[10px] text-zinc-500">{dualCompareData.zomatoScorecard?.dishes_with_photos} / {dualCompareData.zomatoScorecard?.total_dishes} photos</p>
                 </div>
                 <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3">
                   <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Description Coverage</span>
-                  <p className="text-lg font-extrabold text-emerald-400 mt-0.5">{dualCompareData.zomatoScorecard?.desc_coverage_pct}%</p>
+                  <p className="text-lg font-extrabold text-rose-400 mt-0.5">{dualCompareData.zomatoScorecard?.desc_coverage_pct}%</p>
                   <p className="text-[10px] text-zinc-500">{dualCompareData.zomatoScorecard?.dishes_with_descs} / {dualCompareData.zomatoScorecard?.total_dishes} descs</p>
+                </div>
+              </div>
+
+              {/* Zomato Missing Items List Breakdown */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+                  <span className="text-xs font-bold text-zinc-300">Zomato Audit Items Breakdown</span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setZomatoTab("photos")}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
+                        zomatoTab === "photos"
+                          ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                          : "bg-zinc-950 text-zinc-400 hover:bg-zinc-800"
+                      }`}
+                    >
+                      Missing Photos ({dualCompareData.zomatoMissingPhotos?.length || dualCompareData.zomatoScorecard?.dishes_missing_photos || 0})
+                    </button>
+                    <button
+                      onClick={() => setZomatoTab("descs")}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
+                        zomatoTab === "descs"
+                          ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                          : "bg-zinc-950 text-zinc-400 hover:bg-zinc-800"
+                      }`}
+                    >
+                      Missing Descs ({dualCompareData.zomatoMissingDescs?.length || dualCompareData.zomatoScorecard?.dishes_missing_descs || 0})
+                    </button>
+                  </div>
+                </div>
+
+                <div className="max-h-64 overflow-y-auto pr-1 space-y-1.5 scrollbar-thin scrollbar-thumb-zinc-800">
+                  {zomatoTab === "photos" ? (
+                    (dualCompareData.zomatoMissingPhotos || []).length === 0 ? (
+                      <p className="text-xs text-zinc-500 py-4 text-center">No missing photos on Zomato</p>
+                    ) : (
+                      (dualCompareData.zomatoMissingPhotos || []).map((item: any, idx: number) => (
+                        <div key={idx} className="bg-zinc-950/80 border border-zinc-800/80 rounded-xl p-2.5 flex justify-between items-center text-xs">
+                          <div>
+                            <span className="text-[9px] text-zinc-500 uppercase font-bold block">{item.category || "Menu"}</span>
+                            <span className="font-semibold text-zinc-200">{typeof item === "string" ? item : item.dish}</span>
+                          </div>
+                          <span className="text-[9px] font-extrabold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded">
+                            Photo Missing
+                          </span>
+                        </div>
+                      ))
+                    )
+                  ) : (
+                    (dualCompareData.zomatoMissingDescs || []).length === 0 ? (
+                      <p className="text-xs text-zinc-500 py-4 text-center">No missing descriptions on Zomato</p>
+                    ) : (
+                      (dualCompareData.zomatoMissingDescs || []).map((item: any, idx: number) => (
+                        <div key={idx} className="bg-zinc-950/80 border border-zinc-800/80 rounded-xl p-2.5 flex justify-between items-center text-xs">
+                          <div>
+                            <span className="text-[9px] text-zinc-500 uppercase font-bold block">{item.category || "Menu"}</span>
+                            <span className="font-semibold text-zinc-200">{typeof item === "string" ? item : item.dish}</span>
+                          </div>
+                          <span className="text-[9px] font-extrabold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded">
+                            Desc Missing
+                          </span>
+                        </div>
+                      ))
+                    )
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* Swiggy Scorecard */}
-            <div className="bg-zinc-900/90 border-t-4 border-t-orange-500 border-zinc-800 rounded-2xl p-6 shadow-xl space-y-4">
+            {/* Swiggy Single Hygiene Audit Column */}
+            <div className="bg-zinc-900/90 border-t-4 border-t-orange-500 border-zinc-800 rounded-2xl p-6 shadow-xl space-y-5">
               <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
                 <span className="text-sm font-extrabold text-orange-400 uppercase tracking-wider flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
-                  SWIGGY AUDIT METRICS
+                  SWIGGY HYGIENE AUDIT
                 </span>
                 <span className="text-xs font-mono text-zinc-400">{dualCompareData.swiggyScorecard?.total_dishes} Total Items</span>
               </div>
@@ -1707,101 +1776,293 @@ export default function HygieneCheckPage() {
                 <span className="text-sm text-zinc-500 font-bold">/ 100 Hygiene Score</span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3">
                   <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Photo Coverage</span>
-                  <p className="text-lg font-extrabold text-amber-400 mt-0.5">{dualCompareData.swiggyScorecard?.photo_coverage_pct}%</p>
+                  <p className="text-lg font-extrabold text-orange-400 mt-0.5">{dualCompareData.swiggyScorecard?.photo_coverage_pct}%</p>
                   <p className="text-[10px] text-zinc-500">{dualCompareData.swiggyScorecard?.dishes_with_photos} / {dualCompareData.swiggyScorecard?.total_dishes} photos</p>
                 </div>
                 <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3">
                   <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Description Coverage</span>
-                  <p className="text-lg font-extrabold text-amber-400 mt-0.5">{dualCompareData.swiggyScorecard?.desc_coverage_pct}%</p>
+                  <p className="text-lg font-extrabold text-orange-400 mt-0.5">{dualCompareData.swiggyScorecard?.desc_coverage_pct}%</p>
                   <p className="text-[10px] text-zinc-500">{dualCompareData.swiggyScorecard?.dishes_with_descs} / {dualCompareData.swiggyScorecard?.total_dishes} descs</p>
+                </div>
+              </div>
+
+              {/* Swiggy Missing Items List Breakdown */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+                  <span className="text-xs font-bold text-zinc-300">Swiggy Audit Items Breakdown</span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setSwiggyTab("photos")}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
+                        swiggyTab === "photos"
+                          ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
+                          : "bg-zinc-950 text-zinc-400 hover:bg-zinc-800"
+                      }`}
+                    >
+                      Missing Photos ({dualCompareData.swiggyMissingPhotos?.length || dualCompareData.swiggyScorecard?.dishes_missing_photos || 0})
+                    </button>
+                    <button
+                      onClick={() => setSwiggyTab("descs")}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
+                        swiggyTab === "descs"
+                          ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                          : "bg-zinc-950 text-zinc-400 hover:bg-zinc-800"
+                      }`}
+                    >
+                      Missing Descs ({dualCompareData.swiggyMissingDescs?.length || dualCompareData.swiggyScorecard?.dishes_missing_descs || 0})
+                    </button>
+                  </div>
+                </div>
+
+                <div className="max-h-64 overflow-y-auto pr-1 space-y-1.5 scrollbar-thin scrollbar-thumb-zinc-800">
+                  {swiggyTab === "photos" ? (
+                    (dualCompareData.swiggyMissingPhotos || []).length === 0 ? (
+                      <p className="text-xs text-zinc-500 py-4 text-center">No missing photos on Swiggy</p>
+                    ) : (
+                      (dualCompareData.swiggyMissingPhotos || []).map((item: any, idx: number) => (
+                        <div key={idx} className="bg-zinc-950/80 border border-zinc-800/80 rounded-xl p-2.5 flex justify-between items-center text-xs">
+                          <div>
+                            <span className="text-[9px] text-zinc-500 uppercase font-bold block">{item.category || "Menu"}</span>
+                            <span className="font-semibold text-zinc-200">{typeof item === "string" ? item : item.dish}</span>
+                          </div>
+                          <span className="text-[9px] font-extrabold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded">
+                            Photo Missing
+                          </span>
+                        </div>
+                      ))
+                    )
+                  ) : (
+                    (dualCompareData.swiggyMissingDescs || []).length === 0 ? (
+                      <p className="text-xs text-zinc-500 py-4 text-center">No missing descriptions on Swiggy</p>
+                    ) : (
+                      (dualCompareData.swiggyMissingDescs || []).map((item: any, idx: number) => (
+                        <div key={idx} className="bg-zinc-950/80 border border-zinc-800/80 rounded-xl p-2.5 flex justify-between items-center text-xs">
+                          <div>
+                            <span className="text-[9px] text-zinc-500 uppercase font-bold block">{item.category || "Menu"}</span>
+                            <span className="font-semibold text-zinc-200">{typeof item === "string" ? item : item.dish}</span>
+                          </div>
+                          <span className="text-[9px] font-extrabold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded">
+                            Desc Missing
+                          </span>
+                        </div>
+                      ))
+                    )
+                  )}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Missing Items Table: Present on Zomato but MISSING on Swiggy */}
-          {dualCompareData.comparison?.missingOnSwiggy?.length > 0 && (
-            <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-4">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-rose-400" />
-                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                    Dishes Present on Zomato but MISSING on Swiggy ({dualCompareData.comparison.missingOnSwiggy.length} Items)
-                  </h3>
-                </div>
-                <span className="text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2.5 py-0.5 rounded-full">
-                  Potential Revenue Leakage
-                </span>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs text-left text-zinc-300">
-                  <thead className="bg-zinc-950 text-zinc-400 font-bold uppercase text-[10px] border-b border-zinc-800">
-                    <tr>
-                      <th className="p-3">Category</th>
-                      <th className="p-3">Dish Name</th>
-                      <th className="p-3">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-800/60 font-medium">
-                    {dualCompareData.comparison.missingOnSwiggy.map((m: any, i: number) => (
-                      <tr key={i} className="hover:bg-zinc-800/40 transition-colors">
-                        <td className="p-3 text-zinc-400">{m.category}</td>
-                        <td className="p-3 font-bold text-white">{m.dish}</td>
-                        <td className="p-3">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                            Missing on Swiggy
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+          {/* SECOND PART: Cross-Platform Telemetry Comparison Tables (BOTTOM SECTION) */}
+          <div className="space-y-6 pt-4 border-t border-zinc-800/80">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
+                <Layers className="w-5 h-5 text-emerald-400" />
+                <span>Cross-Platform Telemetry & Side-by-Side Comparisons</span>
+              </h3>
             </div>
-          )}
 
-          {/* Missing Items Table: Present on Swiggy but MISSING on Zomato */}
-          {dualCompareData.comparison?.missingOnZomato?.length > 0 && (
-            <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-4">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-orange-400" />
-                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                    Dishes Present on Swiggy but MISSING on Zomato ({dualCompareData.comparison.missingOnZomato.length} Items)
-                  </h3>
+            {/* Photo Gaps Table (Dishes on both platforms with photo gaps) */}
+            {dualCompareData.comparison?.photoGaps?.length > 0 && (
+              <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-4">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <Camera className="w-4 h-4 text-emerald-400" />
+                    <h4 className="text-sm font-bold text-white uppercase tracking-wider">
+                      Photo Gaps: Side-by-Side Comparison ({dualCompareData.comparison.photoGaps.length} Items)
+                    </h4>
+                  </div>
+                  <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">
+                    Listed on Both Platforms
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left text-zinc-300">
+                    <thead className="bg-zinc-950 text-zinc-400 font-bold uppercase text-[10px] border-b border-zinc-800">
+                      <tr>
+                        <th className="p-3">Category</th>
+                        <th className="p-3">Dish Name</th>
+                        <th className="p-3 text-center">Zomato Photo</th>
+                        <th className="p-3 text-center">Swiggy Photo</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800/60 font-medium">
+                      {dualCompareData.comparison.photoGaps.map((item: any, i: number) => (
+                        <tr key={i} className="hover:bg-zinc-800/40 transition-colors">
+                          <td className="p-3 text-zinc-400">{item.category}</td>
+                          <td className="p-3 font-bold text-white">{item.dish}</td>
+                          <td className="p-3 text-center">
+                            {item.hasOnZomato ? (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                Photo Present
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                                Missing Photo
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-3 text-center">
+                            {item.hasOnSwiggy ? (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                Photo Present
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                                Missing Photo
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
+            )}
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs text-left text-zinc-300">
-                  <thead className="bg-zinc-950 text-zinc-400 font-bold uppercase text-[10px] border-b border-zinc-800">
-                    <tr>
-                      <th className="p-3">Category</th>
-                      <th className="p-3">Dish Name</th>
-                      <th className="p-3">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-800/60 font-medium">
-                    {dualCompareData.comparison.missingOnZomato.map((m: any, i: number) => (
-                      <tr key={i} className="hover:bg-zinc-800/40 transition-colors">
-                        <td className="p-3 text-zinc-400">{m.category}</td>
-                        <td className="p-3 font-bold text-white">{m.dish}</td>
-                        <td className="p-3">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                            Missing on Zomato
-                          </span>
-                        </td>
+            {/* Description Gaps Table */}
+            {dualCompareData.comparison?.descGaps?.length > 0 && (
+              <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-4">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-amber-400" />
+                    <h4 className="text-sm font-bold text-white uppercase tracking-wider">
+                      Description Gaps: Side-by-Side Comparison ({dualCompareData.comparison.descGaps.length} Items)
+                    </h4>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left text-zinc-300">
+                    <thead className="bg-zinc-950 text-zinc-400 font-bold uppercase text-[10px] border-b border-zinc-800">
+                      <tr>
+                        <th className="p-3">Category</th>
+                        <th className="p-3">Dish Name</th>
+                        <th className="p-3 text-center">Zomato Desc</th>
+                        <th className="p-3 text-center">Swiggy Desc</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800/60 font-medium">
+                      {dualCompareData.comparison.descGaps.map((item: any, i: number) => (
+                        <tr key={i} className="hover:bg-zinc-800/40 transition-colors">
+                          <td className="p-3 text-zinc-400">{item.category}</td>
+                          <td className="p-3 font-bold text-white">{item.dish}</td>
+                          <td className="p-3 text-center">
+                            {item.hasOnZomato ? (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                Desc Present
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                Missing Desc
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-3 text-center">
+                            {item.hasOnSwiggy ? (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                Desc Present
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                Missing Desc
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+
+            {/* Missing Items Table: Present on Zomato but MISSING on Swiggy */}
+            {dualCompareData.comparison?.missingOnSwiggy?.length > 0 && (
+              <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-4">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-rose-400" />
+                    <h4 className="text-sm font-bold text-white uppercase tracking-wider">
+                      Dishes Present on Zomato but MISSING on Swiggy ({dualCompareData.comparison.missingOnSwiggy.length} Items)
+                    </h4>
+                  </div>
+                  <span className="text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2.5 py-0.5 rounded-full">
+                    Potential Revenue Leakage
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left text-zinc-300">
+                    <thead className="bg-zinc-950 text-zinc-400 font-bold uppercase text-[10px] border-b border-zinc-800">
+                      <tr>
+                        <th className="p-3">Category</th>
+                        <th className="p-3">Dish Name</th>
+                        <th className="p-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800/60 font-medium">
+                      {dualCompareData.comparison.missingOnSwiggy.map((m: any, i: number) => (
+                        <tr key={i} className="hover:bg-zinc-800/40 transition-colors">
+                          <td className="p-3 text-zinc-400">{m.category}</td>
+                          <td className="p-3 font-bold text-white">{m.dish}</td>
+                          <td className="p-3">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                              Missing on Swiggy
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Missing Items Table: Present on Swiggy but MISSING on Zomato */}
+            {dualCompareData.comparison?.missingOnZomato?.length > 0 && (
+              <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-4">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-orange-400" />
+                    <h4 className="text-sm font-bold text-white uppercase tracking-wider">
+                      Dishes Present on Swiggy but MISSING on Zomato ({dualCompareData.comparison.missingOnZomato.length} Items)
+                    </h4>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left text-zinc-300">
+                    <thead className="bg-zinc-950 text-zinc-400 font-bold uppercase text-[10px] border-b border-zinc-800">
+                      <tr>
+                        <th className="p-3">Category</th>
+                        <th className="p-3">Dish Name</th>
+                        <th className="p-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800/60 font-medium">
+                      {dualCompareData.comparison.missingOnZomato.map((m: any, i: number) => (
+                        <tr key={i} className="hover:bg-zinc-800/40 transition-colors">
+                          <td className="p-3 text-zinc-400">{m.category}</td>
+                          <td className="p-3 font-bold text-white">{m.dish}</td>
+                          <td className="p-3">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                              Missing on Zomato
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
 
         </motion.div>
       )}

@@ -68,12 +68,56 @@ async function ensureHygieneServerRunning() {
   }
 }
 
-// Smart dish title sanitization for cross-platform matching (stripping portion size brackets like [500ml], (Half), [6 Pcs], etc.)
+// Smart dish title sanitization & phonetic normalization (laccha <-> lachha, chilly <-> chilli, biryani <-> biriyani, etc.)
 function sanitizeDishName(name: string): string {
   if (!name) return "";
-  let clean = name.replace(/\[.*?\]|\(.*?\)/g, "");
+  let clean = name.toLowerCase();
+  clean = clean.replace(/\[.*?\]|\(.*?\)/g, "");
+  clean = clean.replace(/^\d+\s*/g, ""); // strip leading quantity e.g., '1 '
   clean = clean.replace(/\b(serves?\s*\d+|\d+\s*pcs?|\d+\s*pieces?|\d+\s*ml|\d+\s*gms?|half|full)\b/gi, "");
-  return clean.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  
+  // Phonetic & spelling equivalence replacements
+  clean = clean.replace(/\blachha\b|\blacha\b/g, "laccha");
+  clean = clean.replace(/\bchilly\b|\bchili\b/g, "chilli");
+  clean = clean.replace(/\bbiriyani\b|\bbiryani\b/g, "biryani");
+  clean = clean.replace(/\btanduri\b|\btandoori\b/g, "tandoori");
+  clean = clean.replace(/\bomlelette\b|\bomlette\b|\bomelet\b/g, "omelette");
+  clean = clean.replace(/\bparautha\b|\bparatha\b/g, "paratha");
+  clean = clean.replace(/\bpicece\b|\bpiece\b|\bpieces\b/g, "pc");
+
+  return clean.replace(/[^a-z0-9]+/g, "");
+}
+
+// Levenshtein edit distance for close fuzzy matches (e.g. 1 character difference)
+function editDistance(s1: string, s2: string): number {
+  const m = s1.length;
+  const n = s2.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1];
+      } else {
+        dp[i][j] = 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+      }
+    }
+  }
+  return dp[m][n];
+}
+
+function isSimilarDishKey(k1: string, k2: string): boolean {
+  if (k1 === k2) return true;
+  if (k1.length >= 5 && k2.length >= 5) {
+    if (k1.includes(k2) || k2.includes(k1)) return true;
+    const maxLen = Math.max(k1.length, k2.length);
+    const dist = editDistance(k1, k2);
+    if (dist <= 2 && maxLen >= 8) return true;
+  }
+  return false;
 }
 
 function extractDishesFromAudit(auditData: any): Array<{ dish: string; category: string; hasPhoto: boolean; hasDesc: boolean }> {
@@ -92,6 +136,32 @@ function extractDishesFromAudit(auditData: any): Array<{ dish: string; category:
   (auditData.missing_descs_all || []).forEach((item: any) => {
     const dName = typeof item === "string" ? item : item?.dish;
     if (dName) missingDescsSet.add(dName.trim());
+  });
+
+  (auditData.missing_photos_all || []).forEach((item: any) => {
+    const dName = typeof item === "string" ? item : item?.dish;
+    const catName = typeof item === "string" ? "General" : (item?.category || "General");
+    if (dName && !map.has(dName)) {
+      map.set(dName, {
+        dish: dName,
+        category: catName,
+        hasPhoto: false,
+        hasDesc: !missingDescsSet.has(dName)
+      });
+    }
+  });
+
+  (auditData.missing_descs_all || []).forEach((item: any) => {
+    const dName = typeof item === "string" ? item : item?.dish;
+    const catName = typeof item === "string" ? "General" : (item?.category || "General");
+    if (dName && !map.has(dName)) {
+      map.set(dName, {
+        dish: dName,
+        category: catName,
+        hasPhoto: !missingPhotosSet.has(dName),
+        hasDesc: false
+      });
+    }
   });
 
   (auditData.categories || []).forEach((cat: any) => {
@@ -229,7 +299,7 @@ export async function POST(req: NextRequest) {
       desc_coverage_pct: Number(swiggyAudit.scorecard?.desc_coverage_pct ?? 83.3),
     };
 
-    // Extract items dynamically from audit outputs
+    // Extract items dynamically from audit outputs (includes dishes without photos/descriptions)
     const zDishes = extractDishesFromAudit(zomatoAudit);
     const sDishes = extractDishesFromAudit(swiggyAudit);
 
@@ -245,27 +315,44 @@ export async function POST(req: NextRequest) {
       if (zKey) zDishMap.set(zKey, d);
     });
 
-    // Dynamic missing items (using smart sanitized matching)
+    // Helper matcher function for exact + substring + phonetic fuzzy matching across platform menus
+    const findSwiggyMatch = (zDish: typeof zDishes[0]) => {
+      const zKey = sanitizeDishName(zDish.dish);
+      if (!zKey) return null;
+      for (const [sKey, sDish] of sDishMap.entries()) {
+        if (isSimilarDishKey(zKey, sKey)) {
+          return sDish;
+        }
+      }
+      return null;
+    };
+
+    const findZomatoMatch = (sDish: typeof sDishes[0]) => {
+      const sKey = sanitizeDishName(sDish.dish);
+      if (!sKey) return null;
+      for (const [zKey, zDish] of zDishMap.entries()) {
+        if (isSimilarDishKey(sKey, zKey)) {
+          return zDish;
+        }
+      }
+      return null;
+    };
+
+    // Dynamic missing items (using smart sanitized + substring + phonetic fuzzy matching)
     const missingOnSwiggy = zDishes
-      .filter(d => {
-        const key = sanitizeDishName(d.dish);
-        return !key || !sDishMap.has(key);
-      })
+      .filter(d => !findSwiggyMatch(d))
       .map(d => ({ dish: d.dish, category: d.category }));
 
     const missingOnZomato = sDishes
-      .filter(d => {
-        const key = sanitizeDishName(d.dish);
-        return !key || !zDishMap.has(key);
-      })
+      .filter(d => !findZomatoMatch(d))
       .map(d => ({ dish: d.dish, category: d.category }));
 
     // Dynamic Photo and Description Gaps (Smart side-by-side comparison for dishes on both platforms)
     const photoGaps: Array<{ dish: string; category: string; hasOnZomato: boolean; hasOnSwiggy: boolean }> = [];
     const descGaps: Array<{ dish: string; category: string; hasOnZomato: boolean; hasOnSwiggy: boolean }> = [];
 
-    zDishMap.forEach((zDish, normKey) => {
-      const sDish = sDishMap.get(normKey);
+    zDishes.forEach(zDish => {
+      const sDish = findSwiggyMatch(zDish);
       if (sDish) {
         if (zDish.hasPhoto !== sDish.hasPhoto) {
           photoGaps.push({
@@ -293,6 +380,10 @@ export async function POST(req: NextRequest) {
       swiggyUrl,
       zomatoScorecard,
       swiggyScorecard,
+      zomatoMissingPhotos: zomatoAudit.missing_photos_all || [],
+      zomatoMissingDescs: zomatoAudit.missing_descs_all || [],
+      swiggyMissingPhotos: swiggyAudit.missing_photos_all || [],
+      swiggyMissingDescs: swiggyAudit.missing_descs_all || [],
       comparison: {
         restaurant_name: restaurantName,
         zomatoScore: zomatoScorecard.overall_score,
