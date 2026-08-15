@@ -388,90 +388,102 @@ export interface AdsModelResult {
 
 // ── 1. DISCOUNTING CALCULATIONS ─────────────────────────────────────────────
 
+export interface PrimaryTierDefinition {
+  percentage: number;
+  uptoCap: number;
+  defaultMov: number;
+}
+
+export const STANDARD_PRIMARY_TIERS: PrimaryTierDefinition[] = [
+  { percentage: 60, uptoCap: 120, defaultMov: 199 },
+  { percentage: 50, uptoCap: 100, defaultMov: 199 },
+  { percentage: 40, uptoCap: 80, defaultMov: 199 },
+  { percentage: 30, uptoCap: 75, defaultMov: 199 },
+  { percentage: 20, uptoCap: 50, defaultMov: 199 },
+  { percentage: 10, uptoCap: 40, defaultMov: 199 },
+];
+
+export function calculatePrimaryCodeBurn(percentage: number, uptoCap: number, aov: number): number {
+  const safeAov = Math.max(1, aov);
+  const actualDiscount = Math.min(uptoCap, safeAov * (percentage / 100));
+  return Number(((actualDiscount / safeAov) * 100).toFixed(2));
+}
+
 export function getPrimaryDiscountCodes(aov: number = 699, targetBurnPct: number = 20): DiscountCodeRule[] {
   const safeAov = Math.max(1, aov);
-  const safeTarget = Math.max(5, Math.min(60, targetBurnPct || 20)) / 100;
-
-  // Calculate Primary Caps dynamically scaling with target burn rate & AOV
-  const cap60 = Math.round(safeAov * safeTarget * 1.1);
-  const cap50 = Math.round(safeAov * safeTarget * 1.0);
-  const cap40 = Math.round(safeAov * safeTarget * 0.9);
-  const cap30 = Math.round(safeAov * safeTarget * 0.85);
-  const cap20 = Math.round(safeAov * safeTarget * 0.7);
-  const cap10 = Math.round(safeAov * safeTarget * 0.5);
 
   return [
     {
       id: "p1",
-      name: `60% upto ₹${cap60} on ₹199`,
+      name: `60% upto ₹120 on ₹199`,
       userType: "New User",
       type: "primary",
       percentage: 60,
-      discountCap: cap60,
+      discountCap: 120,
       mov: 199,
-      burnPct: Number(((Math.min(cap60, safeAov * 0.6) / safeAov) * 100).toFixed(2)),
-      segmentTarget: "New User (Give more discount)",
-      formulaNote: "Max Discount / AOV * 100",
+      burnPct: calculatePrimaryCodeBurn(60, 120, safeAov),
+      segmentTarget: "New User (60% upto ₹120)",
+      formulaNote: "min(120, AOV * 0.60) / AOV * 100",
     },
     {
       id: "p2",
-      name: `50% upto ₹${cap50} on ₹199`,
+      name: `50% upto ₹100 on ₹199`,
       userType: "Repeat User",
       type: "primary",
       percentage: 50,
-      discountCap: cap50,
+      discountCap: 100,
       mov: 199,
-      burnPct: Number(((Math.min(cap50, safeAov * 0.5) / safeAov) * 100).toFixed(2)),
-      segmentTarget: "Repeat User (Less than New User)",
-      formulaNote: "Max Discount / AOV * 100",
+      burnPct: calculatePrimaryCodeBurn(50, 100, safeAov),
+      segmentTarget: "Repeat User (50% upto ₹100)",
+      formulaNote: "min(100, AOV * 0.50) / AOV * 100",
     },
     {
       id: "p3",
-      name: `40% upto ₹${cap40} on ₹199`,
+      name: `40% upto ₹80 on ₹199`,
       userType: "All User",
       type: "primary",
       percentage: 40,
-      discountCap: cap40,
+      discountCap: 80,
       mov: 199,
-      burnPct: Number(((Math.min(cap40, safeAov * 0.4) / safeAov) * 100).toFixed(2)),
-      segmentTarget: "All Users (Standard Base Code)",
-      formulaNote: "Max Discount / AOV * 100",
+      burnPct: calculatePrimaryCodeBurn(40, 80, safeAov),
+      segmentTarget: "All Users (40% upto ₹80)",
+      formulaNote: "min(80, AOV * 0.40) / AOV * 100",
     },
     {
       id: "p4",
-      name: `30% upto ₹${cap30} on ₹199`,
-      userType: "Radius 4km",
+      name: `30% upto ₹75 on ₹199`,
+      userType: "All User",
       type: "primary",
       percentage: 30,
-      discountCap: cap30,
+      discountCap: 75,
       mov: 199,
-      burnPct: Number(((Math.min(cap30, safeAov * 0.3) / safeAov) * 100).toFixed(2)),
-      segmentTarget: "4km Hyperlocal Radius",
-      formulaNote: "Max Discount / AOV * 100",
+      burnPct: calculatePrimaryCodeBurn(30, 75, safeAov),
+      segmentTarget: "30% upto ₹75 Code",
+      formulaNote: "min(75, AOV * 0.30) / AOV * 100",
     },
     {
       id: "p5",
-      name: `20% upto ₹${cap20} on ₹199`,
-      userType: "Tier 5",
+      name: `20% upto ₹50 on ₹199`,
+      userType: "All User",
       type: "primary",
       percentage: 20,
-      discountCap: cap20,
+      discountCap: 50,
       mov: 199,
-      burnPct: Number(((Math.min(cap20, safeAov * 0.2) / safeAov) * 100).toFixed(2)),
-      segmentTarget: "Low Burn Primary Code",
-      formulaNote: "Max Discount / AOV * 100",
+      burnPct: calculatePrimaryCodeBurn(20, 50, safeAov),
+      segmentTarget: "20% upto ₹50 Code",
+      formulaNote: "min(50, AOV * 0.20) / AOV * 100",
     },
     {
       id: "p6",
-      name: `10% upto ₹${cap10} on ₹199`,
-      userType: "Tier 6",
+      name: `10% upto ₹40 on ₹199`,
+      userType: "All User",
       type: "primary",
       percentage: 10,
-      discountCap: cap10,
+      discountCap: 40,
       mov: 199,
-      burnPct: Number(((Math.min(cap10, safeAov * 0.1) / safeAov) * 100).toFixed(2)),
-      segmentTarget: "Minimal Burn Code",
-      formulaNote: "Max Discount / AOV * 100",
+      burnPct: calculatePrimaryCodeBurn(10, 40, safeAov),
+      segmentTarget: "10% upto ₹40 Code",
+      formulaNote: "min(40, AOV * 0.10) / AOV * 100",
     },
   ];
 }
@@ -497,16 +509,20 @@ export function getStepperDiscountCodes(aov: number = 699, targetBurnPct: number
     return closest;
   };
 
-  const mov100_la = calcMov(100, 0.85); // Slightly lower MOV for Less Affluent (LA) segment
-  const mov100_mm = calcMov(100, 1.0);  // Standard MOV for Middle Market (MM)
-  const mov125    = calcMov(125, 1.0);
-  const mov150    = calcMov(150, 1.0);
-  const mov175    = calcMov(175, 1.0);
-  const mov200    = calcMov(200, 1.0);
+  const mov100_la = calcMov(100, 0.85);
+  const mov100_mm = calcMov(100, 1.0);
+  const mov125_la = calcMov(125, 0.85);
+  const mov125_mm = calcMov(125, 1.0);
+  const mov150_la = calcMov(150, 0.85);
+  const mov150_mm = calcMov(150, 1.0);
+  const mov175_la = calcMov(175, 0.85);
+  const mov175_mm = calcMov(175, 1.0);
+  const mov200_la = calcMov(200, 0.85);
+  const mov200_mm = calcMov(200, 1.0);
 
   return [
     {
-      id: "s1",
+      id: "s1_la",
       name: `Flat ₹100 off on ₹${mov100_la}`,
       userType: "All User",
       type: "stepper",
@@ -517,7 +533,7 @@ export function getStepperDiscountCodes(aov: number = 699, targetBurnPct: number
       formulaNote: `Flat Discount / MOV * 100 = 100 / ${mov100_la} * 100`,
     },
     {
-      id: "s2",
+      id: "s1_mm",
       name: `Flat ₹100 off on ₹${mov100_mm}`,
       userType: "All User",
       type: "stepper",
@@ -528,48 +544,92 @@ export function getStepperDiscountCodes(aov: number = 699, targetBurnPct: number
       formulaNote: `Flat Discount / MOV * 100 = 100 / ${mov100_mm} * 100`,
     },
     {
-      id: "s3",
-      name: `Flat ₹125 off on ₹${mov125}`,
+      id: "s2_la",
+      name: `Flat ₹125 off on ₹${mov125_la}`,
       userType: "All User",
       type: "stepper",
       discountCap: 125,
-      mov: mov125,
-      burnPct: Number(((125 / mov125) * 100).toFixed(2)),
-      segmentTarget: "Upper Market (UM) - Tier 1",
-      formulaNote: `Flat Discount / MOV * 100 = 125 / ${mov125} * 100`,
+      mov: mov125_la,
+      burnPct: Number(((125 / mov125_la) * 100).toFixed(2)),
+      segmentTarget: "Less Affluent (LA) - Flat 125",
+      formulaNote: `Flat Discount / MOV * 100 = 125 / ${mov125_la} * 100`,
     },
     {
-      id: "s4",
-      name: `Flat ₹150 off on ₹${mov150}`,
+      id: "s2_mm",
+      name: `Flat ₹125 off on ₹${mov125_mm}`,
+      userType: "All User",
+      type: "stepper",
+      discountCap: 125,
+      mov: mov125_mm,
+      burnPct: Number(((125 / mov125_mm) * 100).toFixed(2)),
+      segmentTarget: "Middle Market (MM) - Flat 125",
+      formulaNote: `Flat Discount / MOV * 100 = 125 / ${mov125_mm} * 100`,
+    },
+    {
+      id: "s3_la",
+      name: `Flat ₹150 off on ₹${mov150_la}`,
       userType: "All User",
       type: "stepper",
       discountCap: 150,
-      mov: mov150,
-      burnPct: Number(((150 / mov150) * 100).toFixed(2)),
-      segmentTarget: "Upper Market (UM) - Tier 2",
-      formulaNote: `Flat Discount / MOV * 100 = 150 / ${mov150} * 100`,
+      mov: mov150_la,
+      burnPct: Number(((150 / mov150_la) * 100).toFixed(2)),
+      segmentTarget: "Upper Market (UM) - Flat 150 LA",
+      formulaNote: `Flat Discount / MOV * 100 = 150 / ${mov150_la} * 100`,
     },
     {
-      id: "s5",
-      name: `Flat ₹175 off on ₹${mov175}`,
+      id: "s3_mm",
+      name: `Flat ₹150 off on ₹${mov150_mm}`,
+      userType: "All User",
+      type: "stepper",
+      discountCap: 150,
+      mov: mov150_mm,
+      burnPct: Number(((150 / mov150_mm) * 100).toFixed(2)),
+      segmentTarget: "Upper Market (UM) - Flat 150 MM",
+      formulaNote: `Flat Discount / MOV * 100 = 150 / ${mov150_mm} * 100`,
+    },
+    {
+      id: "s4_la",
+      name: `Flat ₹175 off on ₹${mov175_la}`,
       userType: "All User",
       type: "stepper",
       discountCap: 175,
-      mov: mov175,
-      burnPct: Number(((175 / mov175) * 100).toFixed(2)),
-      segmentTarget: "Upper Market (UM) - Tier 3",
-      formulaNote: `Flat Discount / MOV * 100 = 175 / ${mov175} * 100`,
+      mov: mov175_la,
+      burnPct: Number(((175 / mov175_la) * 100).toFixed(2)),
+      segmentTarget: "Upper Market (UM) - Flat 175 LA",
+      formulaNote: `Flat Discount / MOV * 100 = 175 / ${mov175_la} * 100`,
     },
     {
-      id: "s6",
-      name: `Flat ₹200 off on ₹${mov200}`,
+      id: "s4_mm",
+      name: `Flat ₹175 off on ₹${mov175_mm}`,
+      userType: "All User",
+      type: "stepper",
+      discountCap: 175,
+      mov: mov175_mm,
+      burnPct: Number(((175 / mov175_mm) * 100).toFixed(2)),
+      segmentTarget: "Upper Market (UM) - Flat 175 MM",
+      formulaNote: `Flat Discount / MOV * 100 = 175 / ${mov175_mm} * 100`,
+    },
+    {
+      id: "s5_la",
+      name: `Flat ₹200 off on ₹${mov200_la}`,
       userType: "All User",
       type: "stepper",
       discountCap: 200,
-      mov: mov200,
-      burnPct: Number(((200 / mov200) * 100).toFixed(2)),
-      segmentTarget: "Upper Market (UM) - Tier 4",
-      formulaNote: `Flat Discount / MOV * 100 = 200 / ${mov200} * 100`,
+      mov: mov200_la,
+      burnPct: Number(((200 / mov200_la) * 100).toFixed(2)),
+      segmentTarget: "Upper Market (UM) - Flat 200 LA",
+      formulaNote: `Flat Discount / MOV * 100 = 200 / ${mov200_la} * 100`,
+    },
+    {
+      id: "s5_mm",
+      name: `Flat ₹200 off on ₹${mov200_mm}`,
+      userType: "All User",
+      type: "stepper",
+      discountCap: 200,
+      mov: mov200_mm,
+      burnPct: Number(((200 / mov200_mm) * 100).toFixed(2)),
+      segmentTarget: "Upper Market (UM) - Flat 200 MM",
+      formulaNote: `Flat Discount / MOV * 100 = 200 / ${mov200_mm} * 100`,
     },
   ];
 }
@@ -647,13 +707,16 @@ export function computeEmployeeDiscountAutomation(
     rawStepperCodes = [allStepper[2]]; // default fallback
   }
 
-  // Deduplicate identical code names so "Flat ₹100 off on ₹299" doesn't repeat twice
+  // Deduplicate identical code names so identical MOVs don't repeat
   let selectedStepperCodes = rawStepperCodes.filter((c, idx, self) =>
     idx === self.findIndex((t) => t.name === c.name)
   );
 
   if (stepperSegregation === "au") {
-    selectedStepperCodes = selectedStepperCodes.map((sc) => ({
+    // In AU (All User) mode, keep ONLY 1 code per discountCap (standard MM code)
+    selectedStepperCodes = selectedStepperCodes.filter((c, idx, self) =>
+      idx === self.findIndex((t) => t.discountCap === c.discountCap && t.id.endsWith("_mm"))
+    ).map((sc) => ({
       ...sc,
       segmentTarget: "All User (AU) - Universal Stepper Code",
     }));
@@ -709,11 +772,11 @@ export function calculateAdsModelM1(inputs: AdsModelInputs): AdsModelResult {
 
   return buildAdsResult({
     modelName: "Model M1 (Grow Maxx CV)",
-    adsXName: "Ads through Commissionable Value",
+    adsXName: "Ads through Previous CV",
     adsXAmount: totalAdsAmount,
-    adsXFormula: `Projected CV (₹${safeSales.toLocaleString("en-IN")}) × ${(safeRateX * 100).toFixed(0)}%`,
+    adsXFormula: `Previous CV (₹${safeSales.toLocaleString("en-IN")}) × ${(safeRateX * 100).toFixed(0)}%`,
     totalAdsAmount,
-    totalAdsFormula: `CV × Rate = ₹${safeSales.toLocaleString("en-IN")} × ${(safeRateX * 100).toFixed(0)}%`,
+    totalAdsFormula: `Previous CV × Rate = ₹${safeSales.toLocaleString("en-IN")} × ${(safeRateX * 100).toFixed(0)}%`,
     baseAdsAmount: Math.max(0, baseAdsAmount),
     growMaxxAdsAmount: totalAdsAmount,
     selectedPlacements,
@@ -755,7 +818,7 @@ export function calculateAdsModelM2(inputs: AdsModelInputs): AdsModelResult {
 }
 
 export function calculateAdsModelM3(inputs: AdsModelInputs): AdsModelResult {
-  const { subtotal, rateX, baseAdsAmount, selectedPlacements } = inputs;
+  const { subtotal, rateX, selectedPlacements } = inputs;
   const safeRateX = Math.abs(rateX);
   const safeSubtotal = Math.max(0, subtotal);
 
@@ -763,12 +826,12 @@ export function calculateAdsModelM3(inputs: AdsModelInputs): AdsModelResult {
 
   return buildAdsResult({
     modelName: "Model M3 (Subtotal Grow Maxx)",
-    adsXName: "Ads through Subtotal",
+    adsXName: "Ads through Total Sales",
     adsXAmount: totalAdsAmount,
-    adsXFormula: `Subtotal Sales (₹${safeSubtotal.toLocaleString("en-IN")}) × ${(safeRateX * 100).toFixed(0)}%`,
+    adsXFormula: `Total Sales (₹${safeSubtotal.toLocaleString("en-IN")}) × ${(safeRateX * 100).toFixed(0)}%`,
     totalAdsAmount,
-    totalAdsFormula: `Subtotal × Rate = ₹${safeSubtotal.toLocaleString("en-IN")} × ${(safeRateX * 100).toFixed(0)}%`,
-    baseAdsAmount: Math.max(0, baseAdsAmount),
+    totalAdsFormula: `Total Sales × Rate = ₹${safeSubtotal.toLocaleString("en-IN")} × ${(safeRateX * 100).toFixed(0)}%`,
+    baseAdsAmount: 0,
     growMaxxAdsAmount: totalAdsAmount,
     selectedPlacements,
   });
@@ -785,9 +848,9 @@ export function calculateAdsModelSGM(inputs: AdsModelInputs): AdsModelResult {
     modelName: "Model SGM (Singular Grow Maxx)",
     adsXName: "Singular Grow Maxx Ads",
     adsXAmount: totalAdsAmount,
-    adsXFormula: `Commissionable Value (₹${safeSales.toLocaleString("en-IN")}) × ${(safeRateX * 100).toFixed(0)}%`,
+    adsXFormula: `Total Sales (₹${safeSales.toLocaleString("en-IN")}) × ${(safeRateX * 100).toFixed(0)}%`,
     totalAdsAmount,
-    totalAdsFormula: `CV × Rate = ₹${safeSales.toLocaleString("en-IN")} × ${(safeRateX * 100).toFixed(0)}%`,
+    totalAdsFormula: `Total Sales × Rate = ₹${safeSales.toLocaleString("en-IN")} × ${(safeRateX * 100).toFixed(0)}%`,
     baseAdsAmount: Math.max(0, baseAdsAmount),
     growMaxxAdsAmount: totalAdsAmount,
     selectedPlacements,

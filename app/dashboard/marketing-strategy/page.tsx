@@ -29,6 +29,8 @@ import {
 import * as XLSX from "xlsx";
 import { useBrand } from "@/components/BrandContext";
 import {
+  STANDARD_PRIMARY_TIERS,
+  calculatePrimaryCodeBurn,
   getPrimaryDiscountCodes,
   getStepperDiscountCodes,
   getPartyDiscountCodes,
@@ -78,6 +80,104 @@ export default function MarketingStrategyPage() {
   const [stepperSegregation, setStepperSegregation] = useState<"la_mm_um" | "au">("la_mm_um");
   const [flatOffChoices, setFlatOffChoices] = useState<number[]>([125]);
   const [partyCodesEnabled, setPartyCodesEnabled] = useState<boolean>(true);
+
+  // Interactive User Segment Discount Selection State
+  const [newUserEnabled, setNewUserEnabled] = useState<boolean>(true);
+  const [selectedNewUserPct, setSelectedNewUserPct] = useState<number>(60);
+  const [selectedNewUserMov, setSelectedNewUserMov] = useState<number>(199);
+
+  const [repeatUserEnabled, setRepeatUserEnabled] = useState<boolean>(false);
+  const [selectedRepeatUserPct, setSelectedRepeatUserPct] = useState<number>(40);
+  const [selectedRepeatUserMov, setSelectedRepeatUserMov] = useState<number>(199);
+
+  const [allUserEnabled, setAllUserEnabled] = useState<boolean>(false);
+  const [selectedAllUserPct, setSelectedAllUserPct] = useState<number>(30);
+  const [selectedAllUserMov, setSelectedAllUserMov] = useState<number>(199);
+
+  const newUserBurn = useMemo(() => {
+    const tier = STANDARD_PRIMARY_TIERS.find((t) => t.percentage === selectedNewUserPct) || { uptoCap: 120 };
+    return calculatePrimaryCodeBurn(selectedNewUserPct, tier.uptoCap, aov);
+  }, [selectedNewUserPct, aov]);
+
+  const repeatUserBurn = useMemo(() => {
+    const tier = STANDARD_PRIMARY_TIERS.find((t) => t.percentage === selectedRepeatUserPct) || { uptoCap: 100 };
+    return calculatePrimaryCodeBurn(selectedRepeatUserPct, tier.uptoCap, aov);
+  }, [selectedRepeatUserPct, aov]);
+
+  const allUserBurn = useMemo(() => {
+    const tier = STANDARD_PRIMARY_TIERS.find((t) => t.percentage === selectedAllUserPct) || { uptoCap: 75 };
+    return calculatePrimaryCodeBurn(selectedAllUserPct, tier.uptoCap, aov);
+  }, [selectedAllUserPct, aov]);
+
+  // Interactive Party Code Selection State
+  const [selectedPartyPct, setSelectedPartyPct] = useState<number>(10);
+  const [selectedPartyCap, setSelectedPartyCap] = useState<number>(100);
+  const [selectedPartyMov, setSelectedPartyMov] = useState<number>(999);
+  // Zomato Ads Placement Target Segment State
+  const [pspTargetSegment, setPspTargetSegment] = useState<"auto" | "la" | "mm" | "um" | "all">("auto");
+  const [spTargetSegment, setSpTargetSegment] = useState<"auto" | "la" | "mm" | "um" | "all">("auto");
+
+  const laOrders = useMemo(() => Math.round(totalOrders * (laPct / 100)), [totalOrders, laPct]);
+  const mmOrders = useMemo(() => Math.round(totalOrders * (mmPct / 100)), [totalOrders, mmPct]);
+  const umOrders = useMemo(() => Math.round(totalOrders * (umPct / 100)), [totalOrders, umPct]);
+
+  // Determine highest volume segment automatically
+  const highestSegment = useMemo(() => {
+    const isSwiggy = platform === "swiggy";
+    if (laOrders >= mmOrders && laOrders >= umOrders) {
+      return {
+        code: isSwiggy ? "P1" : "LA",
+        name: isSwiggy ? "P1 (Less Affluent)" : "Less Affluent (LA)",
+        orders: laOrders,
+      };
+    }
+    if (umOrders >= laOrders && umOrders >= mmOrders) {
+      return {
+        code: isSwiggy ? "P3" : "UM",
+        name: isSwiggy ? "P3 (Upper Market)" : "Upper Market (UM)",
+        orders: umOrders,
+      };
+    }
+    return {
+      code: isSwiggy ? "P2" : "MM",
+      name: isSwiggy ? "P2 (Middle Market)" : "Middle Market (MM)",
+      orders: mmOrders,
+    };
+  }, [laOrders, mmOrders, umOrders, platform]);
+
+  // Auto-adjust default Party MOV & Discount based on AOV
+  useEffect(() => {
+    if (aov <= 600) {
+      setSelectedPartyMov(999);
+      setSelectedPartyPct(10);
+      setSelectedPartyCap(100);
+    } else if (aov <= 900) {
+      setSelectedPartyMov(1499);
+      setSelectedPartyPct(15);
+      setSelectedPartyCap(150);
+    } else {
+      setSelectedPartyMov(1999);
+      setSelectedPartyPct(20);
+      setSelectedPartyCap(250);
+    }
+  }, [aov]);
+
+  const partyBurnRate = useMemo(() => {
+    if (!partyCodesEnabled) return 0;
+    const safeAov = Math.max(1, aov);
+    const actualDiscount = Math.min(selectedPartyCap, safeAov * (selectedPartyPct / 100));
+    return Number(((actualDiscount / safeAov) * 100).toFixed(2));
+  }, [partyCodesEnabled, selectedPartyPct, selectedPartyCap, aov]);
+
+  const livePrimaryAvgBurn = useMemo(() => {
+    let sum = 0;
+    let count = 0;
+    if (newUserEnabled) { sum += newUserBurn; count++; }
+    if (repeatUserEnabled) { sum += repeatUserBurn; count++; }
+    if (allUserEnabled) { sum += allUserBurn; count++; }
+    if (count === 0) return 0;
+    return Number((sum / count).toFixed(2));
+  }, [newUserEnabled, repeatUserEnabled, allUserEnabled, newUserBurn, repeatUserBurn, allUserBurn]);
 
   // Dineout Discounts State & Handlers
   const [dineoutConfig, setDineoutConfig] = useState<DineoutStrategyConfig>(getDefaultDineoutConfig());
@@ -1288,7 +1388,9 @@ export default function MarketingStrategyPage() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="flex items-center justify-between p-2.5 rounded-lg bg-paper-dark border border-line">
-                      <span className="text-xs font-medium text-ink/70">LA (Less Affluent):</span>
+                      <span className="text-xs font-medium text-ink/70">
+                        {platform === "swiggy" ? "P1 (Less Affluent):" : "LA (Less Affluent):"}
+                      </span>
                       <div className="flex items-center gap-1.5">
                         <input
                           type="number"
@@ -1301,7 +1403,9 @@ export default function MarketingStrategyPage() {
                     </div>
 
                     <div className="flex items-center justify-between p-2.5 rounded-lg bg-paper-dark border border-line">
-                      <span className="text-xs font-medium text-ink/70">MM (Middle Market):</span>
+                      <span className="text-xs font-medium text-ink/70">
+                        {platform === "swiggy" ? "P2 (Middle Market):" : "MM (Middle Market):"}
+                      </span>
                       <div className="flex items-center gap-1.5">
                         <input
                           type="number"
@@ -1314,7 +1418,9 @@ export default function MarketingStrategyPage() {
                     </div>
 
                     <div className="flex items-center justify-between p-2.5 rounded-lg bg-paper-dark border border-line">
-                      <span className="text-xs font-medium text-ink/70">UM (Upper Market):</span>
+                      <span className="text-xs font-medium text-ink/70">
+                        {platform === "swiggy" ? "P3 (Upper Market):" : "UM (Upper Market):"}
+                      </span>
                       <div className="flex items-center gap-1.5">
                         <input
                           type="number"
@@ -1338,96 +1444,157 @@ export default function MarketingStrategyPage() {
                         1. Primary Codes Selection
                       </span>
                       <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                        {primaryOption.startsWith("single") ? "1 Code Active" : "2 Codes Active"}
+                        {((newUserEnabled ? 1 : 0) + (repeatUserEnabled ? 1 : 0) + (allUserEnabled ? 1 : 0))} Code(s) Active
                       </span>
                     </div>
-                    <p className="text-[11px] text-ink/50">Deploy a single primary code or a dual code set:</p>
+                    <p className="text-[11px] text-ink/50">Select user segment discounts & MOV:</p>
                     
-                    {/* Single Code Options (1 Code) */}
-                    <div className="space-y-1.5 pt-1">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-ink/40 block">
-                        Single Primary Code (1 Code)
-                      </span>
-                      <div className="grid grid-cols-2 gap-1.5 font-mono text-[11px]">
-                        <button
-                          type="button"
-                          onClick={() => setPrimaryOption("single_new")}
-                          className={`p-2 rounded-lg border text-left transition-all ${
-                            primaryOption === "single_new"
-                              ? "bg-blue-500/20 border-blue-500 text-blue-300 font-bold"
-                              : "bg-paper-dark border-line text-ink/60 hover:text-ink"
-                          }`}
-                        >
-                          60% (New User)
-                        </button>
+                    <div className="space-y-2 pt-1 font-mono text-[11px]">
+                      {/* New User Row */}
+                      <div className={`p-2 rounded-lg border transition-all space-y-1.5 ${
+                        newUserEnabled ? "bg-emerald-500/10 border-emerald-500/40" : "bg-paper-dark/50 border-line/50 opacity-60"
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <label className="flex items-center gap-1.5 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={newUserEnabled}
+                              onChange={(e) => setNewUserEnabled(e.target.checked)}
+                              className="rounded border-line bg-paper text-emerald-500 focus:ring-0 w-3.5 h-3.5"
+                            />
+                            <span className="text-xs font-bold text-ink">New User</span>
+                          </label>
+                          <span className="text-[10px] text-emerald-400 font-bold">{newUserEnabled ? `${newUserBurn}% burn` : "Off"}</span>
+                        </div>
 
-                        <button
-                          type="button"
-                          onClick={() => setPrimaryOption("single_repeat")}
-                          className={`p-2 rounded-lg border text-left transition-all ${
-                            primaryOption === "single_repeat"
-                              ? "bg-blue-500/20 border-blue-500 text-blue-300 font-bold"
-                              : "bg-paper-dark border-line text-ink/60 hover:text-ink"
-                          }`}
-                        >
-                          50% (Repeat User)
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setPrimaryOption("single_all")}
-                          className={`p-2 rounded-lg border text-left transition-all ${
-                            primaryOption === "single_all"
-                              ? "bg-blue-500/20 border-blue-500 text-blue-300 font-bold"
-                              : "bg-paper-dark border-line text-ink/60 hover:text-ink"
-                          }`}
-                        >
-                          40% (All User)
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setPrimaryOption("single_radius")}
-                          className={`p-2 rounded-lg border text-left transition-all ${
-                            primaryOption === "single_radius"
-                              ? "bg-blue-500/20 border-blue-500 text-blue-300 font-bold"
-                              : "bg-paper-dark border-line text-ink/60 hover:text-ink"
-                          }`}
-                        >
-                          30% (4km Radius)
-                        </button>
+                        {newUserEnabled && (
+                          <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+                            <div>
+                              <span className="text-[9px] uppercase text-ink/40 block mb-0.5">Discount %</span>
+                              <select
+                                value={selectedNewUserPct}
+                                onChange={(e) => setSelectedNewUserPct(Number(e.target.value))}
+                                className="w-full bg-paper-dark border border-line rounded px-1.5 py-1 text-xs font-bold text-emerald-400 focus:outline-none"
+                              >
+                                {STANDARD_PRIMARY_TIERS.map((t) => (
+                                  <option key={t.percentage} value={t.percentage}>
+                                    {t.percentage}% (Upto ₹{t.uptoCap})
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <span className="text-[9px] uppercase text-ink/40 block mb-0.5">MOV</span>
+                              <select
+                                value={selectedNewUserMov}
+                                onChange={(e) => setSelectedNewUserMov(Number(e.target.value))}
+                                className="w-full bg-paper-dark border border-line rounded px-1.5 py-1 text-xs font-bold text-amber-400 focus:outline-none"
+                              >
+                                {[179, 199, 249].map((m) => (
+                                  <option key={m} value={m}>₹{m}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
 
-                    {/* Dual Codes Options (2 Codes) */}
-                    <div className="space-y-1.5 pt-2 border-t border-line/60">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-ink/40 block">
-                        Dual Primary Codes Set (2 Codes)
-                      </span>
-                      <div className="space-y-1.5">
-                        <button
-                          type="button"
-                          onClick={() => setPrimaryOption("option1")}
-                          className={`w-full p-2.5 rounded-lg border text-left text-xs transition-all ${
-                            primaryOption === "option1"
-                              ? "bg-blue-500/20 border-blue-500 text-blue-300 font-bold"
-                              : "bg-paper-dark border-line text-ink/60 hover:text-ink"
-                          }`}
-                        >
-                          <div>Option 1: All User (40%) + New User (60%)</div>
-                        </button>
+                      {/* Repeat User Row */}
+                      <div className={`p-2 rounded-lg border transition-all space-y-1.5 ${
+                        repeatUserEnabled ? "bg-blue-500/10 border-blue-500/40" : "bg-paper-dark/50 border-line/50 opacity-60"
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <label className="flex items-center gap-1.5 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={repeatUserEnabled}
+                              onChange={(e) => setRepeatUserEnabled(e.target.checked)}
+                              className="rounded border-line bg-paper text-blue-500 focus:ring-0 w-3.5 h-3.5"
+                            />
+                            <span className="text-xs font-bold text-ink">Repeat User</span>
+                          </label>
+                          <span className="text-[10px] text-blue-400 font-bold">{repeatUserEnabled ? `${repeatUserBurn}% burn` : "Off"}</span>
+                        </div>
 
-                        <button
-                          type="button"
-                          onClick={() => setPrimaryOption("option2")}
-                          className={`w-full p-2.5 rounded-lg border text-left text-xs transition-all ${
-                            primaryOption === "option2"
-                              ? "bg-blue-500/20 border-blue-500 text-blue-300 font-bold"
-                              : "bg-paper-dark border-line text-ink/60 hover:text-ink"
-                          }`}
-                        >
-                          <div>Option 2: New User (60%) + Repeat User (50%)</div>
-                        </button>
+                        {repeatUserEnabled && (
+                          <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+                            <div>
+                              <span className="text-[9px] uppercase text-ink/40 block mb-0.5">Discount %</span>
+                              <select
+                                value={selectedRepeatUserPct}
+                                onChange={(e) => setSelectedRepeatUserPct(Number(e.target.value))}
+                                className="w-full bg-paper-dark border border-line rounded px-1.5 py-1 text-xs font-bold text-blue-400 focus:outline-none"
+                              >
+                                {STANDARD_PRIMARY_TIERS.map((t) => (
+                                  <option key={t.percentage} value={t.percentage}>
+                                    {t.percentage}% (Upto ₹{t.uptoCap})
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <span className="text-[9px] uppercase text-ink/40 block mb-0.5">MOV</span>
+                              <select
+                                value={selectedRepeatUserMov}
+                                onChange={(e) => setSelectedRepeatUserMov(Number(e.target.value))}
+                                className="w-full bg-paper-dark border border-line rounded px-1.5 py-1 text-xs font-bold text-amber-400 focus:outline-none"
+                              >
+                                {[179, 199, 249].map((m) => (
+                                  <option key={m} value={m}>₹{m}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* All User Row */}
+                      <div className={`p-2 rounded-lg border transition-all space-y-1.5 ${
+                        allUserEnabled ? "bg-purple-500/10 border-purple-500/40" : "bg-paper-dark/50 border-line/50 opacity-60"
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <label className="flex items-center gap-1.5 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={allUserEnabled}
+                              onChange={(e) => setAllUserEnabled(e.target.checked)}
+                              className="rounded border-line bg-paper text-purple-500 focus:ring-0 w-3.5 h-3.5"
+                            />
+                            <span className="text-xs font-bold text-ink">All User</span>
+                          </label>
+                          <span className="text-[10px] text-purple-400 font-bold">{allUserEnabled ? `${allUserBurn}% burn` : "Off"}</span>
+                        </div>
+
+                        {allUserEnabled && (
+                          <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+                            <div>
+                              <span className="text-[9px] uppercase text-ink/40 block mb-0.5">Discount %</span>
+                              <select
+                                value={selectedAllUserPct}
+                                onChange={(e) => setSelectedAllUserPct(Number(e.target.value))}
+                                className="w-full bg-paper-dark border border-line rounded px-1.5 py-1 text-xs font-bold text-purple-400 focus:outline-none"
+                              >
+                                {STANDARD_PRIMARY_TIERS.map((t) => (
+                                  <option key={t.percentage} value={t.percentage}>
+                                    {t.percentage}% (Upto ₹{t.uptoCap})
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <span className="text-[9px] uppercase text-ink/40 block mb-0.5">MOV</span>
+                              <select
+                                value={selectedAllUserMov}
+                                onChange={(e) => setSelectedAllUserMov(Number(e.target.value))}
+                                className="w-full bg-paper-dark border border-line rounded px-1.5 py-1 text-xs font-bold text-amber-400 focus:outline-none"
+                              >
+                                {[179, 199, 249].map((m) => (
+                                  <option key={m} value={m}>₹{m}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1454,7 +1621,7 @@ export default function MarketingStrategyPage() {
                             : "bg-paper-dark border-line text-ink/60"
                         }`}
                       >
-                        LA, MM, UM
+                        {platform === "swiggy" ? "P1, P2, P3" : "LA, MM, UM"}
                       </button>
                       <button
                         type="button"
@@ -1493,26 +1660,67 @@ export default function MarketingStrategyPage() {
 
                   {/* Party Code Choice */}
                   <div className="p-4 rounded-xl bg-paper border border-line space-y-2.5">
-                    <span className="text-xs font-bold text-purple-400 block uppercase tracking-wider">
-                      3. Party Code Strategy
-                    </span>
-                    <p className="text-[11px] text-ink/50">High value group order discount:</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-purple-400 block uppercase tracking-wider">
+                        3. Party Code Strategy
+                      </span>
+                      <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                        {partyCodesEnabled ? `${partyBurnRate}% Burn` : "Disabled"}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-ink/50">High value group order discount (Auto-scaled by AOV):</p>
 
-                    <button
-                      type="button"
-                      onClick={() => setPartyCodesEnabled(!partyCodesEnabled)}
-                      className={`w-full p-3 rounded-xl border flex items-center justify-between text-xs transition-all ${
-                        partyCodesEnabled
-                          ? "bg-purple-500/20 border-purple-500 text-purple-300 font-bold"
-                          : "bg-paper-dark border-line text-ink/40"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <CheckSquare className={`w-4 h-4 ${partyCodesEnabled ? "text-purple-400" : ""}`} />
-                        <span>Flat 10% on MOV ₹999</span>
+                    <div className={`p-2.5 rounded-xl border transition-all space-y-2 font-mono text-[11px] ${
+                      partyCodesEnabled ? "bg-purple-500/10 border-purple-500/40" : "bg-paper-dark/50 border-line/50 opacity-60"
+                    }`}>
+                      <div className="flex items-center justify-between">
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={partyCodesEnabled}
+                            onChange={(e) => setPartyCodesEnabled(e.target.checked)}
+                            className="rounded border-line bg-paper text-purple-500 focus:ring-0 w-3.5 h-3.5"
+                          />
+                          <span className="text-xs font-bold text-ink">Enable Party Code</span>
+                        </label>
+                        <span className="text-[10px] text-purple-400 font-bold">
+                          {partyCodesEnabled ? `Flat ${selectedPartyPct}% on ₹${selectedPartyMov}` : "Off"}
+                        </span>
                       </div>
-                      <span className="font-mono text-[11px]">10.0% Burn</span>
-                    </button>
+
+                      {partyCodesEnabled && (
+                        <div className="grid grid-cols-2 gap-1.5 pt-1">
+                          <div>
+                            <span className="text-[9px] uppercase text-ink/40 block mb-0.5">Discount %</span>
+                            <select
+                              value={selectedPartyPct}
+                              onChange={(e) => {
+                                const pct = Number(e.target.value);
+                                setSelectedPartyPct(pct);
+                                setSelectedPartyCap(pct === 10 ? 100 : pct === 15 ? 150 : 250);
+                              }}
+                              className="w-full bg-paper-dark border border-line rounded px-1.5 py-1 text-xs font-bold text-purple-400 focus:outline-none"
+                            >
+                              <option value={10}>10% (Upto ₹100)</option>
+                              <option value={15}>15% (Upto ₹150)</option>
+                              <option value={20}>20% (Upto ₹250)</option>
+                            </select>
+                          </div>
+                          <div>
+                            <span className="text-[9px] uppercase text-ink/40 block mb-0.5">Target MOV</span>
+                            <select
+                              value={selectedPartyMov}
+                              onChange={(e) => setSelectedPartyMov(Number(e.target.value))}
+                              className="w-full bg-paper-dark border border-line rounded px-1.5 py-1 text-xs font-bold text-amber-400 focus:outline-none"
+                            >
+                              {[999, 1199, 1499, 1999].map((m) => (
+                                <option key={m} value={m}>₹{m}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                 </div>
@@ -1566,17 +1774,139 @@ export default function MarketingStrategyPage() {
 
                   {/* Recommended Selected Codes Set */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-mono">
-                    {/* Primary Codes Set */}
-                    <div className="p-3.5 rounded-xl bg-paper border border-line space-y-1">
-                      <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider block">
-                        Selected Primary Codes ({discountAutomation.selectedPrimaryCodes.length})
-                      </span>
-                      {discountAutomation.selectedPrimaryCodes.map((c) => (
-                        <div key={c.id} className="text-ink font-semibold flex items-center justify-between">
-                          <span>{c.name}</span>
-                          <span className="text-emerald-400">{c.burnPct}%</span>
-                        </div>
-                      ))}
+                    {/* Primary Segment Selection Summary Box */}
+                    <div className="p-3.5 rounded-xl bg-paper border border-line space-y-2">
+                      <div className="flex items-center justify-between border-b border-line/40 pb-1.5">
+                        <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider block">
+                          Selected Primary Codes
+                        </span>
+                        <span className="text-[10px] text-emerald-400 font-bold">
+                          {livePrimaryAvgBurn}% avg burn
+                        </span>
+                      </div>
+
+                      {/* New User Row */}
+                      <div className={`p-1.5 rounded-lg border transition-all flex items-center justify-between gap-1.5 ${
+                        newUserEnabled ? "bg-emerald-500/10 border-emerald-500/30" : "bg-paper-dark/40 border-line/40 opacity-50"
+                      }`}>
+                        <label className="flex items-center gap-1.5 cursor-pointer shrink-0">
+                          <input
+                            type="checkbox"
+                            checked={newUserEnabled}
+                            onChange={(e) => setNewUserEnabled(e.target.checked)}
+                            className="rounded border-line bg-paper text-emerald-500 focus:ring-0 w-3 h-3"
+                          />
+                          <span className="text-[11px] font-bold text-ink">New User</span>
+                        </label>
+                        {newUserEnabled && (
+                          <div className="flex items-center gap-1 text-[10px]">
+                            <select
+                              value={selectedNewUserPct}
+                              onChange={(e) => setSelectedNewUserPct(Number(e.target.value))}
+                              className="bg-paper-dark border border-line rounded px-1 py-0.5 text-[10px] font-bold text-emerald-400 focus:outline-none"
+                            >
+                              {STANDARD_PRIMARY_TIERS.map((t) => (
+                                <option key={t.percentage} value={t.percentage}>
+                                  {t.percentage}% (Upto ₹{t.uptoCap})
+                                </option>
+                              ))}
+                            </select>
+                            <span className="text-ink/40">on</span>
+                            <select
+                              value={selectedNewUserMov}
+                              onChange={(e) => setSelectedNewUserMov(Number(e.target.value))}
+                              className="bg-paper-dark border border-line rounded px-1 py-0.5 text-[10px] font-bold text-amber-400 focus:outline-none"
+                            >
+                              {[179, 199, 249].map((m) => (
+                                <option key={m} value={m}>₹{m}</option>
+                              ))}
+                            </select>
+                            <span className="text-emerald-400 font-bold ml-1">{newUserBurn}%</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Repeat User Row */}
+                      <div className={`p-1.5 rounded-lg border transition-all flex items-center justify-between gap-1.5 ${
+                        repeatUserEnabled ? "bg-blue-500/10 border-blue-500/30" : "bg-paper-dark/40 border-line/40 opacity-50"
+                      }`}>
+                        <label className="flex items-center gap-1.5 cursor-pointer shrink-0">
+                          <input
+                            type="checkbox"
+                            checked={repeatUserEnabled}
+                            onChange={(e) => setRepeatUserEnabled(e.target.checked)}
+                            className="rounded border-line bg-paper text-blue-500 focus:ring-0 w-3 h-3"
+                          />
+                          <span className="text-[11px] font-bold text-ink">Repeat</span>
+                        </label>
+                        {repeatUserEnabled && (
+                          <div className="flex items-center gap-1 text-[10px]">
+                            <select
+                              value={selectedRepeatUserPct}
+                              onChange={(e) => setSelectedRepeatUserPct(Number(e.target.value))}
+                              className="bg-paper-dark border border-line rounded px-1 py-0.5 text-[10px] font-bold text-blue-400 focus:outline-none"
+                            >
+                              {STANDARD_PRIMARY_TIERS.map((t) => (
+                                <option key={t.percentage} value={t.percentage}>
+                                  {t.percentage}% (Upto ₹{t.uptoCap})
+                                </option>
+                              ))}
+                            </select>
+                            <span className="text-ink/40">on</span>
+                            <select
+                              value={selectedRepeatUserMov}
+                              onChange={(e) => setSelectedRepeatUserMov(Number(e.target.value))}
+                              className="bg-paper-dark border border-line rounded px-1 py-0.5 text-[10px] font-bold text-amber-400 focus:outline-none"
+                            >
+                              {[179, 199, 249].map((m) => (
+                                <option key={m} value={m}>₹{m}</option>
+                              ))}
+                            </select>
+                            <span className="text-blue-400 font-bold ml-1">{repeatUserBurn}%</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* All User Row */}
+                      <div className={`p-1.5 rounded-lg border transition-all flex items-center justify-between gap-1.5 ${
+                        allUserEnabled ? "bg-purple-500/10 border-purple-500/30" : "bg-paper-dark/40 border-line/40 opacity-50"
+                      }`}>
+                        <label className="flex items-center gap-1.5 cursor-pointer shrink-0">
+                          <input
+                            type="checkbox"
+                            checked={allUserEnabled}
+                            onChange={(e) => setAllUserEnabled(e.target.checked)}
+                            className="rounded border-line bg-paper text-purple-500 focus:ring-0 w-3 h-3"
+                          />
+                          <span className="text-[11px] font-bold text-ink">All User</span>
+                        </label>
+                        {allUserEnabled && (
+                          <div className="flex items-center gap-1 text-[10px]">
+                            <select
+                              value={selectedAllUserPct}
+                              onChange={(e) => setSelectedAllUserPct(Number(e.target.value))}
+                              className="bg-paper-dark border border-line rounded px-1 py-0.5 text-[10px] font-bold text-purple-400 focus:outline-none"
+                            >
+                              {STANDARD_PRIMARY_TIERS.map((t) => (
+                                <option key={t.percentage} value={t.percentage}>
+                                  {t.percentage}% (Upto ₹{t.uptoCap})
+                                </option>
+                              ))}
+                            </select>
+                            <span className="text-ink/40">on</span>
+                            <select
+                              value={selectedAllUserMov}
+                              onChange={(e) => setSelectedAllUserMov(Number(e.target.value))}
+                              className="bg-paper-dark border border-line rounded px-1 py-0.5 text-[10px] font-bold text-amber-400 focus:outline-none"
+                            >
+                              {[179, 199, 249].map((m) => (
+                                <option key={m} value={m}>₹{m}</option>
+                              ))}
+                            </select>
+                            <span className="text-purple-400 font-bold ml-1">{allUserBurn}%</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Stepper Codes */}
@@ -1597,54 +1927,15 @@ export default function MarketingStrategyPage() {
                       <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider block">
                         Party Code
                       </span>
-                      {discountAutomation.selectedPartyCode ? (
+                      {partyCodesEnabled ? (
                         <div className="text-ink font-semibold flex items-center justify-between">
-                          <span>{discountAutomation.selectedPartyCode.name}</span>
-                          <span className="text-emerald-400">10.0%</span>
+                          <span>Flat {selectedPartyPct}% off on ₹{selectedPartyMov} (Upto ₹{selectedPartyCap})</span>
+                          <span className="text-emerald-400">{partyBurnRate}%</span>
                         </div>
                       ) : (
                         <div className="text-ink/40">Disabled</div>
                       )}
                     </div>
-                  </div>
-                </div>
-
-                {/* Primary Codes Master Reference Table */}
-                <div className="card !p-0 overflow-hidden border-line">
-                  <div className="p-4 bg-paper-dark border-b border-line flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-ink flex items-center gap-2">
-                      <Tag className="w-4 h-4 text-blue-400" /> Primary Discount Tiers Reference
-                    </h3>
-                    <span className="text-xs text-ink/40 font-mono">6 Tiers</span>
-                  </div>
-
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead>
-                        <tr className="bg-paper border-b border-line text-ink/60 uppercase tracking-wider text-[11px]">
-                          <th className="p-3.5 font-semibold">User Type / Target</th>
-                          <th className="p-3.5 font-semibold">Discount Format</th>
-                          <th className="p-3.5 font-semibold text-right">Max Cap</th>
-                          <th className="p-3.5 font-semibold text-right">MOV</th>
-                          <th className="p-3.5 font-semibold text-right">Burn %</th>
-                          <th className="p-3.5 font-semibold">Formula Logic</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-line">
-                        {primaryCodes.map((c) => (
-                          <tr key={c.id} className="hover:bg-paper-dark/50 transition-all">
-                            <td className="p-3.5 font-bold text-ink">{c.segmentTarget}</td>
-                            <td className="p-3.5 font-mono text-blue-400 font-semibold">{c.name}</td>
-                            <td className="p-3.5 text-right font-mono">₹{c.discountCap}</td>
-                            <td className="p-3.5 text-right font-mono">₹{c.mov}</td>
-                            <td className="p-3.5 text-right font-mono font-bold text-emerald-400">
-                              {c.burnPct}%
-                            </td>
-                            <td className="p-3.5 text-ink/40 font-mono">{c.formulaNote}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
                   </div>
                 </div>
               </>
@@ -2077,7 +2368,7 @@ export default function MarketingStrategyPage() {
               <div className="card p-4 space-y-3 bg-paper border-line">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-purple-400 block">
-                    Target Audience Segments (LA / MM / UM Orders Count)
+                    Target Audience Segments ({platform === "swiggy" ? "P1 / P2 / P3 Orders Count" : "LA / MM / UM Orders Count"})
                   </span>
                   <span className="text-xs font-mono font-bold text-ink">
                     Total Calculated Orders: <strong className="text-emerald-400">{(Number(laPct) || 0) + (Number(mmPct) || 0) + (Number(umPct) || 0)} Orders</strong>
@@ -2085,7 +2376,9 @@ export default function MarketingStrategyPage() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono text-xs">
                   <div>
-                    <label className="text-[10px] font-bold text-ink/70 block mb-1 font-sans">LA (Less Affluent Orders)</label>
+                    <label className="text-[10px] font-bold text-ink/70 block mb-1 font-sans">
+                      {platform === "swiggy" ? "P1 (Less Affluent Orders)" : "LA (Less Affluent Orders)"}
+                    </label>
                     <div className="flex items-center gap-1.5">
                       <input
                         type="number"
@@ -2098,7 +2391,9 @@ export default function MarketingStrategyPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-ink/70 block mb-1 font-sans">MM (Middle Market Orders)</label>
+                    <label className="text-[10px] font-bold text-ink/70 block mb-1 font-sans">
+                      {platform === "swiggy" ? "P2 (Middle Market Orders)" : "MM (Middle Market Orders)"}
+                    </label>
                     <div className="flex items-center gap-1.5">
                       <input
                         type="number"
@@ -2111,7 +2406,9 @@ export default function MarketingStrategyPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-ink/70 block mb-1 font-sans">UM (Upper Market Orders)</label>
+                    <label className="text-[10px] font-bold text-ink/70 block mb-1 font-sans">
+                      {platform === "swiggy" ? "P3 (Upper Market Orders)" : "UM (Upper Market Orders)"}
+                    </label>
                     <div className="flex items-center gap-1.5">
                       <input
                         type="number"
@@ -2174,7 +2471,7 @@ export default function MarketingStrategyPage() {
 
                   {selectedAdsModel === "M3" ? (
                     <div>
-                      <label className="label text-[10px]">Projected Subtotal (₹)</label>
+                      <label className="label text-[10px]">Total Sales (₹)</label>
                       <input
                         type="number"
                         value={subtotalSales}
@@ -2184,7 +2481,13 @@ export default function MarketingStrategyPage() {
                     </div>
                   ) : (
                     <div>
-                      <label className="label text-[10px]">Projected CV / Total Sales (₹)</label>
+                      <label className="label text-[10px]">
+                        {selectedAdsModel === "M1"
+                          ? "Previous CV (₹)"
+                          : selectedAdsModel === "SGM"
+                          ? "Total Sales (₹)"
+                          : "Projected CV / Total Sales (₹)"}
+                      </label>
                       <input
                         type="number"
                         value={totalSales}
@@ -2194,15 +2497,17 @@ export default function MarketingStrategyPage() {
                     </div>
                   )}
 
-                  <div>
-                    <label className="label text-[10px]">Base Ads Budget Override (₹)</label>
-                    <input
-                      type="number"
-                      value={baseAdsAmount}
-                      onChange={(e) => setBaseAdsAmount(parseFloat(e.target.value) || 0)}
-                      className="input text-xs font-bold font-mono"
-                    />
-                  </div>
+                  {selectedAdsModel !== "M3" && (
+                    <div>
+                      <label className="label text-[10px]">Base Ads Budget Override (₹)</label>
+                      <input
+                        type="number"
+                        value={baseAdsAmount}
+                        onChange={(e) => setBaseAdsAmount(parseFloat(e.target.value) || 0)}
+                        className="input text-xs font-bold font-mono"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -2351,20 +2656,51 @@ export default function MarketingStrategyPage() {
                           target: `All Users (AU) — ${totalOrders} Total Orders`,
                           pct: adsResult.baseAdsBreakdown.gvp.pct,
                           amount: adsResult.baseAdsBreakdown.gvp.amount,
+                          customNode: null,
                         },
                         {
                           key: "psp",
                           name: "Promoted Smart Placement (PSP)",
-                          target: `UM (${Math.round(totalOrders * (umPct / 100))} orders) → MM (${Math.round(totalOrders * (mmPct / 100))} orders) → LA (${Math.round(totalOrders * (laPct / 100))} orders)`,
                           pct: adsResult.baseAdsBreakdown.psp.pct,
                           amount: adsResult.baseAdsBreakdown.psp.amount,
+                          customNode: (
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-ink/40 uppercase font-sans font-bold">Targeting:</span>
+                              <select
+                                value={pspTargetSegment}
+                                onChange={(e) => setPspTargetSegment(e.target.value as any)}
+                                className="bg-paper border border-purple-500/40 rounded px-2 py-1 text-xs font-bold text-purple-300 focus:outline-none focus:border-purple-500"
+                              >
+                                <option value="auto">Auto Best ({highestSegment.code}: {highestSegment.orders} orders)</option>
+                                <option value="la">Dedicated Less Affluent (LA) — {laOrders} orders</option>
+                                <option value="mm">Dedicated Middle Market (MM) — {mmOrders} orders</option>
+                                <option value="um">Dedicated Upper Market (UM) — {umOrders} orders</option>
+                                <option value="all">All Segments (UM → MM → LA)</option>
+                              </select>
+                            </div>
+                          ),
                         },
                         {
                           key: "spendingPotential",
                           name: "Spending Potential",
-                          target: `Target Upper Market (UM) Only — ${Math.round(totalOrders * (umPct / 100))} Orders`,
                           pct: adsResult.baseAdsBreakdown.spendingPotential.pct,
                           amount: adsResult.baseAdsBreakdown.spendingPotential.amount,
+                          customNode: (
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-ink/40 uppercase font-sans font-bold">Targeting:</span>
+                              <select
+                                value={spTargetSegment}
+                                onChange={(e) => setSpTargetSegment(e.target.value as any)}
+                                className="bg-paper border border-amber-500/40 rounded px-2 py-1 text-xs font-bold text-amber-300 focus:outline-none focus:border-amber-500"
+                              >
+                                <option value="auto">Auto Best ({highestSegment.code}: {highestSegment.orders} orders)</option>
+                                <option value="la">Dedicated Less Affluent (LA) — {laOrders} orders</option>
+                                <option value="mm">Dedicated Middle Market (MM) — {mmOrders} orders</option>
+                                <option value="um">Dedicated Upper Market (UM) — {umOrders} orders</option>
+                                <option value="all">All Segments (UM → MM → LA)</option>
+                              </select>
+                            </div>
+                          ),
                         },
                         {
                           key: "boss",
@@ -2372,6 +2708,7 @@ export default function MarketingStrategyPage() {
                           target: `Cuisine Tag Placement — ${totalOrders} Orders Target`,
                           pct: adsResult.baseAdsBreakdown.boss.pct,
                           amount: adsResult.baseAdsBreakdown.boss.amount,
+                          customNode: null,
                         },
                         {
                           key: "bigBoss",
@@ -2379,6 +2716,7 @@ export default function MarketingStrategyPage() {
                           target: `Brand Tag Placement — ${totalOrders} Orders Target`,
                           pct: adsResult.baseAdsBreakdown.bigBoss.pct,
                           amount: adsResult.baseAdsBreakdown.bigBoss.amount,
+                          customNode: null,
                         },
                         {
                           key: "dishPsp",
@@ -2386,6 +2724,7 @@ export default function MarketingStrategyPage() {
                           target: `Click-based dish placement — ${totalOrders} Orders Target`,
                           pct: adsResult.baseAdsBreakdown.dishPsp.pct,
                           amount: adsResult.baseAdsBreakdown.dishPsp.amount,
+                          customNode: null,
                         },
                       ]
                         .filter((item) => selectedZomatoPlacements.includes(item.key))
@@ -2395,7 +2734,9 @@ export default function MarketingStrategyPage() {
                               <span className="w-2 h-2 rounded-full bg-purple-400 shrink-0"></span>
                               {item.name}
                             </td>
-                            <td className="p-3.5 text-ink/70">{item.target}</td>
+                            <td className="p-3.5 text-ink/70">
+                              {item.customNode || item.target}
+                            </td>
                             <td className="p-3.5 text-right font-bold text-purple-400">{item.pct}%</td>
                             <td className="p-3.5 text-right font-bold text-emerald-400">
                               {formatCurrency(item.amount)}
@@ -2573,7 +2914,7 @@ export default function MarketingStrategyPage() {
               <span className="font-bold text-ink block">Strategic Executive Notes:</span>
               <ul className="list-disc pl-4 space-y-1 text-ink/70">
                 <li>Primary Codes configuration deployed under {primaryOption === "option1" ? "Option 1 (All User + New User)" : "Option 2 (New User + Repeat User)"}.</li>
-                <li>Stepper Code configured at Flat {flatOffChoices.map((amt) => `₹${amt}`).join(", ")} off on MOV ₹699 targeting {stepperSegregation === "la_mm_um" ? "LA, MM, UM" : "All Users (AU)"}.</li>
+                <li>Stepper Code configured at Flat {flatOffChoices.map((amt) => `₹${amt}`).join(", ")} off on MOV ₹699 targeting {stepperSegregation === "la_mm_um" ? (platform === "swiggy" ? "P1, P2, P3" : "LA, MM, UM") : "All Users (AU)"}.</li>
                 <li>Grow Maxx Ad budget calculated via {adsResult.modelName} for {platform.toUpperCase()} with Base Ads allocation at {formatCurrency(adsResult.baseAdsAmount)}.</li>
               </ul>
             </div>

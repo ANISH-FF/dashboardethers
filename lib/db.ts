@@ -218,7 +218,26 @@ export type LeadItem = {
 };
 
 export function getLeads(): LeadItem[] {
-  return readJSON<LeadItem[]>("leads.json", []);
+  const rawLeads = readJSON<LeadItem[]>("leads.json", []);
+  const seenIds = new Set<string>();
+  let needsSave = false;
+
+  const deduplicatedLeads = rawLeads.map((l) => {
+    if (!l.id || seenIds.has(l.id)) {
+      needsSave = true;
+      const newId = uuid();
+      seenIds.add(newId);
+      return { ...l, id: newId };
+    }
+    seenIds.add(l.id);
+    return l;
+  });
+
+  if (needsSave) {
+    saveLeads(deduplicatedLeads);
+  }
+
+  return deduplicatedLeads;
 }
 
 export function saveLeads(leads: LeadItem[]) {
@@ -229,7 +248,7 @@ export function createLead(partial: Partial<LeadItem>): LeadItem {
   const leads = getLeads();
   const now = new Date().toISOString();
   const lead: LeadItem = {
-    id: `lead_${Date.now()}`,
+    id: partial.id || uuid(),
     brandName: partial.brandName || "New Lead",
     ownerPhone: partial.ownerPhone || "",
     poc: partial.poc || "",
@@ -381,7 +400,7 @@ export function createBrandInvoice(brandId: string, partial: Partial<BrandInvoic
   const totalAmount = Number((amount + gstAmount).toFixed(2));
 
   const inv: BrandInvoice = {
-    id: `inv_${Date.now()}`,
+    id: uuid(),
     brandId,
     brandName: brand?.name || partial.brandName || "Partner Brand",
     invoiceNumber: partial.invoiceNumber || `ETH-INV-${Date.now().toString().slice(-6)}`,
@@ -412,7 +431,7 @@ export function createBrandProposal(brandId: string, partial: Partial<BrandPropo
   const now = new Date().toISOString();
 
   const prop: BrandProposal = {
-    id: `prop_${Date.now()}`,
+    id: uuid(),
     brandId,
     brandName: brand?.name || partial.brandName || "Partner Brand",
     proposalTitle: partial.proposalTitle || `Proposal for Online Delivery Growth Strategy – ${brand?.name || "Brand"}`,
