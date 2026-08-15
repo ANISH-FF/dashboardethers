@@ -2368,7 +2368,7 @@ export default function MarketingStrategyPage() {
               <div className="card p-4 space-y-3 bg-paper border-line">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-purple-400 block">
-                    Target Audience Segments ({platform === "swiggy" ? "P1 / P2 / P3 Orders Count" : "LA / MM / UM Orders Count"})
+                    Target Audience Segments (LA / MM / UM Orders Count)
                   </span>
                   <span className="text-xs font-mono font-bold text-ink">
                     Total Calculated Orders: <strong className="text-emerald-400">{(Number(laPct) || 0) + (Number(mmPct) || 0) + (Number(umPct) || 0)} Orders</strong>
@@ -2377,7 +2377,7 @@ export default function MarketingStrategyPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono text-xs">
                   <div>
                     <label className="text-[10px] font-bold text-ink/70 block mb-1 font-sans">
-                      {platform === "swiggy" ? "P1 (Less Affluent Orders)" : "LA (Less Affluent Orders)"}
+                      LA (Less Affluent Orders)
                     </label>
                     <div className="flex items-center gap-1.5">
                       <input
@@ -2392,7 +2392,7 @@ export default function MarketingStrategyPage() {
                   </div>
                   <div>
                     <label className="text-[10px] font-bold text-ink/70 block mb-1 font-sans">
-                      {platform === "swiggy" ? "P2 (Middle Market Orders)" : "MM (Middle Market Orders)"}
+                      MM (Middle Market Orders)
                     </label>
                     <div className="flex items-center gap-1.5">
                       <input
@@ -2407,7 +2407,7 @@ export default function MarketingStrategyPage() {
                   </div>
                   <div>
                     <label className="text-[10px] font-bold text-ink/70 block mb-1 font-sans">
-                      {platform === "swiggy" ? "P3 (Upper Market Orders)" : "UM (Upper Market Orders)"}
+                      UM (Upper Market Orders)
                     </label>
                     <div className="flex items-center gap-1.5">
                       <input
