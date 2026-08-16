@@ -1,7 +1,9 @@
 "use client";
 
+import { useState, useRef } from "react";
 import { EmployeeDocument } from "@/lib/documents";
-import { X, Printer, Award, FileText, CheckCircle2, ShieldCheck, TrendingUp, UserCheck, FileCheck } from "lucide-react";
+import { X, Printer, Award, FileText, Image as ImageIcon } from "lucide-react";
+import { downloadDocumentAsImage } from "@/lib/exportDocument";
 
 interface ModalProps {
   document: EmployeeDocument | null;
@@ -9,10 +11,24 @@ interface ModalProps {
 }
 
 export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
+  const docRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState(false);
+
   if (!doc) return null;
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDownloadPng = async () => {
+    if (!docRef.current) return;
+    setDownloading(true);
+    try {
+      const fileName = `${doc.type}_${doc.employeeName.replace(/\s+/g, "_")}`;
+      await downloadDocumentAsImage(docRef.current, fileName);
+    } finally {
+      setDownloading(false);
+    }
   };
 
   return (
@@ -32,10 +48,19 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={handlePrint}
-              className="btn btn-secondary text-xs flex items-center gap-1.5 font-bold bg-emerald-600 hover:bg-emerald-700 text-white border-none shadow-md"
+              onClick={handleDownloadPng}
+              disabled={downloading}
+              className="btn btn-primary text-xs flex items-center gap-1.5 font-bold shadow-md"
+              title="Download 100% exact HD PNG image with zero bottom space"
             >
-              <Printer className="w-3.5 h-3.5" /> Print / Download PDF
+              <ImageIcon className="w-3.5 h-3.5" /> {downloading ? "Saving..." : "Download HD Image"}
+            </button>
+            <button
+              onClick={handlePrint}
+              className="p-1.5 rounded-lg border border-line text-ink/70 hover:text-ink hover:bg-paper-dark"
+              title="Browser Print"
+            >
+              <Printer className="w-4 h-4" />
             </button>
             <button
               onClick={onClose}
@@ -50,7 +75,7 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
         <div className="p-4 sm:p-8 bg-white text-zinc-900 overflow-y-auto flex-1 font-sans printable-area no-scrollbar">
           
           {/* Classy #989B5F Double Frame Container */}
-          <div className="bg-white border-[5px] border-solid border-[#989B5F] p-2.5 rounded-sm shadow-md printable-certificate">
+          <div ref={docRef} className="bg-white border-[5px] border-solid border-[#989B5F] p-2.5 rounded-sm shadow-md printable-certificate">
             <div className="border-2 border-solid border-[#989B5F] p-6 sm:p-12 text-center space-y-6 bg-white text-[#2C322C] relative overflow-hidden flex flex-col justify-between min-h-[750px]">
               
               {/* Top Header Block */}
@@ -337,29 +362,25 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
               {/* Bottom Footer Block — Dual Real Scanned Signatures */}
               <div className="pt-6 relative z-10">
                 <div className="flex justify-between items-end w-full px-2 text-center">
-                  <div className="flex flex-col items-center w-60 sm:w-64">
-                    <div className="relative w-full h-[60px] flex items-end justify-center">
-                      <img 
-                        src="/uploads/Hemanyasignature.jpeg" 
-                        alt="Hemanya Gupta Signature" 
-                        className="absolute -bottom-2 h-20 sm:h-24 w-auto object-contain z-10 mix-blend-multiply filter contrast-150 brightness-95"
-                      />
-                      <div className="absolute bottom-[12px] w-full h-[1.5px] bg-[#2F3119] z-0" />
-                    </div>
-                    <p className="font-serif font-bold text-sm sm:text-base text-[#2C322C] mt-2">Hemanya Gupta</p>
+                  <div className="flex flex-col items-center">
+                    <img 
+                      src="/uploads/Hemanyasignature.jpeg" 
+                      alt="Hemanya Gupta Signature" 
+                      className="w-36 sm:w-44 h-16 sm:h-20 object-contain mix-blend-multiply -mb-2.5 max-w-full"
+                    />
+                    <div className="w-36 sm:w-48 h-0.5 bg-[#2F3119] mb-1"></div>
+                    <p className="font-serif font-bold text-sm sm:text-base text-[#2C322C]">Hemanya Gupta</p>
                     <p className="font-serif text-[11px] sm:text-xs text-zinc-600 font-medium mt-0.5">Co-Founder & Director</p>
                   </div>
 
-                  <div className="flex flex-col items-center w-60 sm:w-64">
-                    <div className="relative w-full h-[60px] flex items-end justify-center">
-                      <img 
-                        src="/uploads/tanishasignature.jpeg" 
-                        alt="Tanisha Maity Signature" 
-                        className="absolute -bottom-2 h-20 sm:h-24 w-auto object-contain z-10 mix-blend-multiply filter contrast-150 brightness-95"
-                      />
-                      <div className="absolute bottom-[12px] w-full h-[1.5px] bg-[#2F3119] z-0" />
-                    </div>
-                    <p className="font-serif font-bold text-sm sm:text-base text-[#2C322C] mt-2">Tanisha Maity</p>
+                  <div className="flex flex-col items-center">
+                    <img 
+                      src="/uploads/tanishasignature.jpeg" 
+                      alt="Tanisha Maity Signature" 
+                      className="w-36 sm:w-44 h-16 sm:h-20 object-contain mix-blend-multiply -mb-2.5 max-w-full"
+                    />
+                    <div className="w-36 sm:w-48 h-0.5 bg-[#2F3119] mb-1"></div>
+                    <p className="font-serif font-bold text-sm sm:text-base text-[#2C322C]">Tanisha Maity</p>
                     <p className="font-serif text-[11px] sm:text-xs text-zinc-600 font-medium mt-0.5">Co-Founder & Director</p>
                   </div>
                 </div>

@@ -126,10 +126,10 @@ export default function BrandsDirectory() {
                     <td className="px-6 py-4 text-ink/60">{brand.type}</td>
                     <td className="px-6 py-4">
                       <span
-                        className={`inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border shadow-sm ${
                           brand.status === "Active"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-orange-100 text-orange-700"
+                            ? "bg-white text-zinc-900 border-zinc-200"
+                            : "bg-zinc-800 text-zinc-300 border-zinc-700"
                         }`}
                       >
                         {brand.status}

@@ -308,6 +308,9 @@ export type BrandProposal = {
   id: string;
   brandId: string;
   brandName: string;
+  category?: "delivery" | "dineout";
+  clientOwnerName?: string;
+  clientOwnerPhone?: string;
   proposalTitle: string;
   date: string;
   retainerAmount: number;
@@ -434,6 +437,7 @@ export function createBrandProposal(brandId: string, partial: Partial<BrandPropo
     id: uuid(),
     brandId,
     brandName: brand?.name || partial.brandName || "Partner Brand",
+    category: partial.category || "delivery",
     proposalTitle: partial.proposalTitle || `Proposal for Online Delivery Growth Strategy – ${brand?.name || "Brand"}`,
     date: partial.date || now.split("T")[0],
     retainerAmount: Number(partial.retainerAmount ?? 20000),
