@@ -49,14 +49,15 @@ export default function BrandDetail({ params }: { params: { id: string } }) {
     fetch("/api/auth/me")
       .then((r) => r.json())
       .then((d) => {
-        if (d.ok) {
+        if (d && d.role) {
           setSession({ email: d.email, name: d.name, role: d.role });
         }
       })
       .catch(() => {});
   }, []);
 
-  const isAdmin = !session || session.role === "admin"; // Co-founder has full access
+  // ONLY Co-Founders (admin role) can see or manage Proposals & B2B Invoices
+  const isAdmin = session?.role === "admin";
 
   const [invoiceModal, setInvoiceModal] = useState<{ mode: "create" | "view"; invoice: BrandInvoice | null } | null>(null);
   const [proposalModal, setProposalModal] = useState<{ mode: "create" | "view"; proposal: BrandProposal | null } | null>(null);
@@ -281,148 +282,6 @@ export default function BrandDetail({ params }: { params: { id: string } }) {
 
       {/* Legal, Contact & Assets Modules (Visible to EVERYONE) */}
       <div className="grid lg:grid-cols-2 gap-6">
-        
-        {/* B2B Invoices Module */}
-        <div className="card space-y-4">
-          <div className="flex items-center justify-between border-b border-line pb-3">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                <FileSpreadsheet className="w-4 h-4" />
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-ink">B2B Billing & Invoices</h2>
-                <p className="text-[11px] text-ink/50">GST Invoices & Retainer Records</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setInvoiceModal({ mode: "create", invoice: null })}
-              className="text-xs text-emerald-400 font-semibold hover:underline flex items-center gap-1"
-            >
-              <Plus className="w-3.5 h-3.5" /> Issue Invoice
-            </button>
-          </div>
-
-          {invoices.length === 0 ? (
-            <div className="p-6 text-center text-xs text-ink/40 space-y-2 border border-dashed border-line rounded-xl">
-              <FileSpreadsheet className="w-6 h-6 mx-auto text-ink/30" />
-              <p>No invoices generated for {brand.name} yet.</p>
-              <button
-                onClick={() => setInvoiceModal({ mode: "create", invoice: null })}
-                className="text-emerald-400 hover:underline font-semibold text-xs"
-              >
-                Create First B2B Invoice
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-2 max-h-64 overflow-y-auto no-scrollbar">
-              {invoices.map((inv) => (
-                <div
-                  key={inv.id}
-                  className="p-3 rounded-lg bg-paper-dark border border-line flex items-center justify-between text-xs hover:border-ink/30 transition-all"
-                >
-                  <div>
-                    <p className="font-mono font-bold text-ink">{inv.invoiceNumber}</p>
-                    <p className="text-[11px] text-ink/50 mt-0.5">{inv.particulars}</p>
-                    <p className="text-[10px] text-ink/40 font-mono mt-0.5">Date: {inv.issueDate} • Due: {inv.dueDate}</p>
-                  </div>
-                  <div className="text-right space-y-1">
-                    <p className="font-mono font-bold text-emerald-400 text-sm">₹{inv.totalAmount.toLocaleString("en-IN")}</p>
-                    <div className="flex items-center justify-end gap-1.5">
-                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
-                        inv.status === "Paid" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                      }`}>
-                        {inv.status}
-                      </span>
-                      <button
-                        onClick={() => setInvoiceModal({ mode: "view", invoice: inv })}
-                        className="p-1 text-ink/50 hover:text-ink rounded transition-colors"
-                        title="View / Print Invoice"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteInvoice(inv.id)}
-                        className="p-1 text-ink/40 hover:text-red-400 rounded transition-colors"
-                        title="Delete Invoice"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Growth Proposals Module */}
-        <div className="card space-y-4">
-          <div className="flex items-center justify-between border-b border-line pb-3">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400">
-                <Sparkles className="w-4 h-4" />
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-ink">Growth Strategy Proposals</h2>
-                <p className="text-[11px] text-ink/50">90-Day Delivery Roadmap & Commercial Retainer</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setProposalModal({ mode: "create", proposal: null })}
-              className="text-xs text-purple-400 font-semibold hover:underline flex items-center gap-1"
-            >
-              <Plus className="w-3.5 h-3.5" /> Create Proposal
-            </button>
-          </div>
-
-          {proposals.length === 0 ? (
-            <div className="p-6 text-center text-xs text-ink/40 space-y-2 border border-dashed border-line rounded-xl">
-              <Sparkles className="w-6 h-6 mx-auto text-ink/30" />
-              <p>No proposals created for {brand.name} yet.</p>
-              <button
-                onClick={() => setProposalModal({ mode: "create", proposal: null })}
-                className="text-purple-400 hover:underline font-semibold text-xs"
-              >
-                Generate Tasteera-Style Proposal (Editable)
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-2 max-h-64 overflow-y-auto no-scrollbar">
-              {proposals.map((prop) => (
-                <div
-                  key={prop.id}
-                  className="p-3 rounded-lg bg-paper-dark border border-line flex items-center justify-between text-xs hover:border-ink/30 transition-all"
-                >
-                  <div>
-                    <p className="font-bold text-ink">{prop.proposalTitle}</p>
-                    <p className="text-[11px] text-ink/50 mt-0.5">{prop.durationDays}-Day Strategy Roadmap • Signed by {prop.signatoryName}</p>
-                    <p className="text-[10px] text-ink/40 font-mono mt-0.5">Created: {prop.date}</p>
-                  </div>
-                  <div className="text-right space-y-1">
-                    <p className="font-mono font-bold text-purple-400 text-sm">₹{prop.retainerAmount.toLocaleString("en-IN")}/mo</p>
-                    <div className="flex items-center justify-end gap-1.5">
-                      <button
-                        onClick={() => setProposalModal({ mode: "view", proposal: prop })}
-                        className="p-1 text-ink/50 hover:text-ink rounded transition-colors"
-                        title="View / Print Proposal"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteProposal(prop.id)}
-                        className="p-1 text-ink/40 hover:text-red-400 rounded transition-colors"
-                        title="Delete Proposal"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
         {/* Legal & Business Details */}
         <div className="card space-y-6">
           <h2 className="text-sm font-bold border-b border-line pb-2 text-ink">Legal & Business Details</h2>
