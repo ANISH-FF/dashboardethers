@@ -2,8 +2,8 @@
 
 import { useState, useRef } from "react";
 import { BrandInvoice } from "@/lib/db";
-import { X, Printer, ShieldCheck, FileSpreadsheet, Building2, CheckCircle2, DollarSign, Image as ImageIcon, FileText, Download } from "lucide-react";
-import { downloadDocumentAsImage, downloadDocumentAsPdf } from "@/lib/exportDocument";
+import { X, Printer, ShieldCheck, FileSpreadsheet, Building2, CheckCircle2, DollarSign, Image as ImageIcon, FileText } from "lucide-react";
+import { downloadDocumentAsImage } from "@/lib/exportDocument";
 
 interface InvoiceModalProps {
   brandName: string;
@@ -59,16 +59,6 @@ export function BrandInvoiceModal({ brandName, invoice, mode, onClose, onSubmitI
     setDownloading(true);
     try {
       await downloadDocumentAsImage(docRef.current, `Invoice_${brandName}_${activeInvoice.invoiceNumber}`);
-    } finally {
-      setDownloading(false);
-    }
-  };
-
-  const handleDownloadPdf = async () => {
-    if (!docRef.current) return;
-    setDownloading(true);
-    try {
-      await downloadDocumentAsPdf(docRef.current, `Invoice_${brandName}_${activeInvoice.invoiceNumber}`);
     } finally {
       setDownloading(false);
     }

@@ -2,8 +2,8 @@
 
 import { useState, useRef } from "react";
 import { BrandProposal } from "@/lib/db";
-import { X, Printer, ShieldCheck, FileText, CheckCircle2, TrendingUp, Sparkles, Utensils, Award, Image as ImageIcon, Download } from "lucide-react";
-import { downloadDocumentAsImage, downloadDocumentAsPdf } from "@/lib/exportDocument";
+import { X, Printer, ShieldCheck, FileText, CheckCircle2, TrendingUp, Sparkles, Utensils, Award, Image as ImageIcon } from "lucide-react";
+import { downloadDocumentAsImage } from "@/lib/exportDocument";
 
 interface ProposalModalProps {
   brandName: string;
@@ -123,16 +123,6 @@ export function BrandProposalModal({ brandName, proposal, mode, onClose, onSubmi
     setDownloading(true);
     try {
       await downloadDocumentAsImage(docRef.current, `Proposal_${brandName}_${activeProposal.category}`);
-    } finally {
-      setDownloading(false);
-    }
-  };
-
-  const handleDownloadPdf = async () => {
-    if (!docRef.current) return;
-    setDownloading(true);
-    try {
-      await downloadDocumentAsPdf(docRef.current, `Proposal_${brandName}_${activeProposal.category}`);
     } finally {
       setDownloading(false);
     }
