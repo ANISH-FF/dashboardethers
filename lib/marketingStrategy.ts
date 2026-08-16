@@ -240,12 +240,12 @@ export function computeSwiggyAdsStrategy(config: SwiggyAdsConfig): SwiggyAdsResu
   const mode = config.mode || "tryout";
   
   let totalAdsBudget = 0;
-  if (mode === "tryout") {
+  if (config.baseAdsAmount !== undefined && config.baseAdsAmount > 0) {
+    totalAdsBudget = Math.round(config.baseAdsAmount);
+  } else if (mode === "tryout") {
     const pct = Math.max(0, config.tryoutPct || 0);
     const gmvVal = Math.max(0, config.gmv || 0);
     totalAdsBudget = Math.round((gmvVal * pct) / 100);
-  } else {
-    totalAdsBudget = Math.max(0, Math.round(config.baseAdsAmount || 0));
   }
 
   const selectedIds = config.selectedProductIds && config.selectedProductIds.length > 0 

@@ -2107,7 +2107,7 @@ export default function MarketingStrategyPage() {
                       <div className="p-2.5 rounded-lg bg-orange-500/10 border border-orange-500/20 flex flex-col justify-center font-mono">
                         <span className="text-[10px] text-orange-400 font-bold uppercase">Formula: GMV × X%</span>
                         <span className="text-xs text-ink/70">₹{swiggyAdsConfig.gmv.toLocaleString("en-IN")} × {swiggyAdsConfig.tryoutPct}%</span>
-                        <span className="text-sm font-extrabold text-emerald-400">₹{swiggyAdsResult.totalAdsBudget.toLocaleString("en-IN")}</span>
+                        <span className="text-sm font-extrabold text-emerald-400">₹{Math.round((swiggyAdsConfig.gmv * swiggyAdsConfig.tryoutPct) / 100).toLocaleString("en-IN")}</span>
                       </div>
                     </div>
 
