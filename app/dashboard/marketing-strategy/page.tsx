@@ -2111,12 +2111,17 @@ export default function MarketingStrategyPage() {
                       </div>
                     </div>
 
-                    {/* Conditional Warning Bar: Show ONLY when Base Ads > Calculated Budget */}
-                    {swiggyAdsConfig.baseAdsAmount > swiggyAdsResult.totalAdsBudget && (
-                      <div className="p-3 rounded-xl border bg-amber-500/10 border-amber-500/30 text-amber-400 text-xs font-medium flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
-                        <span>
-                          Warning: Base Ads budget ({formatCurrency(swiggyAdsConfig.baseAdsAmount)}) is higher than calculated Total Swiggy Ad Budget ({formatCurrency(swiggyAdsResult.totalAdsBudget)}).
+                    {/* Conditional Warning Bar: Show ONLY when Base Ads > Calculated Budget (GMV * X%) */}
+                    {swiggyAdsConfig.baseAdsAmount > Math.round((swiggyAdsConfig.gmv * swiggyAdsConfig.tryoutPct) / 100) && Math.round((swiggyAdsConfig.gmv * swiggyAdsConfig.tryoutPct) / 100) > 0 && (
+                      <div className="p-3 rounded-xl border bg-amber-500/10 border-amber-500/30 text-amber-400 text-xs font-medium flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
+                          <span>
+                            Warning: Base Ads budget ({formatCurrency(swiggyAdsConfig.baseAdsAmount)}) is higher than calculated Total Swiggy Ad Budget ({formatCurrency(Math.round((swiggyAdsConfig.gmv * swiggyAdsConfig.tryoutPct) / 100))}).
+                          </span>
+                        </div>
+                        <span className="font-mono font-bold text-[10px] bg-amber-500/20 px-2 py-0.5 rounded text-amber-300 uppercase shrink-0">
+                          Warning: Base Ads Exceeds Formula
                         </span>
                       </div>
                     )}
