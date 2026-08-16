@@ -374,11 +374,35 @@ export default function DiscountCalculator() {
 
       {/* ── ACTION BUTTONS BAR ─────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <h2 className="text-lg font-bold text-ink">Discount Codes ({codes.length})</h2>
           <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-paper border border-line text-ink/60">
             {activeCalculatedItems.length} active in calculation
           </span>
+          <div className="flex items-center gap-1.5 ml-1">
+            <button
+              onClick={() => {
+                const next = codes.map((c) => ({ ...c, enabled: true }));
+                setCodes(next);
+                saveBrandDiscountCalculator(next);
+              }}
+              className="px-3 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-bold border border-emerald-500/30 transition-all active:scale-95 flex items-center gap-1"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Select All</span>
+            </button>
+            <button
+              onClick={() => {
+                const next = codes.map((c) => ({ ...c, enabled: false }));
+                setCodes(next);
+                saveBrandDiscountCalculator(next);
+              }}
+              className="px-3 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-bold border border-rose-500/30 transition-all active:scale-95 flex items-center gap-1"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Deselect All</span>
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -448,7 +472,20 @@ export default function DiscountCalculator() {
           <table className="w-full text-left text-sm whitespace-nowrap">
             <thead className="bg-paper border-b border-line">
               <tr>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-ink/50 w-12 text-center">Active</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-ink/50 w-12 text-center">
+                  <input
+                    type="checkbox"
+                    checked={codes.length > 0 && codes.every((c) => c.enabled)}
+                    onChange={(e) => {
+                      const isChecked = e.target.checked;
+                      const next = codes.map((c) => ({ ...c, enabled: isChecked }));
+                      setCodes(next);
+                      saveBrandDiscountCalculator(next);
+                    }}
+                    title={codes.every((c) => c.enabled) ? "Deselect All Codes" : "Select All Codes"}
+                    className="w-4 h-4 rounded accent-ink cursor-pointer"
+                  />
+                </th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-ink/50">Format Example / Code</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-ink/50">Types of Codes</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-ink/50">Calculation Formula</th>

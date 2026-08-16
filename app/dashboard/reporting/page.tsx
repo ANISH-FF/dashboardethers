@@ -298,6 +298,18 @@ export default function ReportingPage() {
       const ads = items.reduce((a, b) => a + (b.ads || 0), 0);
       const hyperpure = items.reduce((a, b) => a + (b.hyperpure || 0), 0);
       const netPayout = items.reduce((a, b) => a + (b.netPayout || 0), 0);
+      const platformFeesDeductions = items.reduce(
+        (a, b) =>
+          a +
+          (b.platformFeesDeductions !== undefined
+            ? Number(b.platformFeesDeductions || 0)
+            : Number(b.orderLevelDeduction || 0) +
+              Number(b.taxDeduction || 0) +
+              Number(b.comPgGst || 0) +
+              Number(b.complaintsCancellation || 0) +
+              Number(b.tax || 0)),
+        0
+      );
 
       const grossBase = subTotalWithPkg || preGmv || subTotal || 1;
       const discountPct = (discount / grossBase) * 100;
@@ -319,6 +331,7 @@ export default function ReportingPage() {
         discount,
         discountPct,
         commissionableValue,
+        platformFeesDeductions,
         orderLevelDeduction,
         taxDeduction,
         comPgGst,
@@ -361,6 +374,7 @@ export default function ReportingPage() {
                 discount: rollupItem.discount,
                 discountPct: rollupItem.discountPct,
                 commission: rollupItem.commission || rollupItem.orderLevelDeduction || rollupItem.comPgGst,
+                platformFeesDeductions: rollupItem.platformFeesDeductions,
                 ads: rollupItem.ads,
                 adsPct: rollupItem.adsPct,
                 netPayout: rollupItem.netPayout,

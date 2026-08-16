@@ -634,7 +634,7 @@ export default function ProjectionsPage() {
       let orders = Math.round(card.menuOpens * m2oDecimal);
       let subTotal = Math.round(orders * card.aov);
       let packagingCharges = Math.round(orders * 15);
-      let merchantDiscountBurn = Math.round(subTotal * 0.05);
+      let merchantDiscountBurn = 0;
       let commissionableValue = subTotal + packagingCharges - merchantDiscountBurn;
       let advertisement = Math.round(commissionableValue * 0.15);
       let commissionPgGst = Math.round(commissionableValue * 0.28);
@@ -716,6 +716,7 @@ export default function ProjectionsPage() {
       ["Advertisement Budget (₹)", ...allMonths.map((m) => formatCurrency(m.advertisement)), "Commissionable Value * Advertisement Rate %"],
       ["Advertisement Rate (%)", ...allMonths.map((m) => formatPct(m.advertisementPct)), "Historical Baseline / Target Assumption"],
       ["Platform Comm. + PG + GST (₹)", ...allMonths.map((m) => formatCurrency(m.commissionPgGst)), "Commissionable Value * Commission Rate %"],
+      ["Commission %", ...allMonths.map((m) => m.commissionableValue > 0 ? `${((m.commissionPgGst / m.commissionableValue) * 100).toFixed(1)}%` : "0.0%"), "(Comm.+PG+GST / Commissionable Value) * 100"],
       ["Platform Commission Rate (%)", ...allMonths.map((m) => formatPct(m.commissionPct)), "Historical Baseline / Target Assumption"],
       [],
       ["3. PROFITABILITY, PAYOUTS & CONVERSION RATIOS"],
@@ -1172,6 +1173,20 @@ export default function ProjectionsPage() {
                   <td className="p-3 text-ink/40 font-mono text-[10px]">Commissionable Value * Comm %</td>
                 </tr>
 
+                {/* Commission % */}
+                <tr className="hover:bg-paper/30 font-semibold text-rose-400">
+                  <td className="p-3 sticky left-0 bg-paper-dark border-r border-line">Commission %</td>
+                  {allMonths.map((m, i) => {
+                    const commPctVal = m.commissionableValue > 0 ? (m.commissionPgGst / m.commissionableValue) * 100 : 0;
+                    return (
+                      <td key={i} className="p-3 text-center font-mono border-r border-line/40">
+                        {commPctVal.toFixed(1)}%
+                      </td>
+                    );
+                  })}
+                  <td className="p-3 text-ink/40 font-mono text-[10px]">(Comm.+PG+GST / Commissionable Value) * 100</td>
+                </tr>
+
                 {/* Net Payout */}
                 <tr className="bg-emerald-500/10 hover:bg-emerald-500/20 font-black text-sm text-emerald-400 border-y border-emerald-500/30">
                   <td className="p-3.5 sticky left-0 bg-paper-dark border-r border-line text-emerald-400">NET PAYOUT (₹)</td>
@@ -1338,7 +1353,7 @@ export default function ProjectionsPage() {
                       </div>
                       <input
                         type="range"
-                        min="0.01"
+                        min="0.00"
                         max="0.25"
                         step="0.005"
                         value={month.effectiveDiscountPct}
@@ -1440,7 +1455,7 @@ export default function ProjectionsPage() {
                       </div>
                       <input
                         type="range"
-                        min="0.01"
+                        min="0.00"
                         max="0.25"
                         step="0.005"
                         value={month.effectiveDiscountPct}

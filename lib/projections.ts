@@ -175,8 +175,15 @@ export function calculateMonthMetrics(month: Partial<MonthData>): MonthData {
   const packagingCharges = month.packagingCharges !== undefined ? month.packagingCharges : Math.round(orders * 15);
   const subTotalWithPkg = subTotal + packagingCharges;
 
-  const effectiveDiscountPct = month.effectiveDiscountPct || 0.05;
-  const merchantDiscountBurn = Math.round(subTotal * effectiveDiscountPct);
+  const effectiveDiscountPct = month.effectiveDiscountPct !== undefined && month.effectiveDiscountPct !== null 
+    ? month.effectiveDiscountPct 
+    : (month.merchantDiscountBurn !== undefined && month.merchantDiscountBurn !== null && subTotal > 0 
+        ? month.merchantDiscountBurn / subTotal 
+        : 0);
+
+  const merchantDiscountBurn = month.merchantDiscountBurn !== undefined && month.merchantDiscountBurn !== null
+    ? month.merchantDiscountBurn
+    : Math.round(subTotal * effectiveDiscountPct);
 
   const commissionableValue = subTotalWithPkg - merchantDiscountBurn;
 

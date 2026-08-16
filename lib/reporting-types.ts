@@ -536,6 +536,7 @@ export interface MonthlyRollupRecord {
   discount: number;
   discountPct: number;
   commission: number;
+  platformFeesDeductions: number;
   ads: number;
   adsPct: number;
   netPayout: number;

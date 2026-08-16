@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import * as XLSX from "xlsx";
 import {
   Sparkles,
   Search,
@@ -35,6 +36,7 @@ import {
   Eye,
   Printer,
   Copy,
+  FileSpreadsheet,
 } from "lucide-react";
 
 interface AuditResult {
@@ -334,6 +336,149 @@ export default function HygieneCheckPage() {
     }
   };
 
+  // Excel Audit Report Downloads
+  const downloadSingleExcelReport = () => {
+    if (!auditData) return;
+    try {
+      const restName = auditData.restaurant_name || "Restaurant";
+      const wb = XLSX.utils.book_new();
+
+      // Sheet 1: Executive Summary
+      const summaryData = [
+        ["HYGIENE AUDIT REPORT", ""],
+        ["Restaurant Name", restName],
+        ["Platform", auditData.platform || "Delivery"],
+        ["City", auditData.city || "N/A"],
+        ["Cuisines", auditData.cuisines || "N/A"],
+        ["Dining Rating", auditData.ratings?.dining || "N/A"],
+        ["Delivery Rating", auditData.ratings?.delivery || "N/A"],
+        [""],
+        ["EXECUTIVE HEALTH SCORECARD", ""],
+        ["Overall Health Score", `${auditData.scorecard?.overall_score || 0}%`],
+        ["Total Dishes Audited", auditData.scorecard?.total_dishes || 0],
+        ["Dishes Missing Photos", auditData.scorecard?.dishes_missing_photos || 0],
+        ["Photo Coverage", `${auditData.scorecard?.photo_coverage_pct || 0}%`],
+        ["Dishes Missing Descriptions", auditData.scorecard?.dishes_missing_descs || 0],
+        ["Description Coverage", `${auditData.scorecard?.desc_coverage_pct || 0}%`],
+      ];
+      const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(wb, wsSummary, "Summary Scorecard");
+
+      // Sheet 2: Missing Photos
+      const missingPhotosRows = (auditData.missing_photos_all || []).map((item: any) => ({
+        "Item Name": item.name || item.item_name || "",
+        "Category": item.category || "",
+        "Price (₹)": item.price || item.base_price || 0,
+        "Has Description": item.description ? "Yes" : "No",
+        "Action Required": "High Priority: Upload High-Res Food Photo"
+      }));
+      const wsPhotos = XLSX.utils.json_to_sheet(missingPhotosRows.length > 0 ? missingPhotosRows : [{ "Status": "All dishes have photos!" }]);
+      XLSX.utils.book_append_sheet(wb, wsPhotos, "Missing Photos");
+
+      // Sheet 3: Missing Descriptions
+      const missingDescsRows = (auditData.missing_descs_all || []).map((item: any) => ({
+        "Item Name": item.name || item.item_name || "",
+        "Category": item.category || "",
+        "Price (₹)": item.price || item.base_price || 0,
+        "Has Photo": item.has_image ? "Yes" : "No",
+        "Action Required": "Medium Priority: Add Detailed Dish Description"
+      }));
+      const wsDescs = XLSX.utils.json_to_sheet(missingDescsRows.length > 0 ? missingDescsRows : [{ "Status": "All dishes have descriptions!" }]);
+      XLSX.utils.book_append_sheet(wb, wsDescs, "Missing Descriptions");
+
+      // Sheet 4: Full Menu Audit Catalog
+      const allItemsRows: any[] = [];
+      (auditData.categories || []).forEach((cat: any) => {
+        (cat.items || []).forEach((item: any) => {
+          allItemsRows.push({
+            "Category": cat.name || cat.category || "",
+            "Item Name": item.name || item.item_name || "",
+            "Price (₹)": item.price || item.base_price || 0,
+            "Veg / Non-Veg": item.is_veg === false ? "Non-Veg" : "Veg",
+            "Has Photo": item.has_image ? "YES" : "NO (MISSING)",
+            "Has Description": item.description ? "YES" : "NO (MISSING)",
+            "Spice Level": item.spice_level || "Standard",
+            "Description": item.description || "—"
+          });
+        });
+      });
+      const wsFull = XLSX.utils.json_to_sheet(allItemsRows.length > 0 ? allItemsRows : [{ "Status": "No menu items found" }]);
+      XLSX.utils.book_append_sheet(wb, wsFull, "Full Menu Audit");
+
+      const fileName = `${restName.replace(/\s+/g, "_")}_Hygiene_Audit_Report.xlsx`;
+      XLSX.writeFile(wb, fileName);
+    } catch (err) {
+      console.error("Excel download error:", err);
+      alert("Failed to export Excel report.");
+    }
+  };
+
+  const downloadDualExcelReport = () => {
+    if (!dualCompareData) return;
+    try {
+      const restName = dualCompareData.restaurant_name || "Restaurant";
+      const wb = XLSX.utils.book_new();
+
+      // Sheet 1: Executive Comparison Summary
+      const summaryData = [
+        ["ZOMATO VS SWIGGY HYGIENE COMPARISON REPORT", ""],
+        ["Restaurant Name", restName],
+        ["Zomato Score", `${dualCompareData.zomatoScorecard?.overall_score || 0}%`],
+        ["Swiggy Score", `${dualCompareData.swiggyScorecard?.overall_score || 0}%`],
+        ["Overall Cross-Sync Score", `${dualCompareData.overall_sync_score || 0}%`],
+        [""],
+        ["TELEMETRY SUMMARY", ""],
+        ["Zomato Total Dishes", dualCompareData.zomatoScorecard?.total_dishes || 0],
+        ["Swiggy Total Dishes", dualCompareData.swiggyScorecard?.total_dishes || 0],
+        ["Price Discrepancies Count", dualCompareData.price_mismatches?.length || 0],
+        ["Missing on Swiggy Count", dualCompareData.missing_on_swiggy?.length || 0],
+        ["Missing on Zomato Count", dualCompareData.missing_on_zomato?.length || 0],
+      ];
+      const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(wb, wsSummary, "Sync Overview");
+
+      // Sheet 2: Price Discrepancies (Mismatches)
+      const priceRows = (dualCompareData.price_mismatches || []).map((item: any) => ({
+        "Dish Name": item.name || item.dish_name || "",
+        "Category": item.category || "",
+        "Zomato Price (₹)": item.zomato_price || 0,
+        "Swiggy Price (₹)": item.swiggy_price || 0,
+        "Price Difference (₹)": Math.abs((item.zomato_price || 0) - (item.swiggy_price || 0)),
+        "Lower On Platform": (item.zomato_price || 0) < (item.swiggy_price || 0) ? "Zomato" : "Swiggy"
+      }));
+      const wsPrice = XLSX.utils.json_to_sheet(priceRows.length > 0 ? priceRows : [{ "Status": "No price discrepancies found!" }]);
+      XLSX.utils.book_append_sheet(wb, wsPrice, "Price Mismatches");
+
+      // Sheet 3: Missing on Swiggy
+      const swiggyMissingRows = (dualCompareData.missing_on_swiggy || []).map((item: any) => ({
+        "Dish Name": item.name || item.dish_name || "",
+        "Category": item.category || "",
+        "Zomato Price (₹)": item.zomato_price || item.price || 0,
+        "Status": "Available on Zomato but MISSING on Swiggy",
+        "Action": "Add item to Swiggy menu catalog"
+      }));
+      const wsMissingSwiggy = XLSX.utils.json_to_sheet(swiggyMissingRows.length > 0 ? swiggyMissingRows : [{ "Status": "All Zomato items present on Swiggy!" }]);
+      XLSX.utils.book_append_sheet(wb, wsMissingSwiggy, "Missing on Swiggy");
+
+      // Sheet 4: Missing on Zomato
+      const zomatoMissingRows = (dualCompareData.missing_on_zomato || []).map((item: any) => ({
+        "Dish Name": item.name || item.dish_name || "",
+        "Category": item.category || "",
+        "Swiggy Price (₹)": item.swiggy_price || item.price || 0,
+        "Status": "Available on Swiggy but MISSING on Zomato",
+        "Action": "Add item to Zomato menu catalog"
+      }));
+      const wsMissingZomato = XLSX.utils.json_to_sheet(zomatoMissingRows.length > 0 ? zomatoMissingRows : [{ "Status": "All Swiggy items present on Zomato!" }]);
+      XLSX.utils.book_append_sheet(wb, wsMissingZomato, "Missing on Zomato");
+
+      const fileName = `${restName.replace(/\s+/g, "_")}_Zomato_vs_Swiggy_Audit.xlsx`;
+      XLSX.writeFile(wb, fileName);
+    } catch (err) {
+      console.error("Dual Excel download error:", err);
+      alert("Failed to export Dual Excel comparison report.");
+    }
+  };
+
   // Vision Scan Abort & Control References
   const stopVisionRef = useRef(false);
   const visionControllerRef = useRef<AbortController | null>(null);
@@ -607,33 +752,51 @@ export default function HygieneCheckPage() {
           </div>
 
           {auditMode === "single" && auditData && (
-            <button
-              onClick={downloadSinglePdfReport}
-              disabled={isDownloadingSinglePdf}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-md active:scale-95 disabled:opacity-50"
-            >
-              {isDownloadingSinglePdf ? (
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Download className="w-3.5 h-3.5" />
-              )}
-              <span>Download Executive PDF Report</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={downloadSingleExcelReport}
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white transition-all shadow-md active:scale-95"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Download Executive Excel Report (.xlsx)</span>
+              </button>
+              <button
+                onClick={downloadSinglePdfReport}
+                disabled={isDownloadingSinglePdf}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-all border border-zinc-700 active:scale-95 disabled:opacity-50"
+              >
+                {isDownloadingSinglePdf ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Download className="w-3.5 h-3.5" />
+                )}
+                <span>PDF</span>
+              </button>
+            </div>
           )}
 
           {auditMode === "dual" && dualCompareData && (
-            <button
-              onClick={downloadDualPdfReport}
-              disabled={isDownloadingDualPdf}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-md active:scale-95 disabled:opacity-50"
-            >
-              {isDownloadingDualPdf ? (
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Download className="w-3.5 h-3.5" />
-              )}
-              <span>Download Dual Comparison PDF</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={downloadDualExcelReport}
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white transition-all shadow-md active:scale-95"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Download Dual Comparison Excel (.xlsx)</span>
+              </button>
+              <button
+                onClick={downloadDualPdfReport}
+                disabled={isDownloadingDualPdf}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-all border border-zinc-700 active:scale-95 disabled:opacity-50"
+              >
+                {isDownloadingDualPdf ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Download className="w-3.5 h-3.5" />
+                )}
+                <span>PDF</span>
+              </button>
+            </div>
           )}
         </div>
       </motion.div>
@@ -1651,18 +1814,27 @@ export default function HygieneCheckPage() {
               </p>
             </div>
 
-            <button
-              onClick={downloadDualPdfReport}
-              disabled={isDownloadingDualPdf}
-              className="flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs transition-all shadow-lg active:scale-95 disabled:opacity-50 shrink-0"
-            >
-              {isDownloadingDualPdf ? (
-                <RefreshCw className="w-4 h-4 animate-spin" />
-              ) : (
-                <Download className="w-4 h-4" />
-              )}
-              <span>Download Executive Comparison PDF</span>
-            </button>
+            <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+              <button
+                onClick={downloadDualExcelReport}
+                className="flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs transition-all shadow-lg active:scale-95"
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                <span>Download Executive Comparison Excel (.xlsx)</span>
+              </button>
+              <button
+                onClick={downloadDualPdfReport}
+                disabled={isDownloadingDualPdf}
+                className="flex items-center gap-2 px-3 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 font-bold text-xs transition-all shadow-md active:scale-95 disabled:opacity-50"
+              >
+                {isDownloadingDualPdf ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
+                <span>PDF</span>
+              </button>
+            </div>
           </div>
 
           {/* Side-by-Side Platform Scorecards & Single Hygiene Audits (TOP SECTION) */}

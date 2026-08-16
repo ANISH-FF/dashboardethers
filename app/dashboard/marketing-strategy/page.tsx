@@ -25,6 +25,7 @@ import {
   CheckSquare,
   Save,
   RefreshCw,
+  XCircle,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { useBrand } from "@/components/BrandContext";
@@ -164,10 +165,8 @@ export default function MarketingStrategyPage() {
 
   const partyBurnRate = useMemo(() => {
     if (!partyCodesEnabled) return 0;
-    const safeAov = Math.max(1, aov);
-    const actualDiscount = Math.min(selectedPartyCap, safeAov * (selectedPartyPct / 100));
-    return Number(((actualDiscount / safeAov) * 100).toFixed(2));
-  }, [partyCodesEnabled, selectedPartyPct, selectedPartyCap, aov]);
+    return selectedPartyPct;
+  }, [partyCodesEnabled, selectedPartyPct]);
 
   const livePrimaryAvgBurn = useMemo(() => {
     let sum = 0;
@@ -1689,34 +1688,41 @@ export default function MarketingStrategyPage() {
                       </div>
 
                       {partyCodesEnabled && (
-                        <div className="grid grid-cols-2 gap-1.5 pt-1">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                           <div>
-                            <span className="text-[9px] uppercase text-ink/40 block mb-0.5">Discount %</span>
+                            <span className="text-[9px] uppercase text-ink/40 block mb-0.5">Flat Discount %</span>
                             <select
                               value={selectedPartyPct}
-                              onChange={(e) => {
-                                const pct = Number(e.target.value);
-                                setSelectedPartyPct(pct);
-                                setSelectedPartyCap(pct === 10 ? 100 : pct === 15 ? 150 : 250);
-                              }}
-                              className="w-full bg-paper-dark border border-line rounded px-1.5 py-1 text-xs font-bold text-purple-400 focus:outline-none"
+                              onChange={(e) => setSelectedPartyPct(Number(e.target.value))}
+                              className="w-full bg-paper-dark border border-line rounded px-2 py-1 text-xs font-bold text-purple-400 focus:outline-none"
                             >
-                              <option value={10}>10% (Upto ₹100)</option>
-                              <option value={15}>15% (Upto ₹150)</option>
-                              <option value={20}>20% (Upto ₹250)</option>
+                              <option value={10}>Flat 10% Off</option>
+                              <option value={15}>Flat 15% Off</option>
+                              <option value={20}>Flat 20% Off</option>
+                              <option value={25}>Flat 25% Off</option>
                             </select>
                           </div>
                           <div>
-                            <span className="text-[9px] uppercase text-ink/40 block mb-0.5">Target MOV</span>
-                            <select
-                              value={selectedPartyMov}
-                              onChange={(e) => setSelectedPartyMov(Number(e.target.value))}
-                              className="w-full bg-paper-dark border border-line rounded px-1.5 py-1 text-xs font-bold text-amber-400 focus:outline-none"
-                            >
-                              {[999, 1199, 1499, 1999].map((m) => (
-                                <option key={m} value={m}>₹{m}</option>
-                              ))}
-                            </select>
+                            <span className="text-[9px] uppercase text-ink/40 block mb-0.5">Target MOV (₹) — Editable</span>
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="number"
+                                value={selectedPartyMov}
+                                onChange={(e) => setSelectedPartyMov(Number(e.target.value) || 0)}
+                                className="w-full bg-paper-dark border border-line rounded px-2 py-1 text-xs font-bold text-amber-400 focus:outline-none font-mono"
+                                placeholder="MOV ₹"
+                              />
+                              <select
+                                value={selectedPartyMov}
+                                onChange={(e) => setSelectedPartyMov(Number(e.target.value))}
+                                className="bg-paper border border-line rounded px-1 py-1 text-[11px] font-bold text-ink/60 focus:outline-none"
+                                title="Preset MOV Options"
+                              >
+                                {[999, 1099, 1199, 1299, 1399, 1499, 1599, 1999].map((m) => (
+                                  <option key={m} value={m}>₹{m}</option>
+                                ))}
+                              </select>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -1778,135 +1784,38 @@ export default function MarketingStrategyPage() {
                     <div className="p-3.5 rounded-xl bg-paper border border-line space-y-2">
                       <div className="flex items-center justify-between border-b border-line/40 pb-1.5">
                         <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider block">
-                          Selected Primary Codes
+                          Active Primary Codes
                         </span>
                         <span className="text-[10px] text-emerald-400 font-bold">
                           {livePrimaryAvgBurn}% avg burn
                         </span>
                       </div>
 
-                      {/* New User Row */}
-                      <div className={`p-1.5 rounded-lg border transition-all flex items-center justify-between gap-1.5 ${
-                        newUserEnabled ? "bg-emerald-500/10 border-emerald-500/30" : "bg-paper-dark/40 border-line/40 opacity-50"
-                      }`}>
-                        <label className="flex items-center gap-1.5 cursor-pointer shrink-0">
-                          <input
-                            type="checkbox"
-                            checked={newUserEnabled}
-                            onChange={(e) => setNewUserEnabled(e.target.checked)}
-                            className="rounded border-line bg-paper text-emerald-500 focus:ring-0 w-3 h-3"
-                          />
-                          <span className="text-[11px] font-bold text-ink">New User</span>
-                        </label>
-                        {newUserEnabled && (
-                          <div className="flex items-center gap-1 text-[10px]">
-                            <select
-                              value={selectedNewUserPct}
-                              onChange={(e) => setSelectedNewUserPct(Number(e.target.value))}
-                              className="bg-paper-dark border border-line rounded px-1 py-0.5 text-[10px] font-bold text-emerald-400 focus:outline-none"
-                            >
-                              {STANDARD_PRIMARY_TIERS.map((t) => (
-                                <option key={t.percentage} value={t.percentage}>
-                                  {t.percentage}% (Upto ₹{t.uptoCap})
-                                </option>
-                              ))}
-                            </select>
-                            <span className="text-ink/40">on</span>
-                            <select
-                              value={selectedNewUserMov}
-                              onChange={(e) => setSelectedNewUserMov(Number(e.target.value))}
-                              className="bg-paper-dark border border-line rounded px-1 py-0.5 text-[10px] font-bold text-amber-400 focus:outline-none"
-                            >
-                              {[179, 199, 249].map((m) => (
-                                <option key={m} value={m}>₹{m}</option>
-                              ))}
-                            </select>
-                            <span className="text-emerald-400 font-bold ml-1">{newUserBurn}%</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Repeat User Row */}
-                      <div className={`p-1.5 rounded-lg border transition-all flex items-center justify-between gap-1.5 ${
-                        repeatUserEnabled ? "bg-blue-500/10 border-blue-500/30" : "bg-paper-dark/40 border-line/40 opacity-50"
-                      }`}>
-                        <label className="flex items-center gap-1.5 cursor-pointer shrink-0">
-                          <input
-                            type="checkbox"
-                            checked={repeatUserEnabled}
-                            onChange={(e) => setRepeatUserEnabled(e.target.checked)}
-                            className="rounded border-line bg-paper text-blue-500 focus:ring-0 w-3 h-3"
-                          />
-                          <span className="text-[11px] font-bold text-ink">Repeat</span>
-                        </label>
-                        {repeatUserEnabled && (
-                          <div className="flex items-center gap-1 text-[10px]">
-                            <select
-                              value={selectedRepeatUserPct}
-                              onChange={(e) => setSelectedRepeatUserPct(Number(e.target.value))}
-                              className="bg-paper-dark border border-line rounded px-1 py-0.5 text-[10px] font-bold text-blue-400 focus:outline-none"
-                            >
-                              {STANDARD_PRIMARY_TIERS.map((t) => (
-                                <option key={t.percentage} value={t.percentage}>
-                                  {t.percentage}% (Upto ₹{t.uptoCap})
-                                </option>
-                              ))}
-                            </select>
-                            <span className="text-ink/40">on</span>
-                            <select
-                              value={selectedRepeatUserMov}
-                              onChange={(e) => setSelectedRepeatUserMov(Number(e.target.value))}
-                              className="bg-paper-dark border border-line rounded px-1 py-0.5 text-[10px] font-bold text-amber-400 focus:outline-none"
-                            >
-                              {[179, 199, 249].map((m) => (
-                                <option key={m} value={m}>₹{m}</option>
-                              ))}
-                            </select>
-                            <span className="text-blue-400 font-bold ml-1">{repeatUserBurn}%</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* All User Row */}
-                      <div className={`p-1.5 rounded-lg border transition-all flex items-center justify-between gap-1.5 ${
-                        allUserEnabled ? "bg-purple-500/10 border-purple-500/30" : "bg-paper-dark/40 border-line/40 opacity-50"
-                      }`}>
-                        <label className="flex items-center gap-1.5 cursor-pointer shrink-0">
-                          <input
-                            type="checkbox"
-                            checked={allUserEnabled}
-                            onChange={(e) => setAllUserEnabled(e.target.checked)}
-                            className="rounded border-line bg-paper text-purple-500 focus:ring-0 w-3 h-3"
-                          />
-                          <span className="text-[11px] font-bold text-ink">All User</span>
-                        </label>
-                        {allUserEnabled && (
-                          <div className="flex items-center gap-1 text-[10px]">
-                            <select
-                              value={selectedAllUserPct}
-                              onChange={(e) => setSelectedAllUserPct(Number(e.target.value))}
-                              className="bg-paper-dark border border-line rounded px-1 py-0.5 text-[10px] font-bold text-purple-400 focus:outline-none"
-                            >
-                              {STANDARD_PRIMARY_TIERS.map((t) => (
-                                <option key={t.percentage} value={t.percentage}>
-                                  {t.percentage}% (Upto ₹{t.uptoCap})
-                                </option>
-                              ))}
-                            </select>
-                            <span className="text-ink/40">on</span>
-                            <select
-                              value={selectedAllUserMov}
-                              onChange={(e) => setSelectedAllUserMov(Number(e.target.value))}
-                              className="bg-paper-dark border border-line rounded px-1 py-0.5 text-[10px] font-bold text-amber-400 focus:outline-none"
-                            >
-                              {[179, 199, 249].map((m) => (
-                                <option key={m} value={m}>₹{m}</option>
-                              ))}
-                            </select>
-                            <span className="text-purple-400 font-bold ml-1">{allUserBurn}%</span>
-                          </div>
-                        )}
-                      </div>
+                      {/* Clean Output Display of Active Selected Primary Codes Only */}
+                      {(!newUserEnabled && !repeatUserEnabled && !allUserEnabled) ? (
+                        <div className="text-ink/40 text-[11px]">No Primary Code Selected</div>
+                      ) : (
+                        <div className="space-y-1">
+                          {newUserEnabled && (
+                            <div className="text-ink font-semibold flex items-center justify-between">
+                              <span>New User: {selectedNewUserPct}% (Upto ₹{STANDARD_PRIMARY_TIERS.find(t=>t.percentage===selectedNewUserPct)?.uptoCap || 120}) on MOV ₹{selectedNewUserMov}</span>
+                              <span className="text-emerald-400">{newUserBurn}%</span>
+                            </div>
+                          )}
+                          {repeatUserEnabled && (
+                            <div className="text-ink font-semibold flex items-center justify-between">
+                              <span>Repeat User: {selectedRepeatUserPct}% (Upto ₹{STANDARD_PRIMARY_TIERS.find(t=>t.percentage===selectedRepeatUserPct)?.uptoCap || 100}) on MOV ₹{selectedRepeatUserMov}</span>
+                              <span className="text-blue-400">{repeatUserBurn}%</span>
+                            </div>
+                          )}
+                          {allUserEnabled && (
+                            <div className="text-ink font-semibold flex items-center justify-between">
+                              <span>All User: {selectedAllUserPct}% (Upto ₹{STANDARD_PRIMARY_TIERS.find(t=>t.percentage===selectedAllUserPct)?.uptoCap || 75}) on MOV ₹{selectedAllUserMov}</span>
+                              <span className="text-purple-400">{allUserBurn}%</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Stepper Codes */}
@@ -1929,7 +1838,7 @@ export default function MarketingStrategyPage() {
                       </span>
                       {partyCodesEnabled ? (
                         <div className="text-ink font-semibold flex items-center justify-between">
-                          <span>Flat {selectedPartyPct}% off on ₹{selectedPartyMov} (Upto ₹{selectedPartyCap})</span>
+                          <span>Flat {selectedPartyPct}% off on MOV ₹{selectedPartyMov}</span>
                           <span className="text-emerald-400">{partyBurnRate}%</span>
                         </div>
                       ) : (
@@ -2137,50 +2046,80 @@ export default function MarketingStrategyPage() {
                 </div>
 
                 {swiggyAdsConfig.mode === "tryout" ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {/* Tryout X% */}
-                    <div>
-                      <label className="text-[11px] font-bold text-ink/70 block mb-1">X% (Tryout Percentage)</label>
-                      <div className="flex items-center gap-1.5">
-                        <input
-                          type="number"
-                          min={0}
-                          max={100}
-                          value={swiggyAdsConfig.tryoutPct}
-                          onChange={(e) => {
-                            const val = parseFloat(e.target.value) || 0;
-                            setSwiggyAdsConfig((prev) => ({ ...prev, tryoutPct: val }));
-                          }}
-                          className="w-full bg-paper-dark border border-line rounded-lg px-3 py-1.5 text-xs font-mono font-bold text-ink outline-none focus:border-orange-500"
-                        />
-                        <span className="text-xs font-bold text-orange-400">%</span>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {/* Tryout X% */}
+                      <div>
+                        <label className="text-[11px] font-bold text-ink/70 block mb-1">X% (Tryout Percentage)</label>
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            value={swiggyAdsConfig.tryoutPct}
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value) || 0;
+                              setSwiggyAdsConfig((prev) => ({ ...prev, tryoutPct: val }));
+                            }}
+                            className="w-full bg-paper-dark border border-line rounded-lg px-3 py-1.5 text-xs font-mono font-bold text-ink outline-none focus:border-orange-500"
+                          />
+                          <span className="text-xs font-bold text-orange-400">%</span>
+                        </div>
+                      </div>
+
+                      {/* GMV */}
+                      <div>
+                        <label className="text-[11px] font-bold text-ink/70 block mb-1">GMV (Gross Merchandise Value)</label>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-bold text-emerald-400">₹</span>
+                          <input
+                            type="number"
+                            min={0}
+                            value={swiggyAdsConfig.gmv}
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value) || 0;
+                              setSwiggyAdsConfig((prev) => ({ ...prev, gmv: val }));
+                            }}
+                            className="w-full bg-paper-dark border border-line rounded-lg px-3 py-1.5 text-xs font-mono font-bold text-ink outline-none focus:border-emerald-500"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Base Ads Amount Input */}
+                      <div>
+                        <label className="text-[11px] font-bold text-ink/70 block mb-1">Base Ads Amount (₹)</label>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-bold text-purple-400">₹</span>
+                          <input
+                            type="number"
+                            min={0}
+                            value={swiggyAdsConfig.baseAdsAmount}
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value) || 0;
+                              setSwiggyAdsConfig((prev) => ({ ...prev, baseAdsAmount: val }));
+                            }}
+                            className="w-full bg-paper-dark border border-line rounded-lg px-3 py-1.5 text-xs font-mono font-bold text-ink outline-none focus:border-purple-500"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Calculated Budget Summary */}
+                      <div className="p-2.5 rounded-lg bg-orange-500/10 border border-orange-500/20 flex flex-col justify-center font-mono">
+                        <span className="text-[10px] text-orange-400 font-bold uppercase">Formula: GMV × X%</span>
+                        <span className="text-xs text-ink/70">₹{swiggyAdsConfig.gmv.toLocaleString("en-IN")} × {swiggyAdsConfig.tryoutPct}%</span>
+                        <span className="text-sm font-extrabold text-emerald-400">₹{swiggyAdsResult.totalAdsBudget.toLocaleString("en-IN")}</span>
                       </div>
                     </div>
 
-                    {/* GMV */}
-                    <div>
-                      <label className="text-[11px] font-bold text-ink/70 block mb-1">GMV (Gross Merchandise Value)</label>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-emerald-400">₹</span>
-                        <input
-                          type="number"
-                          min={0}
-                          value={swiggyAdsConfig.gmv}
-                          onChange={(e) => {
-                            const val = parseFloat(e.target.value) || 0;
-                            setSwiggyAdsConfig((prev) => ({ ...prev, gmv: val }));
-                          }}
-                          className="w-full bg-paper-dark border border-line rounded-lg px-3 py-1.5 text-xs font-mono font-bold text-ink outline-none focus:border-emerald-500"
-                        />
+                    {/* Conditional Warning Bar: Show ONLY when Base Ads > Calculated Budget */}
+                    {swiggyAdsConfig.baseAdsAmount > swiggyAdsResult.totalAdsBudget && (
+                      <div className="p-3 rounded-xl border bg-amber-500/10 border-amber-500/30 text-amber-400 text-xs font-medium flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
+                        <span>
+                          Warning: Base Ads budget ({formatCurrency(swiggyAdsConfig.baseAdsAmount)}) is higher than calculated Total Swiggy Ad Budget ({formatCurrency(swiggyAdsResult.totalAdsBudget)}).
+                        </span>
                       </div>
-                    </div>
-
-                    {/* Calculated Budget Summary */}
-                    <div className="p-2.5 rounded-lg bg-orange-500/10 border border-orange-500/20 flex flex-col justify-center font-mono">
-                      <span className="text-[10px] text-orange-400 font-bold uppercase">Formula: GMV × X%</span>
-                      <span className="text-xs text-ink/70">₹{swiggyAdsConfig.gmv.toLocaleString("en-IN")} × {swiggyAdsConfig.tryoutPct}%</span>
-                      <span className="text-sm font-extrabold text-emerald-400">₹{swiggyAdsResult.totalAdsBudget.toLocaleString("en-IN")}</span>
-                    </div>
+                    )}
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 font-mono">
@@ -2485,8 +2424,8 @@ export default function MarketingStrategyPage() {
                         {selectedAdsModel === "M1"
                           ? "Previous CV (₹)"
                           : selectedAdsModel === "SGM"
-                          ? "Total Sales (₹)"
-                          : "Projected CV / Total Sales (₹)"}
+                          ? "Projected CV (₹)"
+                          : "Total Sales (₹)"}
                       </label>
                       <input
                         type="number"
@@ -2573,180 +2512,195 @@ export default function MarketingStrategyPage() {
                 </div>
               </div>
 
-              {/* Zomato Placement Products Multi-Select Selector Card */}
-              <div className="card p-4 bg-paper-dark border-line space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-ink block">
-                    Select Zomato Base Ads Placement Products
-                  </span>
-                  <span className="text-[11px] font-mono text-purple-400 font-bold">
-                    {selectedZomatoPlacements.length} Placement Products Selected
+              {/* Zomato Placement Products Multi-Select Selector Card (Notice for M3, Selectors for M1/M2/SGM) */}
+              {selectedAdsModel === "M3" ? (
+                <div className="card p-4 bg-paper-dark/60 border-line/60 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2.5 text-purple-300 font-medium">
+                    <Info className="w-4 h-4 text-purple-400 shrink-0" />
+                    <span>Model M3 operates on Flat Subtotal Allocation — Base Ads Placement Products are not applicable for this model.</span>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold text-purple-400/80 px-2 py-1 rounded bg-purple-500/10 border border-purple-500/20">
+                    No Base Ads Required
                   </span>
                 </div>
+              ) : (
+                <div className="card p-4 bg-paper-dark border-line space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-ink block">
+                      Select Zomato Base Ads Placement Products
+                    </span>
+                    <span className="text-[11px] font-mono text-purple-400 font-bold">
+                      {selectedZomatoPlacements.length} Placement Products Selected
+                    </span>
+                  </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
-                  {[
-                    { id: "gvp", name: "GVP", full: "General Visit Pack" },
-                    { id: "psp", name: "PSP", full: "Promoted Smart Placement" },
-                    { id: "spendingPotential", name: "Spending Potential", full: "Target UM Only" },
-                    { id: "boss", name: "BOSS", full: "Cuisine Tag" },
-                    { id: "bigBoss", name: "BIG BOSS", full: "Brand Tag" },
-                    { id: "dishPsp", name: "Dish PSP", full: "Click Placement" },
-                  ].map((p) => {
-                    const isSelected = selectedZomatoPlacements.includes(p.id);
-                    const dynamicPct = (adsResult.baseAdsBreakdown as any)[p.id]?.pct || 0;
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => toggleZomatoPlacement(p.id)}
-                        className={`p-3 rounded-xl border text-left transition-all ${
-                          isSelected
-                            ? "bg-purple-500/15 border-purple-500 text-purple-300 shadow-md font-bold"
-                            : "bg-paper border-line text-ink/40 hover:text-ink"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-extrabold text-xs flex items-center gap-1.5">
-                            <CheckSquare className={`w-3.5 h-3.5 ${isSelected ? "text-purple-400" : "text-ink/30"}`} />
-                            {p.name}
-                          </span>
-                          <span className="text-[9px] font-mono font-bold text-purple-400 bg-paper-dark px-1 py-0.5 rounded border border-line">
-                            {dynamicPct}%
-                          </span>
-                        </div>
-                        <div className="text-[10px] text-ink/50 mt-1 truncate">{p.full}</div>
-                      </button>
-                    );
-                  })}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+                    {[
+                      { id: "gvp", name: "GVP", full: "General Visit Pack" },
+                      { id: "psp", name: "PSP", full: "Promoted Smart Placement" },
+                      { id: "spendingPotential", name: "Spending Potential", full: "Target UM Only" },
+                      { id: "boss", name: "BOSS", full: "Cuisine Tag" },
+                      { id: "bigBoss", name: "BIG BOSS", full: "Brand Tag" },
+                      { id: "dishPsp", name: "Dish PSP", full: "Click Placement" },
+                    ].map((p) => {
+                      const isSelected = selectedZomatoPlacements.includes(p.id);
+                      const dynamicPct = (adsResult.baseAdsBreakdown as any)[p.id]?.pct || 0;
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => toggleZomatoPlacement(p.id)}
+                          className={`p-3 rounded-xl border text-left transition-all ${
+                            isSelected
+                              ? "bg-purple-500/15 border-purple-500 text-purple-300 shadow-md font-bold"
+                              : "bg-paper border-line text-ink/40 hover:text-ink"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-extrabold text-xs flex items-center gap-1.5">
+                              <CheckSquare className={`w-3.5 h-3.5 ${isSelected ? "text-purple-400" : "text-ink/30"}`} />
+                              {p.name}
+                            </span>
+                            <span className="text-[9px] font-mono font-bold text-purple-400 bg-paper-dark px-1 py-0.5 rounded border border-line">
+                              {dynamicPct}%
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-ink/50 mt-1 truncate">{p.full}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Base Ads Placements Breakdown Table */}
-              <div className="card !p-0 overflow-hidden border-line">
-                <div className="p-4 bg-paper-dark border-b border-line flex items-center justify-between flex-wrap gap-2">
-                  <div>
-                    <h3 className="text-sm font-bold text-ink flex items-center gap-2">
-                      <Store className="w-4 h-4 text-purple-400" /> Zomato Base Ads Placements Distribution
-                    </h3>
-                    <p className="text-[11px] text-ink/50 mt-0.5 font-sans">
-                      Target segments with exact order counts (LA: {Math.round(totalOrders * (laPct / 100))} orders, MM: {Math.round(totalOrders * (mmPct / 100))} orders, UM: {Math.round(totalOrders * (umPct / 100))} orders)
-                    </p>
+              {/* Zomato Base Ads Placements Breakdown Table (Only shown for M1, M2, SGM - Hidden for M3) */}
+              {selectedAdsModel !== "M3" && (
+                <div className="card !p-0 overflow-hidden border-line">
+                  <div className="p-4 bg-paper-dark border-b border-line flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                      <h3 className="text-sm font-bold text-ink flex items-center gap-2">
+                        <Store className="w-4 h-4 text-purple-400" /> Zomato Base Ads Placements Distribution
+                      </h3>
+                      <p className="text-[11px] text-ink/50 mt-0.5 font-sans">
+                        Target segments with exact order counts (LA: {Math.round(totalOrders * (laPct / 100))} orders, MM: {Math.round(totalOrders * (mmPct / 100))} orders, UM: {Math.round(totalOrders * (umPct / 100))} orders)
+                      </p>
+                    </div>
+                    <span className="text-xs text-ink/40 font-mono">
+                      Total Base Ads: {formatCurrency(adsResult.baseAdsAmount)}
+                    </span>
                   </div>
-                  <span className="text-xs text-ink/40 font-mono">
-                    Total Base Ads: {formatCurrency(adsResult.baseAdsAmount)}
-                  </span>
-                </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="bg-paper border-b border-line text-ink/60 uppercase tracking-wider text-[11px]">
-                        <th className="p-3.5 font-semibold">Ad Placement Type</th>
-                        <th className="p-3.5 font-semibold">Target Audience Segment (Exact Orders)</th>
-                        <th className="p-3.5 font-semibold text-right">Allocation %</th>
-                        <th className="p-3.5 font-semibold text-right">Budget Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-line font-mono">
-                      {[
-                        {
-                          key: "gvp",
-                          name: "General Visit Pack (GVP)",
-                          target: `All Users (AU) — ${totalOrders} Total Orders`,
-                          pct: adsResult.baseAdsBreakdown.gvp.pct,
-                          amount: adsResult.baseAdsBreakdown.gvp.amount,
-                          customNode: null,
-                        },
-                        {
-                          key: "psp",
-                          name: "Promoted Smart Placement (PSP)",
-                          pct: adsResult.baseAdsBreakdown.psp.pct,
-                          amount: adsResult.baseAdsBreakdown.psp.amount,
-                          customNode: (
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] text-ink/40 uppercase font-sans font-bold">Targeting:</span>
-                              <select
-                                value={pspTargetSegment}
-                                onChange={(e) => setPspTargetSegment(e.target.value as any)}
-                                className="bg-paper border border-purple-500/40 rounded px-2 py-1 text-xs font-bold text-purple-300 focus:outline-none focus:border-purple-500"
-                              >
-                                <option value="auto">Auto Best ({highestSegment.code}: {highestSegment.orders} orders)</option>
-                                <option value="la">Dedicated Less Affluent (LA) — {laOrders} orders</option>
-                                <option value="mm">Dedicated Middle Market (MM) — {mmOrders} orders</option>
-                                <option value="um">Dedicated Upper Market (UM) — {umOrders} orders</option>
-                                <option value="all">All Segments (UM → MM → LA)</option>
-                              </select>
-                            </div>
-                          ),
-                        },
-                        {
-                          key: "spendingPotential",
-                          name: "Spending Potential",
-                          pct: adsResult.baseAdsBreakdown.spendingPotential.pct,
-                          amount: adsResult.baseAdsBreakdown.spendingPotential.amount,
-                          customNode: (
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] text-ink/40 uppercase font-sans font-bold">Targeting:</span>
-                              <select
-                                value={spTargetSegment}
-                                onChange={(e) => setSpTargetSegment(e.target.value as any)}
-                                className="bg-paper border border-amber-500/40 rounded px-2 py-1 text-xs font-bold text-amber-300 focus:outline-none focus:border-amber-500"
-                              >
-                                <option value="auto">Auto Best ({highestSegment.code}: {highestSegment.orders} orders)</option>
-                                <option value="la">Dedicated Less Affluent (LA) — {laOrders} orders</option>
-                                <option value="mm">Dedicated Middle Market (MM) — {mmOrders} orders</option>
-                                <option value="um">Dedicated Upper Market (UM) — {umOrders} orders</option>
-                                <option value="all">All Segments (UM → MM → LA)</option>
-                              </select>
-                            </div>
-                          ),
-                        },
-                        {
-                          key: "boss",
-                          name: "BOSS (Brand Overall Search Slot)",
-                          target: `Cuisine Tag Placement — ${totalOrders} Orders Target`,
-                          pct: adsResult.baseAdsBreakdown.boss.pct,
-                          amount: adsResult.baseAdsBreakdown.boss.amount,
-                          customNode: null,
-                        },
-                        {
-                          key: "bigBoss",
-                          name: "BIG BOSS",
-                          target: `Brand Tag Placement — ${totalOrders} Orders Target`,
-                          pct: adsResult.baseAdsBreakdown.bigBoss.pct,
-                          amount: adsResult.baseAdsBreakdown.bigBoss.amount,
-                          customNode: null,
-                        },
-                        {
-                          key: "dishPsp",
-                          name: "Dish PSP",
-                          target: `Click-based dish placement — ${totalOrders} Orders Target`,
-                          pct: adsResult.baseAdsBreakdown.dishPsp.pct,
-                          amount: adsResult.baseAdsBreakdown.dishPsp.amount,
-                          customNode: null,
-                        },
-                      ]
-                        .filter((item) => selectedZomatoPlacements.includes(item.key))
-                        .map((item) => (
-                          <tr key={item.key} className="hover:bg-paper-dark/50 transition-all">
-                            <td className="p-3.5 font-bold text-ink flex items-center gap-2">
-                              <span className="w-2 h-2 rounded-full bg-purple-400 shrink-0"></span>
-                              {item.name}
-                            </td>
-                            <td className="p-3.5 text-ink/70">
-                              {item.customNode || item.target}
-                            </td>
-                            <td className="p-3.5 text-right font-bold text-purple-400">{item.pct}%</td>
-                            <td className="p-3.5 text-right font-bold text-emerald-400">
-                              {formatCurrency(item.amount)}
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-paper border-b border-line text-ink/60 uppercase tracking-wider text-[11px]">
+                          <th className="p-3.5 font-semibold">Ad Placement Type</th>
+                          <th className="p-3.5 font-semibold">Target Audience Segment (Exact Orders)</th>
+                          <th className="p-3.5 font-semibold text-right">Allocation %</th>
+                          <th className="p-3.5 font-semibold text-right">Budget Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-line font-mono">
+                        {[
+                          {
+                            key: "gvp",
+                            name: "General Visit Pack (GVP)",
+                            target: `All Users (AU) — ${totalOrders} Total Orders`,
+                            pct: adsResult.baseAdsBreakdown.gvp.pct,
+                            amount: adsResult.baseAdsBreakdown.gvp.amount,
+                            customNode: null,
+                          },
+                          {
+                            key: "psp",
+                            name: "Promoted Smart Placement (PSP)",
+                            pct: adsResult.baseAdsBreakdown.psp.pct,
+                            amount: adsResult.baseAdsBreakdown.psp.amount,
+                            customNode: (
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-ink/40 uppercase font-sans font-bold">Targeting:</span>
+                                <select
+                                  value={pspTargetSegment}
+                                  onChange={(e) => setPspTargetSegment(e.target.value as any)}
+                                  className="bg-paper border border-purple-500/40 rounded px-2 py-1 text-xs font-bold text-purple-300 focus:outline-none focus:border-purple-500"
+                                >
+                                  <option value="auto">Auto Best ({highestSegment.code}: {highestSegment.orders} orders)</option>
+                                  <option value="la">Dedicated Less Affluent (LA) — {laOrders} orders</option>
+                                  <option value="mm">Dedicated Middle Market (MM) — {mmOrders} orders</option>
+                                  <option value="um">Dedicated Upper Market (UM) — {umOrders} orders</option>
+                                  <option value="all">All Segments (UM → MM → LA)</option>
+                                </select>
+                              </div>
+                            ),
+                          },
+                          {
+                            key: "spendingPotential",
+                            name: "Spending Potential",
+                            pct: adsResult.baseAdsBreakdown.spendingPotential.pct,
+                            amount: adsResult.baseAdsBreakdown.spendingPotential.amount,
+                            customNode: (
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-ink/40 uppercase font-sans font-bold">Targeting:</span>
+                                <select
+                                  value={spTargetSegment}
+                                  onChange={(e) => setSpTargetSegment(e.target.value as any)}
+                                  className="bg-paper border border-amber-500/40 rounded px-2 py-1 text-xs font-bold text-amber-300 focus:outline-none focus:border-amber-500"
+                                >
+                                  <option value="auto">Auto Best ({highestSegment.code}: {highestSegment.orders} orders)</option>
+                                  <option value="la">Dedicated Less Affluent (LA) — {laOrders} orders</option>
+                                  <option value="mm">Dedicated Middle Market (MM) — {mmOrders} orders</option>
+                                  <option value="um">Dedicated Upper Market (UM) — {umOrders} orders</option>
+                                  <option value="all">All Segments (UM → MM → LA)</option>
+                                </select>
+                              </div>
+                            ),
+                          },
+                          {
+                            key: "boss",
+                            name: "BOSS (Brand Overall Search Slot)",
+                            target: `Cuisine Tag Placement — ${totalOrders} Orders Target`,
+                            pct: adsResult.baseAdsBreakdown.boss.pct,
+                            amount: adsResult.baseAdsBreakdown.boss.amount,
+                            customNode: null,
+                          },
+                          {
+                            key: "bigBoss",
+                            name: "BIG BOSS",
+                            target: `Brand Tag Placement — ${totalOrders} Orders Target`,
+                            pct: adsResult.baseAdsBreakdown.bigBoss.pct,
+                            amount: adsResult.baseAdsBreakdown.bigBoss.amount,
+                            customNode: null,
+                          },
+                          {
+                            key: "dishPsp",
+                            name: "Dish PSP",
+                            target: `Click-based dish placement — ${totalOrders} Orders Target`,
+                            pct: adsResult.baseAdsBreakdown.dishPsp.pct,
+                            amount: adsResult.baseAdsBreakdown.dishPsp.amount,
+                            customNode: null,
+                          },
+                        ]
+                          .filter((item) => selectedZomatoPlacements.includes(item.key))
+                          .map((item) => (
+                            <tr key={item.key} className="hover:bg-paper-dark/50 transition-all">
+                              <td className="p-3.5 font-bold text-ink flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-purple-400 shrink-0"></span>
+                                {item.name}
+                              </td>
+                              <td className="p-3.5 text-ink/70">
+                                {item.customNode || item.target}
+                              </td>
+                              <td className="p-3.5 text-right font-bold text-purple-400">{item.pct}%</td>
+                              <td className="p-3.5 text-right font-bold text-emerald-400">
+                                {formatCurrency(item.amount)}
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
+              )}
             </>
           )}
         </>

@@ -39,10 +39,11 @@ function parseVariantPrices(variantsStr: string): { name: string; price: number 
   const parts = variantsStr.split(",").map((s) => s.trim()).filter(Boolean);
   const result: { name: string; price: number }[] = [];
   for (const part of parts) {
-    const match = part.match(/^(.*?)\s*(?:\(₹?\s*(\d+(?:\.\d+)?)\))?$/);
+    const match = part.match(/^(.*?)\s*(?:[\(\:\-\/]\s*₹?\s*(\d+(?:\.\d+)?)\)?|\(₹?\s*(\d+(?:\.\d+)?)\))?$/);
     if (match) {
       const name = match[1].trim();
-      const price = match[2] ? parseFloat(match[2]) : 0;
+      const priceStr = match[2] || match[3];
+      const price = priceStr ? parseFloat(priceStr) : 0;
       result.push({ name, price });
     }
   }
@@ -68,13 +69,67 @@ function resolveSpice(apiSpice: string, name: string): 0 | 1 | 2 | 3 {
 
 function fileToBase64(file: File): Promise<{ data: string; mediaType: string }> {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      resolve({ data: result.split(",")[1], mediaType: file.type });
+    if (!file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        resolve({ data: result.split(",")[1], mediaType: file.type || "application/octet-stream" });
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    const img = new window.Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const canvas = document.createElement("canvas");
+      const MAX_DIM = 1600;
+      let width = img.width;
+      let height = img.height;
+
+      if (width > MAX_DIM || height > MAX_DIM) {
+        if (width > height) {
+          height = Math.round((height * MAX_DIM) / width);
+          width = MAX_DIM;
+        } else {
+          width = Math.round((width * MAX_DIM) / height);
+          height = MAX_DIM;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          resolve({ data: result.split(",")[1], mediaType: file.type });
+        };
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(img, 0, 0, width, height);
+
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
+      resolve({ data: dataUrl.split(",")[1], mediaType: "image/jpeg" });
     };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        resolve({ data: result.split(",")[1], mediaType: file.type });
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    };
+    img.src = objectUrl;
   });
 }
 

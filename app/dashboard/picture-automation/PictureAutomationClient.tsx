@@ -269,8 +269,16 @@ export default function PictureAutomationClient({ userId }: { userId: string }) 
   const fetchGallery = async (brandSlug: string) => {
     try {
       const res = await fetch(`/api/picture-automation/get_images?brand_slug=${brandSlug}`);
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Server connection failed (${res.status}): ${text.slice(0, 60)}`);
+      }
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        const text = await res.text();
+        throw new Error(`Server returned HTML instead of JSON: ${text.slice(0, 60)}`);
+      }
       const data = await res.json();
-      if (!res.ok) throw new Error("Could not fetch downloaded images.");
 
       const rawImages: { original_name: string; rel_path: string; url: string }[] = data.images || [];
 
@@ -280,6 +288,7 @@ export default function PictureAutomationClient({ userId }: { userId: string }) 
       rawImages.forEach((img) => {
         const parts = img.rel_path.replace(/\\/g, "/").split("/");
         const folder = parts.length > 1 ? parts[0] : "General";
+        const cleanDishTitle = folder.replace(/_/g, " ").trim();
         
         const cleanRelUrl = img.rel_path.replace(/\\/g, "/");
         const proxyUrl = `/api/picture-automation/downloads/${brandSlug}/${cleanRelUrl}`;
@@ -287,11 +296,17 @@ export default function PictureAutomationClient({ userId }: { userId: string }) 
         if (!groupsMap[folder]) {
           groupsMap[folder] = [];
         }
+        
+        const extMatch = img.original_name.match(/\.[0-9a-z]+$/i);
+        const ext = extMatch ? extMatch[0] : ".jpg";
+
+        const cardDefaultName = `${cleanDishTitle}${ext}`;
+
         groupsMap[folder].push({
           original_name: img.original_name,
           rel_path: img.rel_path,
           url: proxyUrl,
-          newName: img.original_name,
+          newName: cardDefaultName,
           selected: false,
         });
       });
@@ -389,18 +404,19 @@ export default function PictureAutomationClient({ userId }: { userId: string }) 
     setIsZipping(true);
     setErrorMsg(null);
 
-    const payloadImages: { original: string; new: string; rel_path: string }[] = [];
+    const payloadImages: { original: string; dish_name: string; new: string; rel_path: string }[] = [];
 
     groupedDishes.forEach((dish) => {
       dish.images.forEach((img) => {
         if (img.selected) {
-          let name = (img.newName || img.original_name).trim();
+          let name = (img.newName || dish.dishName || img.original_name).trim();
           const extMatch = img.original_name.match(/\.[0-9a-z]+$/i);
           const ext = extMatch ? extMatch[0] : ".jpg";
           if (!name.endsWith(ext)) name += ext;
 
           payloadImages.push({
             original: img.original_name,
+            dish_name: dish.dishName,
             new: name,
             rel_path: img.rel_path,
           });
@@ -424,8 +440,17 @@ export default function PictureAutomationClient({ userId }: { userId: string }) 
         }),
       });
 
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`ZIP service connection failed (${res.status}): ${text.slice(0, 60)}`);
+      }
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        const text = await res.text();
+        throw new Error(`ZIP service returned HTML instead of JSON: ${text.slice(0, 60)}`);
+      }
       const data = await res.json();
-      if (!res.ok || data.status !== "success") {
+      if (data.status !== "success") {
         throw new Error(data.error || "ZIP generation failed.");
       }
 
