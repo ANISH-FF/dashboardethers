@@ -39,6 +39,8 @@ export function UploadMenuModal({ onClose, onImportItems }: UploadModalProps) {
         const rows: any[] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
         const extracted: { itemName: string; basePrice: number }[] = [];
+        const HEADER_KEYWORDS = ["item", "name", "dish", "price", "mrp", "cost", "rate", "sr", "no", "category", "s.no"];
+
         for (let i = 0; i < rows.length; i++) {
           const row = rows[i];
           if (!row || row.length === 0) continue;
@@ -47,12 +49,18 @@ export function UploadMenuModal({ onClose, onImportItems }: UploadModalProps) {
           let price = 0;
 
           for (const cell of row) {
-            if (typeof cell === "string" && cell.trim().length > 1 && !name && !cell.match(/^\d+$/)) {
-              name = cell.trim();
-            } else if (typeof cell === "number" && cell > 0 && price === 0) {
-              price = cell;
-            } else if (typeof cell === "string" && cell.match(/^\d+$/) && price === 0) {
-              price = Number(cell);
+            if (cell === null || cell === undefined) continue;
+            const strVal = String(cell).trim();
+            if (!strVal) continue;
+
+            const isHeaderWord = HEADER_KEYWORDS.some(h => strVal.toLowerCase() === h || strVal.toLowerCase() === `${h} name`);
+            if (isHeaderWord) continue;
+
+            const numVal = Number(strVal);
+            if (!isNaN(numVal) && numVal > 0 && price === 0) {
+              price = numVal;
+            } else if (isNaN(numVal) && strVal.length >= 2 && !name) {
+              name = strVal;
             }
           }
 

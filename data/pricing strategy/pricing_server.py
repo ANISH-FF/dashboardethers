@@ -16,15 +16,12 @@ class PricingServer(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         print(f"[{self.address_string()}] {format % args}")
 
-    def end_headers(self):
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Cache-Control', 'no-cache')
-        super().end_headers()
-
     def do_OPTIONS(self):
         self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.send_header('Cache-Control', 'no-cache')
         self.end_headers()
 
     def do_POST(self):
@@ -34,10 +31,7 @@ class PricingServer(BaseHTTPRequestHandler):
         try:
             payload = json.loads(post_data.decode('utf-8'))
         except Exception:
-            self.send_response(400)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({'error': 'Invalid JSON'}).encode())
+            self._send_json({'error': 'Invalid JSON'}, 400)
             return
 
         if self.path.startswith('/api/pricing/discover'):
@@ -45,15 +39,20 @@ class PricingServer(BaseHTTPRequestHandler):
         elif self.path.startswith('/api/pricing/scrape'):
             self._handle_scrape(payload)
         else:
-            self.send_response(404)
-            self.end_headers()
+            self._send_json({'error': 'Not Found'}, 404)
 
     def _send_json(self, data, status=200):
         body = json.dumps(data, ensure_ascii=False).encode('utf-8')
         self.send_response(status)
-        self.send_header('Content-Type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Cache-Control', 'no-cache')
+        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.send_header('Content-Length', str(len(body)))
         self.end_headers()
-        self.wfile.write(body)
+        try:
+            self.wfile.write(body)
+        except Exception as e:
+            print(f"[!] Send error: {e}")
 
     def _handle_discover(self, payload):
         """Discover live restaurants from Swiggy area page"""
@@ -143,10 +142,7 @@ class PricingServer(BaseHTTPRequestHandler):
             results = []
             with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
                 futures = [executor.submit(process_competitor, comp) for comp in competitors]
-                for future in concurrent.futures.as_completed(futures):
-                    res = future.result()
-                    if res:
-                        results.append(res)
+                results = [f.result() for f in futures if f.result() is not None]
 
             self._send_json({'success': True, 'results': results})
 

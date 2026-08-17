@@ -407,23 +407,26 @@ export async function POST(req: NextRequest) {
       itemNames
     );
 
-    // Build lookup: itemName → [{name, price, url}]
-    const priceMatrix: Record<string, { name: string; price: number | null; url?: string }[]> = {};
+    // Build lookup: itemName → [{compIndex, name, price, url}]
+    const priceMatrix: Record<string, { compIndex: number; name: string; price: number | null; url?: string }[]> = {};
     for (const name of itemNames) priceMatrix[name] = [];
 
-    if (scraperResults) {
-      for (const comp of scraperResults) {
-        for (const matched of (comp.items || [])) {
-          const row = priceMatrix[matched.userItem];
-          if (row) {
-            row.push({
+    if (scraperResults && Array.isArray(scraperResults)) {
+      scraperResults.forEach((comp: any, compIdx: number) => {
+        (comp.items || []).forEach((matched: any) => {
+          if (matched.userItem) {
+            if (!priceMatrix[matched.userItem]) {
+              priceMatrix[matched.userItem] = [];
+            }
+            priceMatrix[matched.userItem].push({
+              compIndex: compIdx,
               name: comp.competitorName,
               price: matched.price,
               url: comp.swiggyUrl
             });
           }
-        }
-      }
+        });
+      });
     }
 
     // ── Step 3: Build results + ask Gemini ONLY for suggestivePrice ────────
@@ -434,33 +437,39 @@ export async function POST(req: NextRequest) {
 
         const compEntries = priceMatrix[itemName] || [];
 
-        // Build final competitors array — robustly match by URL, Name, or Index
+        // Build final competitors array — matched by exact competitor index order
         const compList = competitors.map((comp, idx) => {
-          // 1. Try URL match
-          let found = compEntries.find(e => comp.url && e.url && e.url.toLowerCase().split('?')[0] === comp.url.toLowerCase().split('?')[0]);
-          // 2. Try Name match
+          // 1. Try matching by exact competitor index
+          let found = compEntries.find(e => e.compIndex === idx);
+
+          // 2. Try URL match fallback
           if (!found) {
-            found = compEntries.find(e => e.name.toLowerCase().includes(comp.name.toLowerCase()) || comp.name.toLowerCase().includes(e.name.toLowerCase()));
-          }
-          // 3. Fallback to index matching
-          if (!found && compEntries[idx]) {
-            found = compEntries[idx];
+            found = compEntries.find(e => comp.url && e.url && e.url.toLowerCase().trim().replace(/\/$/, '') === (e.url || "").toLowerCase().trim().replace(/\/$/, ''));
           }
 
-          const displayName = found?.name || comp.name;
-          const displayUrl = found?.url || comp.url;
+          // 3. Try Name match fallback
+          if (!found) {
+            found = compEntries.find(e => {
+              const eName = (e.name || "").toLowerCase();
+              const cName = (comp.name || "").toLowerCase();
+              return eName.includes(cName) || cName.includes(eName);
+            });
+          }
 
-          if (found && found.price !== null && (found.price as number) > 0) {
+          const displayName = comp.name || found?.name || `Competitor ${idx + 1}`;
+          const displayUrl = comp.url || found?.url;
+
+          if (found && found.price !== null && Number(found.price) > 0) {
             return {
               name: displayName,
-              price: found.price as number,
+              price: Math.round(Number(found.price)),
               url: displayUrl,
               realData: true
             };
           }
           return {
             name: displayName,
-            price: null, // No real data — will show as N/A in frontend
+            price: 0,
             url: displayUrl,
             realData: false
           };

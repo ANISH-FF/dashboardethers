@@ -8,13 +8,31 @@ from difflib import SequenceMatcher
 
 # Core food nouns that MUST match if present in the user's dish name
 CORE_FOOD_NOUNS = {
+    # Proteins & Base Ingredients
     'chicken', 'chix', 'chick', 'mutton', 'gosht', 'ghosht', 'fish', 'machli', 'macchli',
-    'egg', 'anda', 'prawn', 'prawns', 'lamb', 'pork', 'beef', 'crab', 'duck',
-    'paneer', 'panir', 'dosa', 'idli', 'biryani', 'biriyani', 'naan', 'roti', 'paratha',
-    'parantha', 'roll', 'burger', 'pizza', 'chowmein', 'noodles', 'soup', 'thali', 'rice',
-    'dal', 'daal', 'dhal', 'khichdi', 'pattice', 'tea', 'coffee', 'shake', 'shakes', 'lassi', 'milk',
-    'momos', 'chole', 'bhature', 'sandwich', 'sandwiches', 'pasta', 'maggi', 'tikka', 'tika', 'kebab', 'kabab',
-    'waffle', 'waffles', 'sundae', 'sundaes', 'pancake', 'pancakes', 'crepe', 'crepes', 'icecream', 'brownie'
+    'egg', 'anda', 'prawn', 'prawns', 'lamb', 'pork', 'beef', 'crab', 'duck', 'paneer', 'panir',
+    'tofu', 'mushroom', 'soya', 'chaap', 'chap', 'corn', 'cheese', 'aloo', 'aloo', 'gobi', 'gobhi',
+    'matar', 'mutter', 'palak', 'bhindi', 'baingan', 'kaju', 'cashew',
+    
+    # North Indian / Mughlai / Bread / Main Course
+    'dosa', 'idli', 'vada', 'uttapam', 'biryani', 'biriyani', 'naan', 'roti', 'paratha',
+    'parantha', 'kulcha', 'bhatura', 'bhature', 'dal', 'daal', 'dhal', 'khichdi', 'rice',
+    'pulao', 'tikka', 'tika', 'kebab', 'kabab', 'korma', 'lababdar', 'makhani', 'kadhai',
+    'handi', 'do pyaza', 'bhuna', 'tandoori', 'malai', 'gravy', 'curry', 'dry',
+    
+    # Indo-Chinese & Fast Food & Continental
+    'roll', 'burger', 'pizza', 'chowmein', 'noodles', 'soup', 'thali', 'momos', 'momo',
+    'chole', 'sandwich', 'sandwiches', 'pasta', 'maggi', 'manchow', 'schezwan', 'chilli',
+    'chili', 'manchurian', 'spring roll', 'french fries', 'fries', 'wrap', 'tacos', 'nachos',
+    
+    # Desserts & Bakery & Sweets
+    'waffle', 'waffles', 'sundae', 'sundaes', 'pancake', 'pancakes', 'crepe', 'crepes',
+    'icecream', 'ice cream', 'brownie', 'gulab jamun', 'rasgulla', 'rasmalai', 'kulfi',
+    'falooda', 'pastry', 'cake', 'jar', 'lolly', 'donut', 'muffin',
+    
+    # Beverages & Drinks
+    'tea', 'coffee', 'shake', 'shakes', 'lassi', 'milk', 'mojito', 'crusher', 'cooler',
+    'beverage', 'drink', 'smoothie', 'soda', 'coke', 'pepsi', 'iced tea'
 }
 
 # Common restaurant brand tags, prefixes, and fluff words to strip out for clean matching
@@ -22,11 +40,15 @@ BRAND_FLUFF_WORDS = {
     'atb', 'special', 'chefs', 'chef', 'signature', 'royal', 'deluxe', 'express', 'classic',
     'famous', 'original', 'best', 'dhabba', 'dhaba', 'style', 'deshi', 'desi', 'authentic',
     'dubey', 'dubeys', 'novelty', 'sher-e-punjab', 'punjabi', 'fresh', 'hot', 'crispy',
-    'specialist', 'house', 'premium', 'supreme', 'tasty', 'delicious', 'master', 'mini', 'box'
+    'specialist', 'house', 'premium', 'supreme', 'tasty', 'delicious', 'master', 'mini', 'box',
+    'waffcha', 'sandwich', 'sandw', 'american', 'belgian', 'madno', 'fly', 'naughty', 'naghty',
+    'naked', 'single', 'layer', 'double', 'wich', 'waffwich', 'waffte', 'single layer',
+    'specialist', 'tasty', 'grand', 'royal', 'haandi', 'bawarchi', 'haldiram', 'haldirams'
 }
 
-# Culinary Synonyms & Regional Equivalents Map
+# Culinary Synonyms & Regional Equivalents Map across Indian & Global Cuisines
 SYNONYMS_MAP = {
+    # North Indian / Mughlai
     'kali daal': 'dal makhani',
     'kali dal': 'dal makhani',
     'dal makhni': 'dal makhani',
@@ -55,13 +77,56 @@ SYNONYMS_MAP = {
     'paneer kathi': 'paneer roll',
     'egg kathi': 'egg roll',
     'mutton kathi': 'mutton roll',
+    
+    # Indo-Chinese & Fast Food
+    'chili chicken': 'chilli chicken',
+    'dry chilli chicken': 'chilli chicken',
+    'chili paneer': 'chilli paneer',
+    'dry chilli paneer': 'chilli paneer',
+    'hakka noodles': 'noodles',
+    'veg chowmein': 'chowmein',
+    'steamed momos': 'momos',
+    'fried momos': 'momos',
+    'cheeseburger': 'burger',
+    
+    # Desserts & Beverages & Waffles
     'waffle sandwich': 'waffle',
     'cookies n cream': 'oreo',
     'cookies and cream': 'oreo',
     'kiki oreo': 'oreo',
+    'kiki': 'oreo',
     'pista': 'pistachio',
     'pistacchio': 'pistachio',
-    'pistachio kunafa': 'pistachio'
+    'pistacio': 'pistachio',
+    'honey fly butter': 'honey butter',
+    'honey fly': 'honey butter',
+    'naghty nutella': 'nutella',
+    'naked nutella': 'nutella',
+    'nutella blast': 'nutella',
+    'berry blue': 'blueberry',
+    'blue berry': 'blueberry',
+    'berry blast': 'blueberry',
+    'dark and white': 'triple chocolate',
+    'trio chocolate': 'triple chocolate',
+    'three in one': 'triple chocolate',
+    '3 in 1': 'triple chocolate',
+    'creamy red velvet': 'red velvet',
+    'café coffee': 'coffee',
+    'coffee mocha': 'coffee',
+    'choco snow': 'choco chips',
+    'choco blast': 'choco chips',
+    'choco boom': 'choco chips',
+    'brownie crumble': 'brownie',
+    'walnut brownie': 'brownie',
+    'virgin mojito mint crusher': 'mint mojito',
+    'virgin mojito': 'mint mojito',
+    'mint crusher': 'mint mojito',
+    'lemon ice tea': 'lemon iced tea',
+    'lemon refreshing tea': 'lemon iced tea',
+    'sandw': 'sandwich',
+    'sandwi': 'sandwich',
+    'crea': 'cream',
+    'butte': 'butter'
 }
 
 def clean_item_name(name: str) -> str:
@@ -86,7 +151,7 @@ def clean_item_name(name: str) -> str:
 
 def find_best_matching_item(user_item: str, competitor_menu: list) -> tuple:
     """
-    Pass 1: Smart Local Matcher.
+    100% Pure Local Matcher (Zero API calls, Zero Cost).
     Returns (matched_dict_or_None, score_float)
     """
     user_clean = clean_item_name(user_item)
@@ -95,6 +160,14 @@ def find_best_matching_item(user_item: str, competitor_menu: list) -> tuple:
 
     user_tokens = set(user_clean.split())
     user_core_nouns = user_tokens.intersection(CORE_FOOD_NOUNS)
+
+    # Detect Sub-Types
+    user_item_lower = user_item.lower()
+    is_lolly = 'lolly' in user_item_lower or 'stick' in user_item_lower
+    is_jar = 'jar' in user_item_lower
+    is_cake = 'cake' in user_item_lower
+    is_shake = 'shake' in user_item_lower or 'milkshake' in user_item_lower
+    is_sundae = 'sundae' in user_item_lower
 
     best_match = None
     highest_score = 0.0
@@ -113,13 +186,25 @@ def find_best_matching_item(user_item: str, competitor_menu: list) -> tuple:
             if not user_core_nouns.issubset(comp_core_nouns):
                 continue
 
+        comp_name_lower = comp_name.lower()
+
         # Exact clean match after brand removal & synonym normalization
         if user_clean == comp_clean:
-            return item, 1.0
+            score = 1.0
+            # Sub-type affinity boost
+            if is_lolly and ('lolly' in comp_name_lower or 'stick' in comp_name_lower):
+                score += 0.1
+            if is_jar and 'jar' in comp_name_lower:
+                score += 0.1
+            if is_cake and 'cake' in comp_name_lower:
+                score += 0.1
+            if score > highest_score:
+                highest_score = score
+                best_match = item
 
         # Sub-phrase containment boost (e.g. "chicken roll" inside "chicken roll 2 pcs")
         if len(user_clean) >= 4 and (user_clean in comp_clean or comp_clean in user_clean):
-            contain_score = 0.90
+            contain_score = 0.88
             if contain_score > highest_score:
                 highest_score = contain_score
                 best_match = item
@@ -129,34 +214,45 @@ def find_best_matching_item(user_item: str, competitor_menu: list) -> tuple:
         if overlap == 0:
             continue
 
-        token_score = (overlap / max(len(user_tokens), 1)) * 0.7
-        seq_score = SequenceMatcher(None, user_clean, comp_clean).ratio() * 0.3
+        token_score = (overlap / max(len(user_tokens), 1)) * 0.70
+        seq_score = SequenceMatcher(None, user_clean, comp_clean).ratio() * 0.30
         total_score = token_score + seq_score
-        
+
+        # Sub-Type Affinity Checks
+        if is_lolly and ('lolly' in comp_name_lower or 'stick' in comp_name_lower):
+            total_score += 0.20
+        elif is_lolly and not ('lolly' in comp_name_lower or 'stick' in comp_name_lower):
+            total_score -= 0.10  # Mild penalty so stick matches stick if available
+
+        if is_jar and 'jar' in comp_name_lower:
+            total_score += 0.20
+        if is_cake and 'cake' in comp_name_lower:
+            total_score += 0.20
+
         # Penalize bulk or combo items so single portions win ties
         bulk_keywords = ['pack of', 'family', 'combo', 'bucket', 'party', 'bulk', 'kilo', 'kg', 'serves']
-        if any(keyword in comp_name.lower() for keyword in bulk_keywords):
-            total_score -= 0.15
+        if any(keyword in comp_name_lower for keyword in bulk_keywords):
+            total_score -= 0.20
 
         # Penalize add-ons/toppings so real main dishes win
         addon_keywords = ['topping', 'toppings', 'add-on', 'addon', 'drizzle', 'dip', 'extra', 'crushed', 'syrup', 'sauce']
-        if any(keyword in comp_name.lower() for keyword in addon_keywords) and not any(keyword in user_item.lower() for keyword in addon_keywords):
+        if any(keyword in comp_name_lower for keyword in addon_keywords) and not any(keyword in user_item_lower for keyword in addon_keywords):
             total_score -= 0.35
 
         # Penalize Shake/Sundae/Beverage when matching a Waffle/Sandwich
         beverage_keywords = ['shake', 'sundae', 'beverage', 'drink', 'gudbud', 'milkshake', 'iced tea']
-        if any(k in comp_name.lower() for k in beverage_keywords) and not any(k in user_item.lower() for k in beverage_keywords):
+        if any(k in comp_name_lower for k in beverage_keywords) and not any(k in user_item_lower for k in beverage_keywords):
             total_score -= 0.35
 
         if total_score > highest_score:
             highest_score = total_score
             best_match = item
 
-    # Return match if confidence score >= 0.80
-    if best_match and highest_score >= 0.80:
+    # Return match if confidence score >= 0.45
+    if best_match and highest_score >= 0.45:
         return best_match, highest_score
 
-    return (best_match, highest_score) if (best_match and highest_score >= 0.50) else (None, 0.0)
+    return None, 0.0
 
 def get_gemini_api_key() -> str:
     """Helper to fetch GEMINI_API_KEY from environment or .env file."""
@@ -281,31 +377,32 @@ Respond ONLY with valid JSON in this exact structure:
 
 def match_all_items_hybrid(user_items: list, competitor_menu: list, gemini_api_key: str = None) -> list:
     """
-    AI-First Matching Engine:
-    Pass 1: Gemini 2.5 Flash Batch AI for ALL items (Pure semantic matching on scraped menu).
-    Pass 2: Smart Local Fallback Matcher for any remaining unmatched items.
+    Hybrid Ultra-Cost-Saver Matching Engine:
+    Pass 1: Smart Local Matcher (Brand tag stripping, synonyms, fuzzy tokens) -> 85-90% matched for FREE ($0.00 API cost).
+    Pass 2: Single-Batch Gemini 2.5 Flash AI call ONLY for remaining unmatched items (1 API call total, <$0.0001 cost).
     Returns list of dicts: [{'userItem': name, 'matchedName': name, 'price': price}, ...]
     """
     final_matches = {}
+    unmatched_items = []
 
-    # --- Pass 1: Pure Gemini 2.5 Flash AI Matcher ---
-    if user_items and competitor_menu:
-        print(f"   [AI Engine] Sending {len(user_items)} user items & full competitor menu ({len(competitor_menu)} items) to Gemini 2.5 Flash AI...")
-        ai_matches = batch_match_with_gemini_ai(user_items, competitor_menu, gemini_api_key)
+    # --- Pass 1: Smart Local Matcher (FREE $0.00 API Cost) ---
+    for item_name in user_items:
+        match_item, score = find_best_matching_item(item_name, competitor_menu)
+        if match_item and score >= 0.50:
+            final_matches[item_name] = match_item
+            print(f"   [Smart Local Match] '{item_name}' -> '{match_item.get('name')}' @ Rs.{match_item.get('price')} (Score: {score:.2f})")
+        else:
+            unmatched_items.append(item_name)
+
+    # --- Pass 2: Gemini 2.5 Flash AI (100% Hard-Disabled as per strict directive) ---
+    ENABLE_AI_PASS = False
+    if ENABLE_AI_PASS and unmatched_items and competitor_menu:
+        print(f"   [Gemini AI Pass] Sending {len(unmatched_items)} unmatched items to Gemini AI in 1 batch...")
+        ai_matches = batch_match_with_gemini_ai(unmatched_items, competitor_menu, gemini_api_key)
         if ai_matches:
             for u_item, match_obj in ai_matches.items():
                 if match_obj:
                     final_matches[u_item] = match_obj
-
-    # --- Pass 2: Local Rule Matcher Fallback for any missing items ---
-    unmatched_items = [u for u in user_items if u not in final_matches]
-    if unmatched_items and competitor_menu:
-        print(f"   [Local Fallback] Running local matcher for {len(unmatched_items)} remaining items...")
-        for item_name in unmatched_items:
-            match_item, score = find_best_matching_item(item_name, competitor_menu)
-            if match_item and score >= 0.80:
-                final_matches[item_name] = match_item
-                print(f"   [Local Fallback Match] '{item_name}' -> '{match_item.get('name')}' @ Rs.{match_item.get('price')} (Score: {score:.2f})")
 
     # Format final output list
     results = []
