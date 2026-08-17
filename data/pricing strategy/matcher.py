@@ -49,19 +49,27 @@ BRAND_FLUFF_WORDS = {
 # Culinary Synonyms & Regional Equivalents Map across Indian & Global Cuisines
 SYNONYMS_MAP = {
     # North Indian / Mughlai
+    'chicken butter masala': 'butter chicken',
+    'chicken makhani': 'butter chicken',
+    'chicken makhni': 'butter chicken',
+    'murgh makhani': 'butter chicken',
+    'murg makhani': 'butter chicken',
+    'murg makhni': 'butter chicken',
+    'murgh makhni': 'butter chicken',
+    'chicken tikka masala': 'chicken tikka',
+    'chicken tikka gravy': 'chicken tikka',
     'kali daal': 'dal makhani',
     'kali dal': 'dal makhani',
     'dal makhni': 'dal makhani',
     'black dal': 'dal makhani',
     'dal makhne': 'dal makhani',
-    'murgh makhani': 'butter chicken',
-    'murg makhani': 'butter chicken',
-    'murg makhni': 'butter chicken',
-    'murgh makhni': 'butter chicken',
-    'chicken makhani': 'butter chicken',
     'chana bhatura': 'chole bhature',
     'chole bhatura': 'chole bhature',
     'chana bhature': 'chole bhature',
+    'gosht biryani': 'mutton biryani',
+    'mutton dum biryani': 'mutton biryani',
+    'chicken dum biryani': 'chicken biryani',
+    'hyderabadi biryani': 'biryani',
     'lachha': 'laccha',
     'lacha': 'laccha',
     'parantha': 'paratha',
@@ -79,14 +87,24 @@ SYNONYMS_MAP = {
     'mutton kathi': 'mutton roll',
     
     # Indo-Chinese & Fast Food
+    'chicken tikka masala': 'chicken tikka',
+    'chicken tikka gravy': 'chicken tikka',
+    'murgh tikka': 'chicken tikka',
+    'murg tikka': 'chicken tikka',
     'chili chicken': 'chilli chicken',
     'dry chilli chicken': 'chilli chicken',
     'chili paneer': 'chilli paneer',
     'dry chilli paneer': 'chilli paneer',
     'hakka noodles': 'noodles',
     'veg chowmein': 'chowmein',
+    'veg manchurian': 'manchurian',
+    'vegetable manchurian': 'manchurian',
+    'chicken manchurian': 'manchurian',
     'steamed momos': 'momos',
     'fried momos': 'momos',
+    'steamed momo': 'momos',
+    'chicken momo': 'momos',
+    'chicken momos': 'momos',
     'cheeseburger': 'burger',
     
     # Desserts & Beverages & Waffles
@@ -154,7 +172,8 @@ PRIMARY_FLAVORS = [
     'oreo', 'kitkat', 'kit kat', 'nutella', 'hazelnut', 'tiramisu',
     'walnut brownie', 'brownie', 'red velvet', 'blue velvet', 'biscoff',
     'mango', 'blueberry', 'cheesecake', 'dal makhani', 'makhani',
-    'butter chicken', 'paneer', 'cold coffee', 'coffee'
+    'butter chicken', 'paneer', 'cold coffee', 'coffee', 'biryani',
+    'tikka', 'manchurian', 'momo', 'momos', 'dosa', 'idli', 'chole'
 ]
 
 def find_best_matching_item(user_item: str, competitor_menu: list) -> tuple:
