@@ -17,6 +17,7 @@ interface TableProps {
   items: StrategyItem[];
   setItems: React.Dispatch<React.SetStateAction<StrategyItem[]>>;
   competitorCount: number;
+  competitorNames?: string[];
   discountPct: number;
   commissionPct: number;
   adsPct: number;
@@ -68,6 +69,7 @@ export function PricingTable({
   items,
   setItems,
   competitorCount,
+  competitorNames = [],
   discountPct,
   commissionPct,
   adsPct,
@@ -218,11 +220,17 @@ export function PricingTable({
                 <th className="py-3.5 px-4 min-w-[110px]">My Brand Price</th>
 
                 {/* Dynamic Competitor Headers */}
-                {Array.from({ length: competitorCount }).map((_, idx) => (
-                  <th key={idx} className="py-3.5 px-4 min-w-[155px] text-blue-400 border-l border-line/40">
-                    Competition {idx + 1} Name & Price
-                  </th>
-                ))}
+                {Array.from({ length: competitorCount }).map((_, idx) => {
+                  const compTitle = competitorNames[idx] || `Competitor ${idx + 1}`;
+                  return (
+                    <th key={idx} className="py-3.5 px-4 min-w-[170px] text-blue-400 border-l border-line/40">
+                      <div className="font-bold text-[11px] text-blue-300 truncate" title={compTitle}>
+                        {compTitle}
+                      </div>
+                      <div className="text-[9px] text-ink/40 font-normal lowercase tracking-normal">Matched Item & Price</div>
+                    </th>
+                  );
+                })}
 
                 <th className="py-3.5 px-4 min-w-[130px] text-purple-400 bg-purple-500/5 border-l border-line">Suggestive Price</th>
                 <th className="py-3.5 px-4 min-w-[110px] text-amber-400">Discount ({discountPct}%)</th>
@@ -277,18 +285,22 @@ export function PricingTable({
 
                     {/* Competitors 1..N */}
                     {Array.from({ length: competitorCount }).map((_, cIdx) => {
-                      const comp = (item.competitors[cIdx] || { name: `Comp ${cIdx + 1}`, price: null }) as { name: string; price: number | null; url?: string };
+                      const comp = (item.competitors[cIdx] || { name: "", price: null }) as { name: string; price: number | null; url?: string };
                       const hasPrice = comp.price !== null && comp.price !== undefined && comp.price > 0;
+                      const restaurantName = competitorNames[cIdx] || "";
+                      const isRestaurantName = restaurantName && comp.name && (comp.name.toLowerCase().includes(restaurantName.toLowerCase()) || restaurantName.toLowerCase().includes(comp.name.toLowerCase()));
+                      const cellDishName = isRestaurantName ? "" : comp.name;
+
                       return (
                         <td key={cIdx} className="py-3 px-4 border-l border-line/40">
                           <div className="space-y-1">
                             <div className="flex items-center justify-between gap-1">
                               <input
                                 type="text"
-                                value={comp.name}
-                                placeholder={`Comp ${cIdx + 1}`}
+                                value={cellDishName}
+                                placeholder={hasPrice ? "Matched Dish Name" : "Not Available"}
                                 onChange={(e) => handleCompetitorChange(item.id, cIdx, e.target.value, comp.price ?? 0)}
-                                className="bg-transparent border-none text-[11px] text-ink/80 font-semibold w-full focus:ring-1 focus:ring-blue-500/30 rounded px-1"
+                                className="bg-transparent border-none text-[11px] text-ink/80 font-semibold w-full focus:ring-1 focus:ring-blue-500/30 rounded px-1 placeholder:text-ink/30"
                               />
                             </div>
                             <div className="flex items-center gap-1 font-mono whitespace-nowrap">

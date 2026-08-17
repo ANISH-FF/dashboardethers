@@ -407,8 +407,8 @@ export async function POST(req: NextRequest) {
       itemNames
     );
 
-    // Build lookup: itemName → [{compIndex, name, price, url}]
-    const priceMatrix: Record<string, { compIndex: number; name: string; price: number | null; url?: string }[]> = {};
+    // Build lookup: itemName → [{compIndex, name, matchedDishName, price, url}]
+    const priceMatrix: Record<string, { compIndex: number; name: string; matchedDishName: string; price: number | null; url?: string }[]> = {};
     for (const name of itemNames) priceMatrix[name] = [];
 
     if (scraperResults && Array.isArray(scraperResults)) {
@@ -421,6 +421,7 @@ export async function POST(req: NextRequest) {
             priceMatrix[matched.userItem].push({
               compIndex: compIdx,
               name: comp.competitorName,
+              matchedDishName: matched.matchedName || matched.userItem,
               price: matched.price,
               url: comp.swiggyUrl
             });
@@ -456,19 +457,19 @@ export async function POST(req: NextRequest) {
             });
           }
 
-          const displayName = comp.name || found?.name || `Competitor ${idx + 1}`;
+          const cellDishName = found?.matchedDishName || comp.name || `Competitor ${idx + 1}`;
           const displayUrl = comp.url || found?.url;
 
           if (found && found.price !== null && Number(found.price) > 0) {
             return {
-              name: displayName,
+              name: cellDishName,
               price: Math.round(Number(found.price)),
               url: displayUrl,
               realData: true
             };
           }
           return {
-            name: displayName,
+            name: cellDishName,
             price: 0,
             url: displayUrl,
             realData: false

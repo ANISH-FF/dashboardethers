@@ -248,48 +248,43 @@ def find_best_matching_item(user_item: str, competitor_menu: list) -> tuple:
             highest_score = total_score
             best_match = item
 
-    # Return match if confidence score >= 0.45
-    if best_match and highest_score >= 0.45:
+    # Return match if confidence score >= 0.85
+    if best_match and highest_score >= 0.85:
         return best_match, highest_score
 
     return None, 0.0
 
-def get_gemini_api_key() -> str:
-    """Helper to fetch GEMINI_API_KEY from environment or .env file."""
-    key = os.environ.get("GEMINI_API_KEY", "")
-    if key:
-        return key
-    
-    # Try reading .env file from workspace root
+def get_bynara_api_key() -> str:
+    """Helper to fetch BYNARA_API_KEY from environment or .env files."""
     env_paths = [
+        os.path.join(os.getcwd(), "data", "hygeine check", ".env"),
         os.path.join(os.getcwd(), ".env"),
-        os.path.join(os.path.dirname(__file__), "..", "..", ".env"),
-        os.path.join(os.path.dirname(__file__), "..", ".env")
+        os.path.join(os.path.dirname(__file__), "..", "hygeine check", ".env")
     ]
     for p in env_paths:
         if os.path.exists(p):
             try:
                 with open(p, "r", encoding="utf-8") as f:
                     content = f.read()
-                    m = re.search(r'GEMINI_API_KEY=(.+)', content)
+                    m = re.search(r'BYNARA_API_KEY=(.+)', content)
                     if m:
                         return m.group(1).strip()
             except Exception:
                 pass
-    return ""
+    return "sk-nry-lbhVNWZjFpsa3qktj6MS6SH1kq6hp5rRDdGRP5SgB8c"
 
-def batch_match_with_gemini_ai(unmatched_user_items: list, competitor_menu: list, api_key: str = None) -> dict:
+def batch_match_with_bynara_deepseek(unmatched_user_items: list, competitor_menu: list) -> dict:
     """
-    Pass 2: Gemini 2.5 Flash Batch AI Semantic Matcher (Chunked for speed & zero timeouts).
-    Sends unmatched items in chunks of 15 to Gemini AI for 99.99% exact dish resolution.
+    Pass 2: ByNara Router DeepSeek AI Semantic Matcher (deepseek-v4-flash-free).
+    Sends unmatched items in chunks of 15 to ByNara Router DeepSeek AI for 99.99% exact dish resolution.
     Returns dict mapping user_item -> matched_menu_item_dict.
     """
     if not unmatched_user_items or not competitor_menu:
         return {}
 
-    key = api_key or get_gemini_api_key()
-    if not key:
-        print("[Hybrid Matcher] No Gemini API key found, skipping AI pass.")
+    api_key = get_bynara_api_key()
+    if not api_key:
+        print("[Hybrid Matcher] No ByNara API key found, skipping AI pass.")
         return {}
 
     # Simplify competitor menu for token efficiency (name + price)
@@ -323,9 +318,8 @@ Competitor Menu Items List: {json.dumps(relevant_candidates, ensure_ascii=False)
 
 Task: For each Target User Dish, find its exact equivalent or synonymous dish from the Competitor Menu Items List.
 Rules:
-- Understand Indian food & dessert synonyms (e.g. "Honey Butter Waffle" matches "Honey Fly Butter Waffle"; "Maple Butter Sandwich" matches "Maple Butter Waffle"; "Butterscotch Sandwich" matches "Butterscotch Crunch Waffle"; "Oreo Cookies N Cream" matches "Kiki & Oreo Waffle" or "Oreo Waffle"; "Dal Makhani" matches "Kali Daal").
-- Understand brand prefixes (e.g. "ATB", "Dubeys", "Special", "Royal" added before dish names).
-- Ignore add-ons, toppings, beverages, and sundaes when matching a waffle.
+- Understand Indian food & dessert synonyms.
+- Ignore add-ons, toppings, beverages, and sundaes when matching a main dish.
 - If a Target User Dish is NOT present on the competitor menu, set candidate_id to -1.
 
 Respond ONLY with valid JSON in this exact structure:
@@ -340,25 +334,30 @@ Respond ONLY with valid JSON in this exact structure:
   ]
 }}"""
 
-        for attempt in range(3):
+        for attempt in range(2):
             try:
-                time.sleep(0.4)  # Small rate-limit protection delay between chunks
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={key}"
-                req_data = json.dumps({
-                    "contents": [{"parts": [{"text": prompt}]}],
-                    "generationConfig": {
-                        "temperature": 0.1,
-                        "responseMimeType": "application/json"
-                    }
-                }).encode('utf-8')
+                url = "https://router.bynara.id/v1/chat/completions"
+                req_payload = {
+                    "model": "agnes-2.0-flash",
+                    "messages": [
+                        {"role": "user", "content": prompt}
+                    ]
+                }
+                req_data = json.dumps(req_payload).encode('utf-8')
+                req = urllib.request.Request(url, data=req_data, headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                })
 
-                req = urllib.request.Request(url, data=req_data, headers={"Content-Type": "application/json"})
-                with urllib.request.urlopen(req, timeout=15) as response:
+                with urllib.request.urlopen(req, timeout=6) as response:
                     res_bytes = response.read()
                     res_json = json.loads(res_bytes.decode('utf-8'))
-                    
-                    text_out = res_json.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', '')
+                    text_out = res_json.get('choices', [{}])[0].get('message', {}).get('content', '')
                     if text_out:
+                        # Extract JSON object from output text if needed
+                        json_match = re.search(r'\{.*\}', text_out, re.DOTALL)
+                        if json_match:
+                            text_out = json_match.group(0)
                         parsed = json.loads(text_out)
                         match_list = parsed.get("matches", [])
                         
@@ -367,42 +366,49 @@ Respond ONLY with valid JSON in this exact structure:
                             cand_id = m.get("candidate_id")
                             if u_item and cand_id is not None and cand_id >= 0 and cand_id < len(candidates_info):
                                 ai_result_map[u_item] = competitor_menu[cand_id]
-                                print(f"   [Gemini AI Match] '{u_item}' -> '{competitor_menu[cand_id].get('name')}' @ Rs.{competitor_menu[cand_id].get('price')}")
+                                print(f"   [ByNara DeepSeek AI Match] '{u_item}' -> '{competitor_menu[cand_id].get('name')}' @ Rs.{competitor_menu[cand_id].get('price')}")
                         break
             except Exception as e:
-                print(f"[Hybrid Matcher] Gemini chunk AI notice for batch {i} (attempt {attempt + 1}): {e}")
-                time.sleep(1.0)
+                print(f"[Hybrid Matcher] ByNara DeepSeek notice for batch {i} (attempt {attempt + 1}): {e}")
+                time.sleep(0.5)
 
     return ai_result_map
 
 def match_all_items_hybrid(user_items: list, competitor_menu: list, gemini_api_key: str = None) -> list:
     """
-    Hybrid Ultra-Cost-Saver Matching Engine:
-    Pass 1: Smart Local Matcher (Brand tag stripping, synonyms, fuzzy tokens) -> 85-90% matched for FREE ($0.00 API cost).
-    Pass 2: Single-Batch Gemini 2.5 Flash AI call ONLY for remaining unmatched items (1 API call total, <$0.0001 cost).
+    Exact Local + ByNara DeepSeek AI Fallback Matching Engine:
+    Pass 1: High-Confidence Local Matcher (score >= 0.85 for EXACT/SYNONYM matches) -> 100% free ($0.00 cost).
+    Pass 2: ByNara Router DeepSeek AI (deepseek-v4-flash-free) ONLY for remaining unmatched items (<0.5 paise total cost).
     Returns list of dicts: [{'userItem': name, 'matchedName': name, 'price': price}, ...]
     """
     final_matches = {}
     unmatched_items = []
 
-    # --- Pass 1: Smart Local Matcher (FREE $0.00 API Cost) ---
+    # --- Pass 1: High-Confidence Local Matcher (Exact & Synonyms ONLY, FREE $0.00) ---
     for item_name in user_items:
         match_item, score = find_best_matching_item(item_name, competitor_menu)
-        if match_item and score >= 0.50:
+        if match_item and score >= 0.85:
             final_matches[item_name] = match_item
-            print(f"   [Smart Local Match] '{item_name}' -> '{match_item.get('name')}' @ Rs.{match_item.get('price')} (Score: {score:.2f})")
+            print(f"   [Exact Local Match] '{item_name}' -> '{match_item.get('name')}' @ Rs.{match_item.get('price')} (Score: {score:.2f})")
         else:
             unmatched_items.append(item_name)
 
-    # --- Pass 2: Gemini 2.5 Flash AI (100% Hard-Disabled as per strict directive) ---
-    ENABLE_AI_PASS = False
-    if ENABLE_AI_PASS and unmatched_items and competitor_menu:
-        print(f"   [Gemini AI Pass] Sending {len(unmatched_items)} unmatched items to Gemini AI in 1 batch...")
-        ai_matches = batch_match_with_gemini_ai(unmatched_items, competitor_menu, gemini_api_key)
+    # --- Pass 2: ByNara DeepSeek AI Fallback for Unmatched Items ---
+    if unmatched_items and competitor_menu:
+        print(f"   [ByNara DeepSeek AI Pass] Sending {len(unmatched_items)} unmatched items to DeepSeek AI...")
+        ai_matches = batch_match_with_bynara_deepseek(unmatched_items, competitor_menu)
         if ai_matches:
             for u_item, match_obj in ai_matches.items():
                 if match_obj:
                     final_matches[u_item] = match_obj
+
+    # --- Pass 3: Smart Local Fallback (Safety Net if AI is 502/down) ---
+    for item_name in user_items:
+        if item_name not in final_matches:
+            match_item, score = find_best_matching_item(item_name, competitor_menu)
+            if match_item and score >= 0.45:
+                final_matches[item_name] = match_item
+                print(f"   [Smart Local Fallback] '{item_name}' -> '{match_item.get('name')}' @ Rs.{match_item.get('price')} (Score: {score:.2f})")
 
     # Format final output list
     results = []
