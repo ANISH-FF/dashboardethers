@@ -239,22 +239,49 @@ export default function ReportingPage() {
     }
   }
 
-  // Combined Aggregations for Overall Delivery & Overall Dineout
+  // Helper to filter items strictly belonging to the currently active brand
+  const currentBrandId = activeBrand?.id;
+
+  const brandZomatoDelivery = (store?.zomato_delivery || []).filter(
+    (item) => !currentBrandId || item.brandId === currentBrandId || (!item.brandId && currentBrandId === "1")
+  );
+
+  const brandSwiggyDelivery = (store?.swiggy_delivery || []).filter(
+    (item) => !currentBrandId || item.brandId === currentBrandId || (!item.brandId && currentBrandId === "1")
+  );
+
+  const brandZomatoDinein = (store?.zomato_dinein || []).filter(
+    (item) => !currentBrandId || item.brandId === currentBrandId || (!item.brandId && currentBrandId === "1")
+  );
+
+  const brandSwiggyDineout = (store?.swiggy_dineout || []).filter(
+    (item) => !currentBrandId || item.brandId === currentBrandId || (!item.brandId && currentBrandId === "1")
+  );
+
+  // Combined Aggregations for Overall Delivery & Overall Dineout — Strictly for activeBrand
   const combinedDeliveryList = store
-    ? computeCombinedDeliveryRecords(store.zomato_delivery || [], store.swiggy_delivery || [])
+    ? computeCombinedDeliveryRecords(brandZomatoDelivery, brandSwiggyDelivery)
     : [];
 
   const combinedDineoutList = store
-    ? computeCombinedDineoutRecords(store.zomato_dinein || [], store.swiggy_dineout || [])
+    ? computeCombinedDineoutRecords(brandZomatoDinein, brandSwiggyDineout)
     : [];
 
-  // Aggregation for Monthly Rollup & Section Selection
+  // Aggregation for Monthly Rollup & Section Selection — Strictly for activeBrand
   const rawItems = store
     ? activeTab === "overall_delivery"
       ? combinedDeliveryList
       : activeTab === "overall_dineout"
       ? combinedDineoutList
-      : store[activeTab as keyof ReportingStore] || []
+      : activeTab === "zomato_delivery"
+      ? brandZomatoDelivery
+      : activeTab === "swiggy_delivery"
+      ? brandSwiggyDelivery
+      : activeTab === "zomato_dinein"
+      ? brandZomatoDinein
+      : activeTab === "swiggy_dineout"
+      ? brandSwiggyDineout
+      : []
     : [];
   let currentItems: any[] = rawItems;
 
