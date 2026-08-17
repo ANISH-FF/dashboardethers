@@ -281,40 +281,42 @@ Respond ONLY with valid JSON in this exact structure:
 
 def match_all_items_hybrid(user_items: list, competitor_menu: list, gemini_api_key: str = None) -> list:
     """
-    Hybrid 2-Pass Matching Engine:
-    Pass 1: Smart Local Matching (Brand tag stripping, synonyms, fuzzy token ratio).
-    Pass 2: Gemini 2.5 Flash Batch AI for any remaining unmatched items.
+    AI-First Matching Engine:
+    Pass 1: Gemini 2.5 Flash Batch AI for ALL items (Pure semantic matching on scraped menu).
+    Pass 2: Smart Local Fallback Matcher for any remaining unmatched items.
     Returns list of dicts: [{'userItem': name, 'matchedName': name, 'price': price}, ...]
     """
     final_matches = {}
-    unmatched_items = []
 
-    # --- Pass 1: Smart Local Rule Match ---
-    for item_name in user_items:
-        match_item, score = find_best_matching_item(item_name, competitor_menu)
-        if match_item and score >= 0.80:
-            final_matches[item_name] = match_item
-            print(f"   [Smart Local Match] '{item_name}' -> '{match_item.get('name')}' @ Rs.{match_item.get('price')} (Score: {score:.2f})")
-        else:
-            unmatched_items.append(item_name)
+    # --- Pass 1: Pure Gemini 2.5 Flash AI Matcher ---
+    if user_items and competitor_menu:
+        print(f"   [AI Engine] Sending {len(user_items)} user items & full competitor menu ({len(competitor_menu)} items) to Gemini 2.5 Flash AI...")
+        ai_matches = batch_match_with_gemini_ai(user_items, competitor_menu, gemini_api_key)
+        if ai_matches:
+            for u_item, match_obj in ai_matches.items():
+                if match_obj:
+                    final_matches[u_item] = match_obj
 
-    # --- Pass 2: Gemini 2.5 Flash Batch AI for Unmatched Items ---
+    # --- Pass 2: Local Rule Matcher Fallback for any missing items ---
+    unmatched_items = [u for u in user_items if u not in final_matches]
     if unmatched_items and competitor_menu:
-        print(f"   [Hybrid Engine] Invoking Gemini AI for {len(unmatched_items)} unmatched item(s): {unmatched_items}")
-        ai_matches = batch_match_with_gemini_ai(unmatched_items, competitor_menu, gemini_api_key)
-        for u_item, cand_item in ai_matches.items():
-            final_matches[u_item] = cand_item
+        print(f"   [Local Fallback] Running local matcher for {len(unmatched_items)} remaining items...")
+        for item_name in unmatched_items:
+            match_item, score = find_best_matching_item(item_name, competitor_menu)
+            if match_item and score >= 0.80:
+                final_matches[item_name] = match_item
+                print(f"   [Local Fallback Match] '{item_name}' -> '{match_item.get('name')}' @ Rs.{match_item.get('price')} (Score: {score:.2f})")
 
-    # Build structured output list maintaining exact user_items order
+    # Format final output list
     results = []
     for item_name in user_items:
         matched = final_matches.get(item_name)
         if matched:
-            real_price = matched.get('final_price') if (matched.get('final_price') and matched.get('final_price') > 0) else matched.get('price')
+            price_val = matched.get('final_price') if (matched.get('final_price') and matched.get('final_price') > 0) else matched.get('price')
             results.append({
                 'userItem': item_name,
                 'matchedName': matched.get('name'),
-                'price': real_price
+                'price': price_val
             })
         else:
             results.append({
