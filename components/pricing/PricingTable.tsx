@@ -21,6 +21,47 @@ interface TableProps {
   commissionPct: number;
   adsPct: number;
   foodCostPct: number;
+  priceEnding?: "9_7_5" | "round" | "none";
+}
+
+function applyPriceEnding(price: number, strategy: string = "9_7_5"): number {
+  if (strategy !== "9_7_5" || price <= 10) return Math.round(price);
+  const r = Math.round(price);
+  const last = r % 10;
+  if ([9, 7, 5].includes(last)) return r;
+  if (last === 8 || last === 6 || last === 4) return r + 1;
+  if (last === 3) return r + 2;
+  if (last === 2) return r + 3;
+  if (last === 1) return r - 2;
+  return r - 1;
+}
+
+function recalculateSuggestivePrice(
+  myBrandPrice: number,
+  competitorPrices: (number | null)[],
+  discountPct: number,
+  commissionPct: number,
+  adsPct: number,
+  priceEnding: string = "9_7_5"
+): number {
+  const validPrices = competitorPrices.map((p) => Number(p || 0)).filter((p) => p > 0);
+  const totalDeductionsPct = (commissionPct + adsPct + discountPct) / 100;
+  const costBasedPrice = myBrandPrice * (1 + totalDeductionsPct);
+
+  if (validPrices.length === 0) {
+    return applyPriceEnding(costBasedPrice, priceEnding);
+  }
+
+  const avg = validPrices.reduce((a, b) => a + b, 0) / validPrices.length;
+  const max = Math.max(...validPrices);
+  const marketBasedPrice = avg * 0.95;
+
+  let suggestiveRaw = (costBasedPrice + marketBasedPrice) / 2;
+  const minAcceptablePrice = myBrandPrice * 1.1;
+  if (suggestiveRaw < minAcceptablePrice) suggestiveRaw = minAcceptablePrice;
+  if (suggestiveRaw > max * 1.2) suggestiveRaw = max * 1.2;
+
+  return applyPriceEnding(suggestiveRaw, priceEnding);
 }
 
 export function PricingTable({
@@ -30,22 +71,47 @@ export function PricingTable({
   discountPct,
   commissionPct,
   adsPct,
-  foodCostPct
+  foodCostPct,
+  priceEnding = "9_7_5"
 }: TableProps) {
 
   const handleItemChange = (id: string, field: keyof StrategyItem, val: any) => {
     setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, [field]: val } : item))
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        const updated = { ...item, [field]: val };
+        if (field === "myBrandPrice") {
+          const compPrices = updated.competitors.map((c) => c.price);
+          updated.suggestivePrice = recalculateSuggestivePrice(
+            Number(val || 0),
+            compPrices,
+            discountPct,
+            commissionPct,
+            adsPct,
+            priceEnding
+          );
+        }
+        return updated;
+      })
     );
   };
 
-  const handleCompetitorChange = (itemId: string, compIndex: number, name: string, price: number) => {
+  const handleCompetitorChange = (itemId: string, compIndex: number, name: string, price: number | null) => {
     setItems((prev) =>
       prev.map((item) => {
         if (item.id !== itemId) return item;
         const comps = [...item.competitors];
-        comps[compIndex] = { name, price };
-        return { ...item, competitors: comps };
+        comps[compIndex] = { ...comps[compIndex], name, price };
+        const compPrices = comps.map((c) => c.price);
+        const newSuggestive = recalculateSuggestivePrice(
+          item.myBrandPrice,
+          compPrices,
+          discountPct,
+          commissionPct,
+          adsPct,
+          priceEnding
+        );
+        return { ...item, competitors: comps, suggestivePrice: newSuggestive };
       })
     );
   };
@@ -153,7 +219,7 @@ export function PricingTable({
 
                 {/* Dynamic Competitor Headers */}
                 {Array.from({ length: competitorCount }).map((_, idx) => (
-                  <th key={idx} className="py-3.5 px-4 min-w-[140px] text-blue-400 border-l border-line/40">
+                  <th key={idx} className="py-3.5 px-4 min-w-[155px] text-blue-400 border-l border-line/40">
                     Competition {idx + 1} Name & Price
                   </th>
                 ))}
@@ -225,23 +291,33 @@ export function PricingTable({
                                 className="bg-transparent border-none text-[11px] text-ink/80 font-semibold w-full focus:ring-1 focus:ring-blue-500/30 rounded px-1"
                               />
                             </div>
-                            {hasPrice ? (
-                              <div className="flex items-center gap-1 font-mono">
-                                <span className="text-ink/40 text-[10px]">₹</span>
-                                <input
-                                  type="number"
-                                  value={comp.price!}
-                                  onChange={(e) => handleCompetitorChange(item.id, cIdx, comp.name, Number(e.target.value))}
-                                  className="bg-paper-dark/80 border border-line/60 rounded px-1.5 py-0.5 text-[11px] text-blue-300 font-bold w-16"
-                                />
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-1">
-                                <span className="inline-block bg-rose-500/10 border border-rose-500/25 text-rose-400 text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0">
+                            <div className="flex items-center gap-1 font-mono whitespace-nowrap">
+                              <span className="text-ink/40 text-[10px]">₹</span>
+                              <input
+                                type="number"
+                                min={0}
+                                value={hasPrice ? comp.price! : ""}
+                                placeholder="0"
+                                onChange={(e) => {
+                                  const rawVal = e.target.value;
+                                  const numVal = rawVal === "" ? 0 : parseFloat(rawVal) || 0;
+                                  handleCompetitorChange(item.id, cIdx, comp.name, numVal);
+                                }}
+                                className={`border rounded px-1 py-0.5 text-[11px] font-bold w-12 text-center outline-none transition-all ${
+                                  hasPrice
+                                    ? "bg-paper-dark/80 border-line/60 text-blue-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30"
+                                    : "bg-rose-500/10 border-rose-500/30 text-rose-400 focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30 placeholder:text-rose-400/50"
+                                }`}
+                              />
+                              {!hasPrice && (
+                                <span 
+                                  className="inline-block bg-rose-500/10 border border-rose-500/25 text-rose-400 text-[8.5px] font-bold px-1 py-0.5 rounded shrink-0 whitespace-nowrap cursor-pointer hover:bg-rose-500/20 transition-all leading-none"
+                                  title="Type price in box to override Not Available"
+                                >
                                   Not Available
                                 </span>
-                              </div>
-                            )}
+                              )}
+                            </div>
                           </div>
                         </td>
                       );

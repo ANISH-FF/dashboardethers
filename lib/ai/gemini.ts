@@ -47,7 +47,7 @@ export async function callGemini(prompt: string, options: CallOptions = {}): Pro
     });
   }
 
-  const candidateModels = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.0-flash"];
+  const candidateModels = ["gemini-2.5-flash"];
 
   for (let i = 0; i < candidateModels.length; i++) {
     const modelName = candidateModels[i];
@@ -55,8 +55,8 @@ export async function callGemini(prompt: string, options: CallOptions = {}): Pro
       const model = genAI.getGenerativeModel({
         model: modelName,
         generationConfig,
-        // @ts-expect-error - search grounding tool
-        tools: options.useSearchGrounding ? [{ googleSearch: {} }] : undefined
+        // Search Grounding 100% disabled across entire application to eliminate query fees
+        tools: undefined
       });
 
       const result = await model.generateContent(parts);

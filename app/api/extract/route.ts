@@ -49,7 +49,7 @@ CRITICAL EXTRACTION RULES:
       prompt += `\n\nAdditional Instructions from User:\n${customPrompt}`;
     }
 
-    const MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
+    const MODELS = ["gemini-2.5-flash"];
     let lastError: Error | null = null;
     let data: any = null;
 

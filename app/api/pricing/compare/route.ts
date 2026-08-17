@@ -94,7 +94,7 @@ List 3-5 competitors with their approximate price in INR.
 Suggest a competitive price for "${settings.restaurantName}".
 Respond ONLY with JSON: { "competitors": [{"name": string, "price": number}], "suggestedPrice": number, "reasoning": string }`;
 
-        const result = await callGeminiJSON(prompt, { useSearchGrounding: true });
+        const result = await callGeminiJSON(prompt);
         return NextResponse.json({ ...result, disclaimer: "AI-estimated from public listings — not official data", source: "gemini" });
       } catch {
         // Fall through to mock data

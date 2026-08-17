@@ -94,7 +94,7 @@ class PricingServer(BaseHTTPRequestHandler):
 
             from search_helper import find_swiggy_link
             from swiggy_scraper import SwiggyMenuScraper
-            from matcher import find_best_matching_item
+            from matcher import match_all_items_hybrid
             import concurrent.futures
 
             def process_competitor(comp):
@@ -130,20 +130,7 @@ class PricingServer(BaseHTTPRequestHandler):
                 except Exception as e:
                     print(f"[!] Full menu scrape notice for {comp_name}: {e}")
 
-                matched_items = []
-                for user_item_name in user_items:
-                    match = find_best_matching_item(user_item_name, menu_items)
-                    if match:
-                        real_price = match['final_price'] if (match['final_price'] and match['final_price'] > 0) else match['price']
-                        matched_items.append({
-                            'userItem': user_item_name,
-                            'matchedName': match['name'],
-                            'price': real_price
-                        })
-                        print(f"   ✓ [Full Menu] '{user_item_name}' → '{match['name']}' @ ₹{real_price}")
-                    else:
-                        matched_items.append({'userItem': user_item_name, 'matchedName': None, 'price': None})
-                        print(f"   ✗ '{user_item_name}' → no match")
+                matched_items = match_all_items_hybrid(user_items, menu_items)
 
                 return {
                     'competitorName': actual_name or comp_name or 'Competitor',

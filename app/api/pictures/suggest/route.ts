@@ -35,7 +35,7 @@ Prefer clean, appetizing, well-lit food photography. Respond ONLY with JSON:
 {"images": ["url1", "url2", "url3", "url4"]}
 Only include URLs you are reasonably confident actually resolve to an image.`;
 
-        const result = await callGeminiJSON<{ images: string[] }>(prompt, { useSearchGrounding: true });
+        const result = await callGeminiJSON<{ images: string[] }>(prompt);
         return NextResponse.json({ images: result.images || [] });
       } catch {
         // Fall through to fallback

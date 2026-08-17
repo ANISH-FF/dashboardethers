@@ -48,7 +48,7 @@ Return ONLY a raw JSON array of objects following this exact structure:
   }
 ]`;
 
-    let response = await fetch(
+    const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
         method: "POST",
@@ -62,25 +62,6 @@ Return ONLY a raw JSON array of objects following this exact structure:
         })
       }
     );
-
-    // Fallback to gemini-2.5-flash-lite if 2.5-flash hits rate limit or fails
-    if (!response.ok) {
-      console.warn("gemini-2.5-flash returned error, attempting gemini-2.5-flash-lite fallback...");
-      response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              temperature: 0.2,
-              responseMimeType: "application/json"
-            }
-          })
-        }
-      );
-    }
 
     if (!response.ok) {
       const errText = await response.text();

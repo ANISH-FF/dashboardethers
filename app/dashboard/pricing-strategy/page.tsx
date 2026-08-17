@@ -397,6 +397,7 @@ export default function PricingStrategyPage() {
             commissionPct={commissionPct}
             adsPct={adsPct}
             foodCostPct={foodCostPct}
+            priceEnding={priceEnding}
           />
         </div>
       )}

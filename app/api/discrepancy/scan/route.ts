@@ -46,8 +46,7 @@ listing, or that exist on the listing but not internally (or vice versa). If you
 cannot access the page, return an empty mismatches array and rating: null.`;
 
         const result = await callGeminiJSON<{ rating: number | null; mismatches: { itemName: string; issue: string }[] }>(
-          prompt,
-          { useSearchGrounding: true }
+          prompt
         );
 
         for (const m of result.mismatches || []) {
