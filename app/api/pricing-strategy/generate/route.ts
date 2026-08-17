@@ -205,27 +205,27 @@ Respond ONLY in valid JSON format with a top-level key "results":
   ]
 }`;
 
-    const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+    const bynaraKey = process.env.BYNARA_API_KEY || "sk-nry-lbhVNWZjFpsa3qktj6MS6SH1kq6hp5rRDdGRP5SgB8c";
     let responseText = "";
 
-    for (const m of models) {
-      try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${apiKey}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { responseMimeType: "application/json", temperature: 0.2 }
-          })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-          if (responseText) break;
-        }
-      } catch (e) {
-        console.warn(`[Ethers AI Model ${m} error]:`, e);
+    try {
+      const res = await fetch("https://router.bynara.id/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${bynaraKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "agnes-2.0-flash",
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        responseText = data.choices?.[0]?.message?.content || "";
       }
+    } catch (e) {
+      console.warn("[Nara Router Ethers AI error]:", e);
     }
 
     if (responseText) {
