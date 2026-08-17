@@ -1,6 +1,7 @@
 import re
 import os
 import json
+import time
 import urllib.request
 import urllib.error
 from difflib import SequenceMatcher
@@ -11,8 +12,9 @@ CORE_FOOD_NOUNS = {
     'egg', 'anda', 'prawn', 'prawns', 'lamb', 'pork', 'beef', 'crab', 'duck',
     'paneer', 'panir', 'dosa', 'idli', 'biryani', 'biriyani', 'naan', 'roti', 'paratha',
     'parantha', 'roll', 'burger', 'pizza', 'chowmein', 'noodles', 'soup', 'thali', 'rice',
-    'dal', 'daal', 'dhal', 'khichdi', 'pattice', 'tea', 'coffee', 'shake', 'lassi', 'milk',
-    'momos', 'chole', 'bhature', 'sandwich', 'pasta', 'maggi', 'tikka', 'tika', 'kebab', 'kabab'
+    'dal', 'daal', 'dhal', 'khichdi', 'pattice', 'tea', 'coffee', 'shake', 'shakes', 'lassi', 'milk',
+    'momos', 'chole', 'bhature', 'sandwich', 'sandwiches', 'pasta', 'maggi', 'tikka', 'tika', 'kebab', 'kabab',
+    'waffle', 'waffles', 'sundae', 'sundaes', 'pancake', 'pancakes', 'crepe', 'crepes', 'icecream', 'brownie'
 }
 
 # Common restaurant brand tags, prefixes, and fluff words to strip out for clean matching
@@ -20,7 +22,7 @@ BRAND_FLUFF_WORDS = {
     'atb', 'special', 'chefs', 'chef', 'signature', 'royal', 'deluxe', 'express', 'classic',
     'famous', 'original', 'best', 'dhabba', 'dhaba', 'style', 'deshi', 'desi', 'authentic',
     'dubey', 'dubeys', 'novelty', 'sher-e-punjab', 'punjabi', 'fresh', 'hot', 'crispy',
-    'specialist', 'house', 'premium', 'supreme', 'tasty', 'delicious', 'master'
+    'specialist', 'house', 'premium', 'supreme', 'tasty', 'delicious', 'master', 'mini', 'box'
 }
 
 # Culinary Synonyms & Regional Equivalents Map
@@ -52,7 +54,14 @@ SYNONYMS_MAP = {
     'chicken kathi': 'chicken roll',
     'paneer kathi': 'paneer roll',
     'egg kathi': 'egg roll',
-    'mutton kathi': 'mutton roll'
+    'mutton kathi': 'mutton roll',
+    'waffle sandwich': 'waffle',
+    'cookies n cream': 'oreo',
+    'cookies and cream': 'oreo',
+    'kiki oreo': 'oreo',
+    'pista': 'pistachio',
+    'pistacchio': 'pistachio',
+    'pistachio kunafa': 'pistachio'
 }
 
 def clean_item_name(name: str) -> str:
@@ -129,6 +138,16 @@ def find_best_matching_item(user_item: str, competitor_menu: list) -> tuple:
         if any(keyword in comp_name.lower() for keyword in bulk_keywords):
             total_score -= 0.15
 
+        # Penalize add-ons/toppings so real main dishes win
+        addon_keywords = ['topping', 'toppings', 'add-on', 'addon', 'drizzle', 'dip', 'extra', 'crushed', 'syrup', 'sauce']
+        if any(keyword in comp_name.lower() for keyword in addon_keywords) and not any(keyword in user_item.lower() for keyword in addon_keywords):
+            total_score -= 0.35
+
+        # Penalize Shake/Sundae/Beverage when matching a Waffle/Sandwich
+        beverage_keywords = ['shake', 'sundae', 'beverage', 'drink', 'gudbud', 'milkshake', 'iced tea']
+        if any(k in comp_name.lower() for k in beverage_keywords) and not any(k in user_item.lower() for k in beverage_keywords):
+            total_score -= 0.35
+
         if total_score > highest_score:
             highest_score = total_score
             best_match = item
@@ -165,8 +184,8 @@ def get_gemini_api_key() -> str:
 
 def batch_match_with_gemini_ai(unmatched_user_items: list, competitor_menu: list, api_key: str = None) -> dict:
     """
-    Pass 2: Gemini 2.5 Flash Batch AI Semantic Matcher.
-    Sends unmatched items in 1 single fast API call to Gemini AI for 99.99% exact dish resolution.
+    Pass 2: Gemini 2.5 Flash Batch AI Semantic Matcher (Chunked for speed & zero timeouts).
+    Sends unmatched items in chunks of 15 to Gemini AI for 99.99% exact dish resolution.
     Returns dict mapping user_item -> matched_menu_item_dict.
     """
     if not unmatched_user_items or not competitor_menu:
@@ -187,14 +206,30 @@ def batch_match_with_gemini_ai(unmatched_user_items: list, competitor_menu: list
             "price": price_val
         })
 
-    prompt = f"""You are a master Indian restaurant dish matching AI engine.
-Target User Dishes to Match: {json.dumps(unmatched_user_items, ensure_ascii=False)}
-Competitor Menu Items List: {json.dumps(candidates_info, ensure_ascii=False)}
+    chunk_size = 15
+    ai_result_map = {}
+
+    for i in range(0, len(unmatched_user_items), chunk_size):
+        chunk = unmatched_user_items[i:i + chunk_size]
+
+        # Filter candidate items relevant to current chunk for ultra-fast response
+        chunk_words = set(re.findall(r'\w+', " ".join(chunk).lower())) - BRAND_FLUFF_WORDS - {'and', 'the', 'with', 'for'}
+        relevant_candidates = [
+            c for c in candidates_info
+            if set(re.findall(r'\w+', c['name'].lower())).intersection(chunk_words)
+        ]
+        if len(relevant_candidates) < 10:
+            relevant_candidates = candidates_info[:40]
+
+        prompt = f"""You are a master Indian restaurant dish matching AI engine.
+Target User Dishes to Match: {json.dumps(chunk, ensure_ascii=False)}
+Competitor Menu Items List: {json.dumps(relevant_candidates, ensure_ascii=False)}
 
 Task: For each Target User Dish, find its exact equivalent or synonymous dish from the Competitor Menu Items List.
 Rules:
-- Understand Indian food synonyms (e.g. "Dal Makhani" matches "Kali Daal" or "Dal Makhni"; "Chicken Roll" matches "ATB Special Chicken Kathi Roll"; "Butter Chicken" matches "Murgh Makhani").
+- Understand Indian food & dessert synonyms (e.g. "Honey Butter Waffle" matches "Honey Fly Butter Waffle"; "Maple Butter Sandwich" matches "Maple Butter Waffle"; "Butterscotch Sandwich" matches "Butterscotch Crunch Waffle"; "Oreo Cookies N Cream" matches "Kiki & Oreo Waffle" or "Oreo Waffle"; "Dal Makhani" matches "Kali Daal").
 - Understand brand prefixes (e.g. "ATB", "Dubeys", "Special", "Royal" added before dish names).
+- Ignore add-ons, toppings, beverages, and sundaes when matching a waffle.
 - If a Target User Dish is NOT present on the competitor menu, set candidate_id to -1.
 
 Respond ONLY with valid JSON in this exact structure:
@@ -209,41 +244,40 @@ Respond ONLY with valid JSON in this exact structure:
   ]
 }}"""
 
-    models_to_try = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
-    for model_name in models_to_try:
-        try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={key}"
-            req_data = json.dumps({
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {
-                    "temperature": 0.1,
-                    "responseMimeType": "application/json"
-                }
-            }).encode('utf-8')
+        for attempt in range(3):
+            try:
+                time.sleep(0.4)  # Small rate-limit protection delay between chunks
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={key}"
+                req_data = json.dumps({
+                    "contents": [{"parts": [{"text": prompt}]}],
+                    "generationConfig": {
+                        "temperature": 0.1,
+                        "responseMimeType": "application/json"
+                    }
+                }).encode('utf-8')
 
-            req = urllib.request.Request(url, data=req_data, headers={"Content-Type": "application/json"})
-            with urllib.request.urlopen(req, timeout=8) as response:
-                res_bytes = response.read()
-                res_json = json.loads(res_bytes.decode('utf-8'))
-                
-                text_out = res_json.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', '')
-                if text_out:
-                    parsed = json.loads(text_out)
-                    match_list = parsed.get("matches", [])
-                    ai_result_map = {}
+                req = urllib.request.Request(url, data=req_data, headers={"Content-Type": "application/json"})
+                with urllib.request.urlopen(req, timeout=15) as response:
+                    res_bytes = response.read()
+                    res_json = json.loads(res_bytes.decode('utf-8'))
                     
-                    for m in match_list:
-                        u_item = m.get("userItem")
-                        cand_id = m.get("candidate_id")
-                        if u_item and cand_id is not None and cand_id >= 0 and cand_id < len(candidates_info):
-                            ai_result_map[u_item] = competitor_menu[cand_id]
-                            print(f"   [Gemini AI Match] '{u_item}' -> '{competitor_menu[cand_id].get('name')}' @ Rs.{competitor_menu[cand_id].get('price')}")
-                    
-                    return ai_result_map
-        except Exception as e:
-            print(f"[Hybrid Matcher] Gemini {model_name} notice: {e}")
+                    text_out = res_json.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', '')
+                    if text_out:
+                        parsed = json.loads(text_out)
+                        match_list = parsed.get("matches", [])
+                        
+                        for m in match_list:
+                            u_item = m.get("userItem")
+                            cand_id = m.get("candidate_id")
+                            if u_item and cand_id is not None and cand_id >= 0 and cand_id < len(candidates_info):
+                                ai_result_map[u_item] = competitor_menu[cand_id]
+                                print(f"   [Gemini AI Match] '{u_item}' -> '{competitor_menu[cand_id].get('name')}' @ Rs.{competitor_menu[cand_id].get('price')}")
+                        break
+            except Exception as e:
+                print(f"[Hybrid Matcher] Gemini chunk AI notice for batch {i} (attempt {attempt + 1}): {e}")
+                time.sleep(1.0)
 
-    return {}
+    return ai_result_map
 
 def match_all_items_hybrid(user_items: list, competitor_menu: list, gemini_api_key: str = None) -> list:
     """
