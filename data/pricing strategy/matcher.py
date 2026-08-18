@@ -226,6 +226,21 @@ SYNONYMS_MAP = {
     'strawberry shake': 'strawberry shake', 'mango shake': 'mango shake'
 }
 
+# Auto-load Master Culinary Ontology JSON if present
+try:
+    ontology_path = os.path.join(os.path.dirname(__file__), "master_culinary_ontology.json")
+    if os.path.exists(ontology_path):
+        with open(ontology_path, "r", encoding="utf-8") as f:
+            ont_data = json.load(f)
+            for cl in ont_data.get("clusters", []):
+                std_name = cl.get("name", "").lower().strip()
+                for syn in cl.get("synonyms", []):
+                    syn_l = syn.lower().strip()
+                    if syn_l:
+                        SYNONYMS_MAP[syn_l] = std_name
+except Exception as e:
+    pass
+
 GENERIC_DUMMY_DISHES = {
     "chef's special", "chefs special", "chef special", "today's special", "todays special",
     "today special", "special dish", "house special", "chef choice", "must try", "recommended",

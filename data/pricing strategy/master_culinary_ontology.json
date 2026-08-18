@@ -1,0 +1,1006 @@
+{
+  "_metadata": {
+    "title": "Ethers Universal Restaurant Dish & Culinary Knowledge Graph",
+    "version": "2.0.0",
+    "description": "Comprehensive Indian, Continental, Waffle, Asian, Fast Food and Beverage synonym and equivalence taxonomy.",
+    "total_clusters": 61
+  },
+  "clusters": [
+    {
+      "id": "dal_makhani",
+      "name": "Dal Makhani",
+      "category": "main_course",
+      "sub_category": "dal",
+      "protein": "veg",
+      "form": "curry_gravy",
+      "synonyms": [
+        "dal makhani",
+        "dal makhni",
+        "kali dal",
+        "kali daal",
+        "black dal",
+        "black daal",
+        "maa ki dal",
+        "maa ki daal",
+        "dal bukhara",
+        "dal casa",
+        "dhaba dal makhani",
+        "shahi dal makhani",
+        "makhani dal",
+        "butter black lentils",
+        "royal dal makhani",
+        "special dal makhani",
+        "dal makhani handi"
+      ]
+    },
+    {
+      "id": "dal_tadka",
+      "name": "Dal Tadka",
+      "category": "main_course",
+      "sub_category": "dal",
+      "protein": "veg",
+      "form": "curry_gravy",
+      "synonyms": [
+        "dal tadka",
+        "dal fry",
+        "yellow dal",
+        "yellow dal fry",
+        "yellow dal tadka",
+        "dal sunehri",
+        "peeli dal",
+        "peeli dal tadka",
+        "dhaba dal fry",
+        "arhar dal tadka",
+        "toor dal tadka",
+        "butter yellow dal",
+        "jeera dal",
+        "lasooni dal tadka",
+        "garlic dal tadka"
+      ]
+    },
+    {
+      "id": "butter_chicken",
+      "name": "Butter Chicken",
+      "category": "main_course",
+      "sub_category": "chicken_curry",
+      "protein": "chicken",
+      "form": "curry_gravy",
+      "synonyms": [
+        "butter chicken",
+        "murgh makhani",
+        "murg makhani",
+        "murgh makhni",
+        "murg makhni",
+        "chicken makhani",
+        "chicken makhni",
+        "chicken butter masala",
+        "butter chicken masala",
+        "murgh butter masala",
+        "murg butter masala",
+        "boneless butter chicken",
+        "shahi butter chicken",
+        "delhi style butter chicken",
+        "dhaba butter chicken",
+        "royal butter chicken"
+      ]
+    },
+    {
+      "id": "chicken_tikka_masala",
+      "name": "Chicken Tikka Masala",
+      "category": "main_course",
+      "sub_category": "chicken_curry",
+      "protein": "chicken",
+      "form": "curry_gravy",
+      "synonyms": [
+        "chicken tikka masala",
+        "murgh tikka masala",
+        "murg tikka masala",
+        "chicken tikka butter masala",
+        "chicken tikka gravy",
+        "chicken tikka lababdar",
+        "murgh tikka lababdar",
+        "boneless chicken tikka masala"
+      ]
+    },
+    {
+      "id": "kadhai_chicken",
+      "name": "Kadhai Chicken",
+      "category": "main_course",
+      "sub_category": "chicken_curry",
+      "protein": "chicken",
+      "form": "curry_gravy",
+      "synonyms": [
+        "kadhai chicken",
+        "kadai chicken",
+        "chicken kadhai",
+        "chicken kadai",
+        "murgh kadhai",
+        "murg kadai",
+        "karahi chicken",
+        "chicken karahi"
+      ]
+    },
+    {
+      "id": "chicken_kosha",
+      "name": "Chicken Kosha",
+      "category": "main_course",
+      "sub_category": "chicken_curry",
+      "protein": "chicken",
+      "form": "curry_gravy",
+      "synonyms": [
+        "chicken kosha",
+        "chicken kasha",
+        "chicken kassa",
+        "murg kasha",
+        "murgh kosha",
+        "bengali chicken kosha",
+        "chicken bhuna",
+        "murgh bhuna",
+        "chicken bhuna masala"
+      ]
+    },
+    {
+      "id": "chicken_do_pyaza",
+      "name": "Chicken Do Pyaza",
+      "category": "main_course",
+      "sub_category": "chicken_curry",
+      "protein": "chicken",
+      "form": "curry_gravy",
+      "synonyms": [
+        "chicken do pyaza",
+        "chicken dopiaza",
+        "murgh do pyaza",
+        "murg do pyaza"
+      ]
+    },
+    {
+      "id": "handi_chicken",
+      "name": "Handi Chicken",
+      "category": "main_course",
+      "sub_category": "chicken_curry",
+      "protein": "chicken",
+      "form": "curry_gravy",
+      "synonyms": [
+        "handi chicken",
+        "chicken handi",
+        "murgh handi",
+        "murg handi",
+        "champaran chicken",
+        "ahuna chicken",
+        "matka chicken"
+      ]
+    },
+    {
+      "id": "mutton_rogan_josh",
+      "name": "Mutton Rogan Josh",
+      "category": "main_course",
+      "sub_category": "mutton_curry",
+      "protein": "mutton",
+      "form": "curry_gravy",
+      "synonyms": [
+        "mutton rogan josh",
+        "gosht rogan josh",
+        "rogan josh",
+        "kashmiri mutton rogan josh",
+        "mutton roganjosh",
+        "gosht roganjosh"
+      ]
+    },
+    {
+      "id": "mutton_kosha",
+      "name": "Mutton Kosha",
+      "category": "main_course",
+      "sub_category": "mutton_curry",
+      "protein": "mutton",
+      "form": "curry_gravy",
+      "synonyms": [
+        "mutton kosha",
+        "mutton kasha",
+        "mutton kassa",
+        "gosht kasha",
+        "gosht kosha",
+        "bengali mutton kosha",
+        "mutton bhuna",
+        "gosht bhuna",
+        "mutton bhuna gosht"
+      ]
+    },
+    {
+      "id": "paneer_butter_masala",
+      "name": "Paneer Butter Masala",
+      "category": "main_course",
+      "sub_category": "paneer_curry",
+      "protein": "paneer",
+      "form": "curry_gravy",
+      "synonyms": [
+        "paneer butter masala",
+        "paneer makhani",
+        "paneer makhni",
+        "butter paneer masala",
+        "shahi paneer makhani",
+        "paneer butter gravy",
+        "royal paneer butter masala"
+      ]
+    },
+    {
+      "id": "kadai_paneer",
+      "name": "Kadai Paneer",
+      "category": "main_course",
+      "sub_category": "paneer_curry",
+      "protein": "paneer",
+      "form": "curry_gravy",
+      "synonyms": [
+        "kadai paneer",
+        "kadhai paneer",
+        "paneer kadai",
+        "paneer kadhai",
+        "karahi paneer",
+        "paneer karahi",
+        "kadhai paneer with dal makhni"
+      ]
+    },
+    {
+      "id": "palak_paneer",
+      "name": "Palak Paneer",
+      "category": "main_course",
+      "sub_category": "paneer_curry",
+      "protein": "paneer",
+      "form": "curry_gravy",
+      "synonyms": [
+        "palak paneer",
+        "saag paneer",
+        "paneer palak",
+        "paneer saagwala",
+        "spinach paneer"
+      ]
+    },
+    {
+      "id": "shahi_paneer",
+      "name": "Shahi Paneer",
+      "category": "main_course",
+      "sub_category": "paneer_curry",
+      "protein": "paneer",
+      "form": "curry_gravy",
+      "synonyms": [
+        "shahi paneer",
+        "paneer shahi",
+        "royal shahi paneer",
+        "mughlai shahi paneer"
+      ]
+    },
+    {
+      "id": "paneer_lababdar",
+      "name": "Paneer Lababdar",
+      "category": "main_course",
+      "sub_category": "paneer_curry",
+      "protein": "paneer",
+      "form": "curry_gravy",
+      "synonyms": [
+        "paneer lababdar",
+        "paneer tikka lababdar",
+        "paneer tikka masala lababdar"
+      ]
+    },
+    {
+      "id": "malai_kofta",
+      "name": "Malai Kofta",
+      "category": "main_course",
+      "sub_category": "kofta",
+      "protein": "veg",
+      "form": "curry_gravy",
+      "synonyms": [
+        "malai kofta",
+        "subz malai kofta",
+        "chena malai kofta",
+        "casa olive kofta",
+        "shahi malai kofta",
+        "paneer malai kofta",
+        "white gravy malai kofta",
+        "red gravy malai kofta"
+      ]
+    },
+    {
+      "id": "matar_paneer",
+      "name": "Matar Paneer",
+      "category": "main_course",
+      "sub_category": "paneer_curry",
+      "protein": "paneer",
+      "form": "curry_gravy",
+      "synonyms": [
+        "matar paneer",
+        "mutter paneer",
+        "paneer matar",
+        "paneer mutter"
+      ]
+    },
+    {
+      "id": "chole_bhature",
+      "name": "Chole Bhature",
+      "category": "main_course",
+      "sub_category": "chole",
+      "protein": "veg",
+      "form": "fast_food",
+      "synonyms": [
+        "chole bhature",
+        "chana bhatura",
+        "chana bhature",
+        "chola bhatura",
+        "chola bhaturaa",
+        "chole bhatura",
+        "amritsari chole bhature",
+        "delhi style chole bhature",
+        "pindi chana bhature"
+      ]
+    },
+    {
+      "id": "pindi_chana",
+      "name": "Pindi Chana",
+      "category": "main_course",
+      "sub_category": "chole",
+      "protein": "veg",
+      "form": "curry_gravy",
+      "synonyms": [
+        "pindi chana",
+        "pindi chole",
+        "amritsari chole",
+        "punjabi chana",
+        "pindi chana bulk"
+      ]
+    },
+    {
+      "id": "tandoori_chicken",
+      "name": "Tandoori Chicken",
+      "category": "starter",
+      "sub_category": "chicken_starter",
+      "protein": "chicken",
+      "form": "starter_dry",
+      "synonyms": [
+        "tandoori chicken",
+        "tandoori murg",
+        "tandoori murgh",
+        "murg tandoori",
+        "chicken tandoori",
+        "tandoori chicken full",
+        "tandoori chicken half",
+        "charcoal tandoori chicken"
+      ]
+    },
+    {
+      "id": "chicken_tikka",
+      "name": "Chicken Tikka",
+      "category": "starter",
+      "sub_category": "chicken_starter",
+      "protein": "chicken",
+      "form": "starter_dry",
+      "synonyms": [
+        "chicken tikka",
+        "murg tikka",
+        "murgh tikka",
+        "chicken tikka dry",
+        "chicken tikka kebab",
+        "boneless chicken tikka",
+        "tandoori chicken tikka",
+        "angara chicken tikka"
+      ]
+    },
+    {
+      "id": "paneer_tikka",
+      "name": "Paneer Tikka",
+      "category": "starter",
+      "sub_category": "paneer_starter",
+      "protein": "paneer",
+      "form": "starter_dry",
+      "synonyms": [
+        "paneer tikka",
+        "tandoori paneer tikka",
+        "shahi paneer tikka",
+        "pahadi paneer tikka",
+        "achari paneer tikka",
+        "hariyali paneer tikka",
+        "malai paneer tikka",
+        "paneer tikka dry",
+        "paneer tikka 8 pcs",
+        "paneer tikka 6 pcs"
+      ]
+    },
+    {
+      "id": "hara_bhara_kebab",
+      "name": "Hara Bhara Kebab",
+      "category": "starter",
+      "sub_category": "veg_starter",
+      "protein": "veg",
+      "form": "starter_dry",
+      "synonyms": [
+        "hara bhara kebab",
+        "veg hara bhara kebab",
+        "spinach green kebab",
+        "dahi hara bhara kebab"
+      ]
+    },
+    {
+      "id": "dahi_ke_kebab",
+      "name": "Dahi Ke Kebab",
+      "category": "starter",
+      "sub_category": "veg_starter",
+      "protein": "veg",
+      "form": "starter_dry",
+      "synonyms": [
+        "dahi ke kebab",
+        "dahi kebab",
+        "dahi ke sholay",
+        "dahi ke kabab",
+        "hung curd kebab"
+      ]
+    },
+    {
+      "id": "tandoori_roti",
+      "name": "Tandoori Roti",
+      "category": "bread",
+      "sub_category": "roti",
+      "protein": "veg",
+      "form": "bread",
+      "synonyms": [
+        "tandoori roti",
+        "plain tandoori roti",
+        "butter tandoori roti",
+        "khasta roti",
+        "tandoori plain roti",
+        "tandoori butter roti",
+        "roti"
+      ]
+    },
+    {
+      "id": "butter_naan",
+      "name": "Butter Naan",
+      "category": "bread",
+      "sub_category": "naan",
+      "protein": "veg",
+      "form": "bread",
+      "synonyms": [
+        "butter naan",
+        "plain naan",
+        "naan",
+        "tandoori butter naan",
+        "shahi butter naan"
+      ]
+    },
+    {
+      "id": "garlic_naan",
+      "name": "Garlic Naan",
+      "category": "bread",
+      "sub_category": "naan",
+      "protein": "veg",
+      "form": "bread",
+      "synonyms": [
+        "garlic naan",
+        "butter garlic naan",
+        "garlic butter naan",
+        "cheese garlic naan",
+        "olive cheese naan"
+      ]
+    },
+    {
+      "id": "lachha_paratha",
+      "name": "Lachha Paratha",
+      "category": "bread",
+      "sub_category": "paratha",
+      "protein": "veg",
+      "form": "bread",
+      "synonyms": [
+        "lachha paratha",
+        "butter lachha paratha",
+        "laccha paratha",
+        "pudina lachha paratha",
+        "pyaz lachhedar paratha"
+      ]
+    },
+    {
+      "id": "kulcha",
+      "name": "Masala Kulcha",
+      "category": "bread",
+      "sub_category": "kulcha",
+      "protein": "veg",
+      "form": "bread",
+      "synonyms": [
+        "masala kulcha",
+        "butter masala kulcha",
+        "onion kulcha",
+        "paneer kulcha",
+        "amritsari kulcha"
+      ]
+    },
+    {
+      "id": "veg_biryani",
+      "name": "Vegetable Biryani",
+      "category": "rice",
+      "sub_category": "biryani",
+      "protein": "veg",
+      "form": "rice",
+      "synonyms": [
+        "veg biryani",
+        "vegetable biryani",
+        "veg dum biryani",
+        "hyderabadi veg biryani",
+        "shahi veg biryani",
+        "lucknowi veg biryani",
+        "no onion garlic biryani"
+      ]
+    },
+    {
+      "id": "chicken_biryani",
+      "name": "Chicken Biryani",
+      "category": "rice",
+      "sub_category": "biryani",
+      "protein": "chicken",
+      "form": "rice",
+      "synonyms": [
+        "chicken biryani",
+        "chicken dum biryani",
+        "hyderabadi chicken biryani",
+        "kolkata chicken biryani",
+        "lucknowi chicken biryani",
+        "murgh biryani",
+        "murg biryani",
+        "special chicken biryani"
+      ]
+    },
+    {
+      "id": "mutton_biryani",
+      "name": "Mutton Biryani",
+      "category": "rice",
+      "sub_category": "biryani",
+      "protein": "mutton",
+      "form": "rice",
+      "synonyms": [
+        "mutton biryani",
+        "mutton dum biryani",
+        "hyderabadi mutton biryani",
+        "kolkata mutton biryani",
+        "gosht biryani",
+        "lucknowi mutton biryani",
+        "shahi mutton biryani"
+      ]
+    },
+    {
+      "id": "jeera_rice",
+      "name": "Jeera Rice",
+      "category": "rice",
+      "sub_category": "rice",
+      "protein": "veg",
+      "form": "rice",
+      "synonyms": [
+        "jeera rice",
+        "jeera pulao",
+        "cumin rice",
+        "ghee jeera rice"
+      ]
+    },
+    {
+      "id": "steamed_rice",
+      "name": "Steamed Basmati Rice",
+      "category": "rice",
+      "sub_category": "rice",
+      "protein": "veg",
+      "form": "rice",
+      "synonyms": [
+        "steamed rice",
+        "plain rice",
+        "basmati rice",
+        "steamed basmati rice",
+        "white rice"
+      ]
+    },
+    {
+      "id": "waffle_honey_butter",
+      "name": "Honey Butter Waffle",
+      "category": "dessert",
+      "sub_category": "waffle",
+      "protein": "veg",
+      "form": "dessert_sweet",
+      "synonyms": [
+        "honey butter sandwich waffle",
+        "honey butter lolly waffle",
+        "honey butter waffle",
+        "honey butter waff-wich",
+        "honey butter waffle sandwich",
+        "honey & butter waffle"
+      ]
+    },
+    {
+      "id": "waffle_maple_butter",
+      "name": "Maple Butter Waffle",
+      "category": "dessert",
+      "sub_category": "waffle",
+      "protein": "veg",
+      "form": "dessert_sweet",
+      "synonyms": [
+        "maple butter sandwich waffle",
+        "maple butter lolly waffle",
+        "maple butter waffle",
+        "maple butter waff-wich",
+        "maple butter waffle sandwich",
+        "maple & butter waffle"
+      ]
+    },
+    {
+      "id": "waffle_butterscotch",
+      "name": "Butterscotch Crunch Waffle",
+      "category": "dessert",
+      "sub_category": "waffle",
+      "protein": "veg",
+      "form": "dessert_sweet",
+      "synonyms": [
+        "butterscotch sandwich waffle",
+        "butterscotch lolly waffle",
+        "butterscotch crunch waffle",
+        "butterscotch waffle",
+        "butterscotch waff-wich",
+        "butterscotch crunch waffwich"
+      ]
+    },
+    {
+      "id": "waffle_oreo",
+      "name": "Oreo Cookies & Cream Waffle",
+      "category": "dessert",
+      "sub_category": "waffle",
+      "protein": "veg",
+      "form": "dessert_sweet",
+      "synonyms": [
+        "oreo cookies n cream sandwich waffle",
+        "kiki & oreo waffle",
+        "kiki and oreo waffle",
+        "kit kat oreo waffle sandwich",
+        "oreo cream waff-wich",
+        "oreo cookies waffle",
+        "kiki & oreo waff-wich",
+        "oreo overload waffle"
+      ]
+    },
+    {
+      "id": "waffle_kitkat",
+      "name": "KitKat Crunch Waffle",
+      "category": "dessert",
+      "sub_category": "waffle",
+      "protein": "veg",
+      "form": "dessert_sweet",
+      "synonyms": [
+        "kitkat crunch sandwich waffle",
+        "kitkat crunch lolly waffle",
+        "kitkat waffle",
+        "kit kat waffle",
+        "kit kat crunch jar",
+        "kitkat waff-wich",
+        "duo chocolate kitkat sandwich waffle"
+      ]
+    },
+    {
+      "id": "waffle_nutella",
+      "name": "Naked Nutella Hazelnut Waffle",
+      "category": "dessert",
+      "sub_category": "waffle",
+      "protein": "veg",
+      "form": "dessert_sweet",
+      "synonyms": [
+        "nutella hazelnut sandwich waffle",
+        "nutella hazelnut lolly waffle",
+        "naked nutella waffle",
+        "double choco hazelnut waffle",
+        "nutella cheesecake sandwich waffle",
+        "nutella waff-wich",
+        "hazelnut nutella waffle",
+        "nutella overload waffle"
+      ]
+    },
+    {
+      "id": "waffle_belgian_chocolate",
+      "name": "Belgian Chocolate Waffle",
+      "category": "dessert",
+      "sub_category": "waffle",
+      "protein": "veg",
+      "form": "dessert_sweet",
+      "synonyms": [
+        "belgian chocolate sandwich waffle",
+        "belgian milk waffle",
+        "belgian dark waffle",
+        "belgian chocolate waffle sandwich",
+        "belgian chocomelt waffle",
+        "dark & white fantasy waffle"
+      ]
+    },
+    {
+      "id": "waffle_triple_chocolate",
+      "name": "Triple Chocolate Waffle",
+      "category": "dessert",
+      "sub_category": "waffle",
+      "protein": "veg",
+      "form": "dessert_sweet",
+      "synonyms": [
+        "triple chocolate sandwich waffle",
+        "trio chocolate sandwich waffle",
+        "triple chocomelt waffle",
+        "triple chocolate brownie waffle",
+        "triple chocolate waffle jar",
+        "chocobite overload milk waffle",
+        "chocolate fully loaded sandwich waffle"
+      ]
+    },
+    {
+      "id": "waffle_red_velvet",
+      "name": "Classic Red Velvet Waffle",
+      "category": "dessert",
+      "sub_category": "waffle",
+      "protein": "veg",
+      "form": "dessert_sweet",
+      "synonyms": [
+        "classic red velvet sandwich waffle",
+        "classic red velvet waffle cake",
+        "red velvet waffle",
+        "red velvet brownie waffle",
+        "red velvet waff-wich"
+      ]
+    },
+    {
+      "id": "waffle_biscoff",
+      "name": "Lotus Biscoff Waffle",
+      "category": "dessert",
+      "sub_category": "waffle",
+      "protein": "veg",
+      "form": "dessert_sweet",
+      "synonyms": [
+        "biscoff cheesecake sandwich waffle",
+        "biscoff white chocolate sandwich waffle",
+        "lotus biscoff waffle",
+        "biscoff waffle",
+        "biscoff cheesecake* waffle"
+      ]
+    },
+    {
+      "id": "waffle_blueberry",
+      "name": "Blueberry Cheesecake Waffle",
+      "category": "dessert",
+      "sub_category": "waffle",
+      "protein": "veg",
+      "form": "dessert_sweet",
+      "synonyms": [
+        "blueberry cheesecake sandwich waffle",
+        "blueberry crème waffle",
+        "berries and cream waffle sandwich",
+        "very berry waffle jar",
+        "blueberry waffle"
+      ]
+    },
+    {
+      "id": "waffle_kunafa",
+      "name": "Pistachio Kunafa Waffle",
+      "category": "dessert",
+      "sub_category": "waffle",
+      "protein": "veg",
+      "form": "dessert_sweet",
+      "synonyms": [
+        "pistacchio kunafa sandwich waffle",
+        "choco kunafa waffle",
+        "nutty pistachio waffle",
+        "dubai chocolate waffle"
+      ]
+    },
+    {
+      "id": "waffle_brownie",
+      "name": "Walnut Brownie Waffle",
+      "category": "dessert",
+      "sub_category": "waffle",
+      "protein": "veg",
+      "form": "dessert_sweet",
+      "synonyms": [
+        "walnut brownie sandwich waffle",
+        "almond brownie waffle",
+        "nutty fudge brownie waffle",
+        "choco brownie overload waffle sandwich",
+        "brownie waffle"
+      ]
+    },
+    {
+      "id": "waffle_dbc_cake",
+      "name": "Death By Chocolate Waffle Cake",
+      "category": "dessert",
+      "sub_category": "waffle_cake",
+      "protein": "veg",
+      "form": "dessert_sweet",
+      "synonyms": [
+        "death by chocolate waffle cake",
+        "death by choco-rush waffle cake (double layer)",
+        "death by chocolate waffle",
+        "death by chocolate waffle cake"
+      ]
+    },
+    {
+      "id": "gulab_jamun",
+      "name": "Gulab Jamun",
+      "category": "dessert",
+      "sub_category": "indian_sweet",
+      "protein": "veg",
+      "form": "dessert_sweet",
+      "synonyms": [
+        "gulab jamun",
+        "mini gulab jamun",
+        "mini gulab jamun (08 pcs)",
+        "hot gulab jamun",
+        "shahi gulab jamun",
+        "kala jamun",
+        "gulab jamun 2 pcs",
+        "gulab jamun 4 pcs"
+      ]
+    },
+    {
+      "id": "rasgulla",
+      "name": "Rasgulla",
+      "category": "dessert",
+      "sub_category": "indian_sweet",
+      "protein": "veg",
+      "form": "dessert_sweet",
+      "synonyms": [
+        "rasgulla",
+        "rossogolla",
+        "spongy rasgulla",
+        "bengali rasgulla",
+        "kesar rasgulla"
+      ]
+    },
+    {
+      "id": "rasmalai",
+      "name": "Rasmalai",
+      "category": "dessert",
+      "sub_category": "indian_sweet",
+      "protein": "veg",
+      "form": "dessert_sweet",
+      "synonyms": [
+        "rasmalai",
+        "kesar rasmalai",
+        "shahi rasmalai",
+        "anguri rasmalai"
+      ]
+    },
+    {
+      "id": "gajar_halwa",
+      "name": "Gajar Ka Halwa",
+      "category": "dessert",
+      "sub_category": "indian_sweet",
+      "protein": "veg",
+      "form": "dessert_sweet",
+      "synonyms": [
+        "gajar ka halwa",
+        "gajar halwa",
+        "carrot halwa",
+        "shahi gajar halwa"
+      ]
+    },
+    {
+      "id": "cold_coffee",
+      "name": "Cold Coffee",
+      "category": "beverage",
+      "sub_category": "coffee",
+      "protein": "veg",
+      "form": "beverage",
+      "synonyms": [
+        "cold coffee",
+        "signature cold coffee",
+        "classic cold coffee",
+        "cold coffee with ice cream",
+        "iced coffee",
+        "frappe",
+        "sugar free- cold coffee milkshake"
+      ]
+    },
+    {
+      "id": "peach_iced_tea",
+      "name": "Peach Iced Tea",
+      "category": "beverage",
+      "sub_category": "tea",
+      "protein": "veg",
+      "form": "beverage",
+      "synonyms": [
+        "peach iced tea",
+        "peach - iced tea",
+        "peach iced-tea",
+        "iced tea peach"
+      ]
+    },
+    {
+      "id": "lemon_iced_tea",
+      "name": "Lemon Iced Tea",
+      "category": "beverage",
+      "sub_category": "tea",
+      "protein": "veg",
+      "form": "beverage",
+      "synonyms": [
+        "lemon iced tea",
+        "lemon - iced tea",
+        "lemon iced-tea",
+        "iced tea lemon"
+      ]
+    },
+    {
+      "id": "mint_mojito",
+      "name": "Virgin Mint Mojito",
+      "category": "beverage",
+      "sub_category": "cooler",
+      "protein": "veg",
+      "form": "beverage",
+      "synonyms": [
+        "mint mojito",
+        "virgin mojito",
+        "virgin mint mojito",
+        "classic mojito"
+      ]
+    },
+    {
+      "id": "oreo_shake",
+      "name": "Oreo Shake",
+      "category": "beverage",
+      "sub_category": "milkshake",
+      "protein": "veg",
+      "form": "beverage",
+      "synonyms": [
+        "oreo shake",
+        "oreo milkshake",
+        "kit kat oreo milkshake",
+        "cookies & cream shake"
+      ]
+    },
+    {
+      "id": "kitkat_shake",
+      "name": "KitKat Shake",
+      "category": "beverage",
+      "sub_category": "milkshake",
+      "protein": "veg",
+      "form": "beverage",
+      "synonyms": [
+        "kit kat shake",
+        "kitkat shake",
+        "kitkat milkshake",
+        "kit kat milkshake"
+      ]
+    },
+    {
+      "id": "nutella_shake",
+      "name": "Nutella Shake",
+      "category": "beverage",
+      "sub_category": "milkshake",
+      "protein": "veg",
+      "form": "beverage",
+      "synonyms": [
+        "nutella shake",
+        "nutella milkshake",
+        "hazelnut nutella shake"
+      ]
+    },
+    {
+      "id": "belgian_chocolate_shake",
+      "name": "Belgian Chocolate Shake",
+      "category": "beverage",
+      "sub_category": "milkshake",
+      "protein": "veg",
+      "form": "beverage",
+      "synonyms": [
+        "belgian chocolate shake",
+        "belgian chocomelt shake",
+        "belgian chocolate milkshake",
+        "chocolate milkshake",
+        "belgian choco shake"
+      ]
+    },
+    {
+      "id": "lassi",
+      "name": "Sweet Lassi",
+      "category": "beverage",
+      "sub_category": "traditional_drink",
+      "protein": "veg",
+      "form": "beverage",
+      "synonyms": [
+        "sweet lassi",
+        "punjabi sweet lassi",
+        "mango lassi",
+        "salted lassi"
+      ]
+    }
+  ]
+}
