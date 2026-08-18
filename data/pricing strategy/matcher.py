@@ -195,11 +195,35 @@ SYNONYMS_MAP = {
     'chocolate brownie': 'brownie', 'walnut brownie': 'brownie', 'brownie with ice cream': 'brownie',
     'chocolate mud slice': 'brownie', 'tutti frutti sundae': 'sundae', 'hot chocolate fudge': 'sundae',
     
-    # Beverages
+    # Waffles & Desserts (Universal Cross-Brand Equivalence)
+    'honey butter sandwich waffle': 'honey butter waffle', 'honey butter lolly waffle': 'honey butter waffle', 'honey butter waffle': 'honey butter waffle',
+    'maple butter sandwich waffle': 'maple butter waffle', 'maple butter lolly waffle': 'maple butter waffle', 'maple butter waffle': 'maple butter waffle',
+    'butterscotch sandwich waffle': 'butterscotch waffle', 'butterscotch lolly waffle': 'butterscotch waffle', 'butterscotch crunch waffle': 'butterscotch waffle',
+    'oreo cookies n cream sandwich waffle': 'oreo waffle', 'kiki & oreo waffle': 'oreo waffle', 'kiki and oreo waffle': 'oreo waffle', 'kit kat oreo waffle sandwich': 'oreo waffle',
+    'kitkat crunch sandwich waffle': 'kitkat waffle', 'kitkat crunch lolly waffle': 'kitkat waffle', 'kitkat waffle': 'kitkat waffle', 'kit kat waffle': 'kitkat waffle',
+    'nutella hazelnut sandwich waffle': 'nutella waffle', 'nutella hazelnut lolly waffle': 'nutella waffle', 'naked nutella waffle': 'nutella waffle', 'double choco hazelnut waffle': 'nutella waffle', 'nutella cheesecake sandwich waffle': 'nutella waffle',
+    'belgian chocolate sandwich waffle': 'belgian chocolate waffle', 'belgian milk waffle': 'belgian chocolate waffle', 'belgian dark waffle': 'belgian chocolate waffle', 'belgian chocolate waffle sandwich': 'belgian chocolate waffle',
+    'triple chocolate sandwich waffle': 'triple chocolate waffle', 'trio chocolate sandwich waffle': 'triple chocolate waffle', 'triple chocomelt waffle': 'triple chocolate waffle', 'triple chocolate brownie waffle': 'triple chocolate waffle',
+    'classic red velvet sandwich waffle': 'red velvet waffle', 'classic red velvet waffle cake': 'red velvet waffle', 'red velvet waffle': 'red velvet waffle', 'red velvet brownie waffle': 'red velvet waffle',
+    'biscoff cheesecake sandwich waffle': 'biscoff waffle', 'biscoff white chocolate sandwich waffle': 'biscoff waffle', 'lotus biscoff waffle': 'biscoff waffle',
+    'blueberry cheesecake sandwich waffle': 'blueberry waffle', 'blueberry crème waffle': 'blueberry waffle', 'berries and cream waffle sandwich': 'blueberry waffle',
+    'pistacchio kunafa sandwich waffle': 'kunafa waffle', 'choco kunafa waffle': 'kunafa waffle',
+    'almond cocoa butter sandwich waffle': 'almond butter waffle', 'almond cocoa butter waffle': 'almond butter waffle',
+    'walnut brownie sandwich waffle': 'brownie waffle', 'almond brownie waffle': 'brownie waffle', 'nutty fudge brownie waffle': 'brownie waffle', 'choco brownie overload waffle sandwich': 'brownie waffle',
+    'death by chocolate waffle cake': 'death by chocolate waffle', 'death by choco rush waffle cake': 'death by chocolate waffle', 'death by chocolate waffle': 'death by chocolate waffle',
+    'choco chips sandwich waffle': 'choco chips waffle', 'choco vanilla waffle': 'choco chips waffle',
+    'coffee mocha sandwich waffle': 'coffee mocha waffle', 'coffee mocha waffle': 'coffee mocha waffle',
+    
+    # Beverages & Shakes & Coolers
     'sweet lassi': 'lassi', 'salted lassi': 'lassi', 'mango lassi': 'lassi',
     'masala chaas': 'chaas', 'buttermilk': 'chaas',
-    'cold coffee': 'cold coffee', 'cold coffee with ice cream': 'cold coffee',
-    'virgin mojito': 'mint mojito', 'mint mojito': 'mint mojito', 'lemon iced tea': 'lemon iced tea'
+    'cold coffee': 'cold coffee', 'cold coffee with ice cream': 'cold coffee', 'signature cold coffee': 'cold coffee', 'classic cold coffee': 'cold coffee',
+    'virgin mojito': 'mint mojito', 'mint mojito': 'mint mojito',
+    'peach iced tea': 'peach iced tea', 'peach - iced tea': 'peach iced tea',
+    'lemon iced tea': 'lemon iced tea', 'lemon - iced tea': 'lemon iced tea',
+    'oreo shake': 'oreo shake', 'kit kat shake': 'kit kat shake', 'kitkat shake': 'kit kat shake', 'nutella shake': 'nutella shake',
+    'belgian chocolate shake': 'belgian chocolate shake', 'belgian chocomelt shake': 'belgian chocolate shake', 'belgian chocolate milkshake': 'belgian chocolate shake',
+    'strawberry shake': 'strawberry shake', 'mango shake': 'mango shake'
 }
 
 GENERIC_DUMMY_DISHES = {
