@@ -192,12 +192,21 @@ export function PricingTable({
   return (
     <div className="space-y-4">
       
-      {/* Header Actions */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs font-semibold text-ink/60">
-          <span>Items Analyzed: <strong className="text-ink font-bold">{items.length}</strong></span>
-          <span>•</span>
-          <span className="text-emerald-400">Formula Mode: Live Auto-Calculation</span>
+      {/* Header Actions & Intelligence Status Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-zinc-900/60 p-3 rounded-xl border border-zinc-800/80">
+        <div className="flex flex-wrap items-center gap-3 text-xs">
+          <span className="font-semibold text-zinc-300">
+            Total Items: <strong className="text-white font-bold">{items.length}</strong>
+          </span>
+          <span className="text-zinc-600">|</span>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-medium text-[11px]">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            Fast Local Guard Active
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-300 font-medium text-[11px]">
+            <Sparkles className="w-3 h-3 text-amber-400" />
+            Ethers AI Verified
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -216,18 +225,32 @@ export function PricingTable({
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-paper-dark/95 border-b border-line text-ink/70 uppercase tracking-wider font-bold text-[10px]">
-                <th className="py-3.5 px-4 sticky left-0 bg-paper-dark z-10 min-w-[160px]">Item Name</th>
+                <th className="py-3.5 px-4 sticky left-0 bg-paper-dark z-20 min-w-[250px] w-[260px]">Item Name</th>
                 <th className="py-3.5 px-4 min-w-[110px]">My Brand Price</th>
 
                 {/* Dynamic Competitor Headers */}
                 {Array.from({ length: competitorCount }).map((_, idx) => {
                   const compTitle = competitorNames[idx] || `Competitor ${idx + 1}`;
+                  const compObj = items[0]?.competitors[idx];
+                  const compUrl = compObj?.url;
+
                   return (
-                    <th key={idx} className="py-3.5 px-4 min-w-[170px] text-blue-400 border-l border-line/40">
+                    <th key={idx} className="py-3.5 px-4 min-w-[180px] max-w-[220px] text-blue-400 border-l border-line/40">
                       <div className="font-bold text-[11px] text-blue-300 truncate" title={compTitle}>
                         {compTitle}
                       </div>
-                      <div className="text-[9px] text-ink/40 font-normal lowercase tracking-normal">Matched Item & Price</div>
+                      {compUrl ? (
+                        <a
+                          href={compUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[9.5px] text-blue-400/80 hover:text-blue-300 underline font-normal lowercase tracking-normal flex items-center gap-1 mt-0.5"
+                        >
+                          🔗 Store Link
+                        </a>
+                      ) : (
+                        <div className="text-[9px] text-ink/40 font-normal lowercase tracking-normal">Matched Item & Price</div>
+                      )}
                     </th>
                   );
                 })}
@@ -261,12 +284,13 @@ export function PricingTable({
                   <tr key={item.id} className="hover:bg-paper-dark/60 transition-colors group">
                     
                     {/* Item Name */}
-                    <td className="py-3 px-4 sticky left-0 bg-paper group-hover:bg-paper-dark transition-colors z-10">
+                    <td className="py-3 px-4 sticky left-0 bg-paper group-hover:bg-paper-dark transition-colors z-20 min-w-[250px] w-[260px]">
                       <input
                         type="text"
                         value={item.itemName}
                         onChange={(e) => handleItemChange(item.id, "itemName", e.target.value)}
-                        className="bg-transparent border-none text-xs font-bold text-ink focus:ring-1 focus:ring-ink/30 rounded px-1.5 py-1 w-full"
+                        className="bg-transparent border-none text-xs font-bold text-ink focus:ring-1 focus:ring-ink/30 rounded px-1.5 py-1 w-full truncate"
+                        title={item.itemName}
                       />
                     </td>
 

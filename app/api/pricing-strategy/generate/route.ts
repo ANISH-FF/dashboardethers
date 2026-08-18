@@ -100,8 +100,9 @@ async function scrapeCompetitorPrices(
   competitors: { name: string; isManual: boolean }[],
   area: string,
   city: string,
-  itemNames: string[]
-): Promise<any[] | null> {
+  itemNames: string[],
+  jobId: string = "default"
+): Promise<{ results: any[]; summary: any } | null> {
   try {
     const res = await fetch(`${PRICING_SERVER_URL}/api/pricing/scrape`, {
       method: "POST",
@@ -110,13 +111,39 @@ async function scrapeCompetitorPrices(
         competitors,
         location: area,
         city,
-        items: itemNames
+        items: itemNames,
+        jobId
       }),
-      signal: AbortSignal.timeout(600_000) // 10 min max for multi-competitor scraping
+      signal: AbortSignal.timeout(10_000)
     });
     if (res.ok) {
-      const data = await res.json();
-      return data.results || null;
+      const initData = await res.json();
+      const targetJobId = initData.jobId || jobId;
+
+      // Poll python progress endpoint until completed
+      const startTime = Date.now();
+      while (Date.now() - startTime < 600_000) {
+        await new Promise((r) => setTimeout(r, 500));
+        try {
+          const pollRes = await fetch(`${PRICING_SERVER_URL}/api/pricing/progress?jobId=${encodeURIComponent(targetJobId)}`, {
+            cache: "no-store"
+          });
+          if (pollRes.ok) {
+            const pollData = await pollRes.json();
+            if (pollData.status === "COMPLETED") {
+              return {
+                results: pollData.results || [],
+                summary: pollData.summary || null
+              };
+            } else if (pollData.status === "FAILED") {
+              console.error("[Scrape] Python background job failed:", pollData.error);
+              return null;
+            }
+          }
+        } catch (e) {
+          // Retry poll
+        }
+      }
     }
   } catch (e) {
     console.warn("[Scrape] Python server error:", e);
@@ -266,7 +293,8 @@ export async function POST(req: NextRequest) {
       discountPct = 10,
       commissionPct = 30,
       adsPct = 5,
-      foodCostPct = 30
+      foodCostPct = 30,
+      jobId = "default"
     } = body;
 
     const competitorCount = Math.min(Math.max(Number(rawCompetitorCount) || 4, 1), 5);
@@ -286,75 +314,7 @@ export async function POST(req: NextRequest) {
 
     const itemNames: string[] = items.map((i: any) => i.itemName);
 
-    // ── Mode 1: Ethers AI Estimation (~50% Accuracy, Gemini powered) ──
-    if (researchMode === "ethers" || researchMode === "gemini") {
-      const aiMap = await generateEthersAiCompetitors(
-        apiKey,
-        searchLocation,
-        items.map(i => ({ itemName: i.itemName, basePrice: Number(i.basePrice || 100) })),
-        competitorCount
-      );
-
-      const results = await Promise.all(
-        items.map(async (item: any, idx: number) => {
-          const itemName: string = item.itemName;
-          const myPrice: number = Number(item.basePrice || 100);
-
-          const aiComps = aiMap[itemName] || [];
-          const compList = Array.from({ length: competitorCount }, (_, cIdx) => {
-            if (aiComps[cIdx] && aiComps[cIdx].name && aiComps[cIdx].price > 0) {
-              return {
-                name: aiComps[cIdx].name,
-                price: aiComps[cIdx].price,
-                url: null,
-                realData: false
-              };
-            }
-            const variance = 1.1 + (cIdx * 0.12) + (Math.sin(idx + cIdx) * 0.05);
-            const estPrice = Math.round(myPrice * variance);
-            return {
-              name: `Competitor ${cIdx + 1} (AI Est.)`,
-              price: estPrice,
-              url: null,
-              realData: false
-            };
-          });
-
-          const compPrices = compList.map(c => c.price);
-          const suggestivePrice = await calcSuggestivePrice(
-            apiKey,
-            itemName,
-            myPrice,
-            compPrices,
-            priceEnding,
-            discountPct,
-            commissionPct,
-            adsPct,
-            foodCostPct,
-            customPrompt
-          );
-
-          return {
-            itemName,
-            myBrandPrice: myPrice,
-            competitors: compList,
-            suggestivePrice,
-            accuracyMode: "50%",
-            source: "ethers_ai"
-          };
-        })
-      );
-
-      return NextResponse.json({
-        success: true,
-        location: searchLocation,
-        competitorCount,
-        fetchedLinks: [],
-        results
-      });
-    }
-
-    // ── Mode 2 & Mode 3: Swiggy Scraper (Names ~80% or Direct Links 100%) ───
+    // ── Mode 2 & Mode 3 & All Modes: Swiggy Scraper + ByNara AI Engine ───
     let competitors: { name: string; isManual: boolean; url?: string }[] = [];
 
     if (researchMode === "links" && manualCompetitorLinks.trim().length > 0) {
@@ -373,7 +333,10 @@ export async function POST(req: NextRequest) {
           if (parts.length > 0) {
             const lastSegment = parts[parts.length - 1].replace(/-?rest\d+/i, "");
             if (lastSegment) {
-              name = lastSegment.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+              const words = lastSegment.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1));
+              // Extract clean short brand name (max 3 words, removing city/area fluff)
+              const cleanWords = words.filter(w => !["North", "South", "East", "West", "Twenty", "Four", "Parganas", "Salt", "Lake", "Kolkata", "Jamshedpur", "Inside", "Ac", "Market", "Salkia", "Bhawanipur"].includes(w));
+              name = (cleanWords.length > 0 ? cleanWords : words).slice(0, 3).join(" ");
             }
           }
         } catch {}
@@ -400,12 +363,14 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Step 2: Scrape real prices from Swiggy ────────────────────────────
-    const scraperResults = await scrapeCompetitorPrices(
+    const scraperData = await scrapeCompetitorPrices(
       competitors.map(c => ({ name: c.name, isManual: c.isManual, url: c.url })),
       area,
       city,
-      itemNames
+      itemNames,
+      jobId
     );
+    const scraperResults = scraperData?.results || [];
 
     // Build lookup: itemName → [{compIndex, name, matchedDishName, price, url}]
     const priceMatrix: Record<string, { compIndex: number; name: string; matchedDishName: string; price: number | null; url?: string }[]> = {};
@@ -510,17 +475,29 @@ export async function POST(req: NextRequest) {
       })
     );
 
-    const fetchedLinks = (scraperResults || []).map((comp: any) => ({
-      competitorName: comp.competitorName,
-      swiggyUrl: comp.swiggyUrl || null,
-      found: comp.found || false
-    }));
+    const fetchedLinks = (scraperResults || []).map((comp: any, idx: number) => {
+      const fallbackName = competitors[idx]?.name || `Store ${idx + 1}`;
+      const name = (comp.competitorName && comp.competitorName !== "Unknown Restaurant") ? comp.competitorName : fallbackName;
+      return {
+        competitorName: name,
+        swiggyUrl: comp.swiggyUrl || null,
+        found: comp.found || false
+      };
+    });
+
+    const matchingSummary = scraperData?.summary || {
+      totalItems: items.length,
+      localMatches: 0,
+      aiMatches: 0,
+      notAvailable: 0
+    };
 
     return NextResponse.json({
       success: true,
       location: searchLocation,
       competitorCount,
       fetchedLinks,
+      matchingSummary,
       results
     });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { PricingHeader } from "@/components/pricing/PricingHeader";
 import { PricingTable, StrategyItem } from "@/components/pricing/PricingTable";
 import { UploadMenuModal } from "@/components/pricing/UploadMenuModal";
@@ -11,6 +11,7 @@ import { useBrand } from "@/components/BrandContext";
 
 export default function PricingStrategyPage() {
   const { activeBrand } = useBrand();
+  const terminalEndRef = useRef<HTMLDivElement>(null);
   const [location, setLocation] = useState("Bistupur, Jamshedpur");
   const [researchMode, setResearchMode] = useState<"ethers" | "gemini" | "names" | "links">("names");
   const [manualCompetitors, setManualCompetitors] = useState("");
@@ -134,6 +135,10 @@ export default function PricingStrategyPage() {
     }
   };
 
+  useEffect(() => {
+    terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [terminalLogs]);
+
   const saveBrandPricingStrategy = (newItems?: StrategyItem[]) => {
     if (!activeBrand?.id) return;
     fetch("/api/pricing-strategy/store", {
@@ -161,30 +166,35 @@ export default function PricingStrategyPage() {
     if (items.length === 0) return;
     setIsGenerating(true);
     setFetchedLinks([]);
+    const jobId = `job_${Date.now()}`;
     const modeLabel = researchMode === "ethers" || researchMode === "gemini" ? "Ethers AI (~50% Accuracy)" : researchMode === "links" ? "Direct Store Links (100% Accuracy)" : "Competitor Names (~80% Accuracy)";
     setTerminalLogs([
-      { text: `Initializing Pricing Intelligence Engine [Mode: ${modeLabel}]...`, color: "text-emerald-400 font-bold" },
-      { text: `Target Location: ${location}`, color: "text-zinc-400" },
-      { text: `Connecting to Market Intelligence Data Sources...`, color: "text-amber-400" }
+      { text: `[INIT] Initializing Pricing Intelligence Engine [Mode: ${modeLabel}]...`, color: "text-emerald-400 font-bold" },
+      { text: `[LOCATION] Target Location: ${location}`, color: "text-zinc-400" },
+      { text: `[CONNECT] Connecting to Market Intelligence Data Sources...`, color: "text-amber-400" }
     ]);
 
-    // Simulated streaming logs while waiting for backend
-    const logInterval = setInterval(() => {
-      setTerminalLogs((prev) => {
-        const elapsed = prev.length;
-        if (elapsed === 3) return [...prev, { text: "Locating competitor outlets...", color: "text-zinc-400" }];
-        if (elapsed === 4) return [...prev, { text: "Analyzing competitor data stream...", color: "text-blue-400" }];
-        if (elapsed === 5) return [...prev, { text: "Fetching live menu and price catalog...", color: "text-emerald-400" }];
-        if (elapsed === 6) return [...prev, { text: `Matching ${items.length} dishes with competitor menus...`, color: "text-indigo-400" }];
-        return prev;
-      });
-    }, 2500);
+    let seenLogsCount = 0;
+    const progressInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/pricing-strategy/progress?jobId=${jobId}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.logs && Array.isArray(data.logs) && data.logs.length > seenLogsCount) {
+            const newLogs = data.logs.slice(seenLogsCount);
+            seenLogsCount = data.logs.length;
+            setTerminalLogs((prev) => [...prev, ...newLogs]);
+          }
+        }
+      } catch (e) {}
+    }, 800);
 
     try {
       const response = await fetch("/api/pricing-strategy/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          jobId,
           items: items.map((i) => ({ itemName: i.itemName, basePrice: i.myBrandPrice })),
           location,
           researchMode,
@@ -199,7 +209,7 @@ export default function PricingStrategyPage() {
         })
       });
 
-      clearInterval(logInterval);
+      clearInterval(progressInterval);
 
       if (response.ok) {
         const data = await response.json();
@@ -241,17 +251,28 @@ export default function PricingStrategyPage() {
           saveBrandPricingStrategy(generatedItems);
         }
 
-        setTerminalLogs((prev) => [
-          ...prev,
-          { text: `Pricing Strategy Generated Successfully.`, color: "text-emerald-400 font-bold" }
-        ]);
+        if (data.matchingSummary) {
+          setTerminalLogs((prev) => [
+            ...prev,
+            { text: `[SUMMARY] PRICING MATCHING INTELLIGENCE REPORT`, color: "text-emerald-400 font-bold" },
+            { text: `[LOCAL GUARD] Fast Local Guard Matches: ${data.matchingSummary.localMatches} items`, color: "text-emerald-300 font-medium" },
+            { text: `[ETHERS AI]   Ethers AI Verified Matches:  ${data.matchingSummary.aiMatches} items`, color: "text-amber-300 font-bold" },
+            { text: `[UNMATCHED]   Not Available / Missing:      ${data.matchingSummary.notAvailable} items`, color: "text-rose-400 font-medium" },
+            { text: `[SUCCESS] Price Intelligence Table rendered successfully.`, color: "text-emerald-400 font-bold" }
+          ]);
+        } else {
+          setTerminalLogs((prev) => [
+            ...prev,
+            { text: `[SUCCESS] Pricing Strategy Generated Successfully.`, color: "text-emerald-400 font-bold" }
+          ]);
+        }
 
         await new Promise((resolve) => setTimeout(resolve, 800));
       } else {
         throw new Error("Failed response");
       }
     } catch (err) {
-      clearInterval(logInterval);
+      clearInterval(progressInterval);
       console.error("Failed to generate AI pricing strategy:", err);
       setTerminalLogs((prev) => [
         ...prev,
@@ -360,6 +381,7 @@ export default function PricingStrategyPage() {
                   <span className={log.color || "text-zinc-300"}>{log.text}</span>
                 </div>
               ))}
+              <div ref={terminalEndRef} />
             </div>
           </div>
         </div>
@@ -389,16 +411,34 @@ export default function PricingStrategyPage() {
             </div>
           )}
 
-          <PricingTable
-            items={items}
-            setItems={setItems}
-            competitorCount={competitorCount}
-            discountPct={discountPct}
-            commissionPct={commissionPct}
-            adsPct={adsPct}
-            foodCostPct={foodCostPct}
-            priceEnding={priceEnding}
-          />
+          {(() => {
+            const parsedCompNames = fetchedLinks.length > 0 && fetchedLinks.some(l => l.competitorName && l.competitorName !== "Unknown Restaurant")
+              ? fetchedLinks.map(l => l.competitorName)
+              : manualCompetitorLinks.trim().length > 0
+              ? manualCompetitorLinks.split(",").map(l => {
+                  try {
+                    const u = new URL(l.trim());
+                    const parts = u.pathname.split("/").filter(Boolean);
+                    const seg = parts[parts.length - 1].replace(/-?rest\d+/i, "");
+                    return seg.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+                  } catch { return l.trim(); }
+                }).filter(Boolean)
+              : manualCompetitors.split(",").map(s => s.trim()).filter(Boolean);
+
+            return (
+              <PricingTable
+                items={items}
+                setItems={setItems}
+                competitorCount={competitorCount}
+                competitorNames={parsedCompNames}
+                discountPct={discountPct}
+                commissionPct={commissionPct}
+                adsPct={adsPct}
+                foodCostPct={foodCostPct}
+                priceEnding={priceEnding}
+              />
+            );
+          })()}
         </div>
       )}
 
