@@ -41,9 +41,9 @@ BRAND_FLUFF_WORDS = {
     'famous', 'original', 'best', 'dhabba', 'dhaba', 'style', 'deshi', 'desi', 'authentic',
     'dubey', 'dubeys', 'novelty', 'sher-e-punjab', 'punjabi', 'fresh', 'hot', 'crispy',
     'specialist', 'house', 'premium', 'supreme', 'tasty', 'delicious', 'master', 'mini', 'box',
-    'waffcha', 'sandwich', 'sandw', 'american', 'belgian', 'madno', 'fly', 'naughty', 'naghty',
+    'waffcha', 'american', 'belgian', 'madno', 'fly', 'naughty', 'naghty',
     'naked', 'single', 'layer', 'double', 'wich', 'waffwich', 'waffte', 'single layer',
-    'specialist', 'tasty', 'grand', 'royal', 'haandi', 'bawarchi', 'haldiram', 'haldirams'
+    'grand', 'haandi', 'bawarchi', 'haldiram', 'haldirams'
 }
 
 # 1. Protein Types for Strict Isolation (Paneer != Chicken != Fish != Mutton != Egg != Veg)
@@ -72,27 +72,36 @@ def get_dish_protein(name: str) -> str:
 
 def get_dish_form(name: str) -> str:
     name_l = name.lower()
-    # High-Priority Special Form Checks
+    # Priority 0: Desserts, Sweets & Waffles (Prevents 'Sandwich Waffle' from becoming fast_food)
+    if any(w in name_l for w in ['waffle', 'waffwich', 'waff-wich', 'waffle-wich', 'lolly waffle', 'waffle jar', 'waffle cake', 'brownie', 'sundae', 'gulab jamun', 'rasgulla', 'rasmalai', 'kheer', 'phirni', 'halwa', 'rabri', 'kulfi', 'ice cream', 'pancake', 'crepe', 'cake', 'cupcake', 'donut', 'muffin', 'pastry', 'tart']):
+        return 'dessert_sweet'
+    # Priority 1: Beverages & Drinks
+    if any(w in name_l for w in ['tea', 'chai', 'coffee', 'shake', 'lassi', 'chaas', 'mojito', 'juice', 'cooler', 'soda', 'lemonade', 'boba']):
+        return 'beverage'
+    # Priority 2: Rolls & Wraps
     if any(w in name_l for w in ['roll', 'kathi roll', 'wrap', 'frankie', 'shawarma']):
         return 'roll_wrap'
+    # Priority 3: Curries & Gravies
     if any(w in name_l for w in ['masala', 'curry', 'gravy', 'makhani', 'makhni', 'lababdar', 'kadhai', 'kadai', 'korma', 'handi', 'do pyaza', 'kasha', 'kosha', 'rogan josh', 'bhuna', 'saag', 'palak', 'methi', 'malai kofta', 'pasanda', 'butter masala']):
         return 'curry_gravy'
+    # Priority 4: Starters & Tandoori
     if any(w in name_l for w in ['tikka', 'kebab', 'kabab', 'dry', 'fry', '65', 'chilli', 'crispy', 'finger', 'pakora', 'pakoda', 'cutlet', 'lollypop', 'lollipop']):
         return 'starter_dry'
+    # Priority 5: Breads
     if any(w in name_l for w in ['roti', 'naan', 'paratha', 'parantha', 'kulcha', 'puri', 'poori', 'bhatura', 'bhature', 'phulka', 'chapati', 'kulche']):
         return 'bread'
+    # Priority 6: Rice & Biryani
     if any(w in name_l for w in ['biryani', 'biriyani', 'pulao', 'pulav', 'fried rice', 'khichdi', 'jeera rice', 'curd rice', 'rice']):
         return 'rice'
+    # Priority 7: Soups
     if any(w in name_l for w in ['soup', 'shorba', 'broth', 'clear soup', 'manchow', 'hot and sour', 'sweet corn', 'minestrone', 'tomato soup']):
         return 'soup'
+    # Priority 8: Noodles & Pasta
     if any(w in name_l for w in ['noodles', 'noodle', 'chowmein', 'pasta', 'spaghetti', 'macaroni', 'lasagna', 'maggi']):
         return 'noodles_pasta'
+    # Priority 9: Fast Food (Sandwiches, Burgers, Pizzas, Fries, Momos)
     if any(w in name_l for w in ['burger', 'pizza', 'sandwich', 'garlic bread', 'fries', 'french fries', 'nachos', 'momos', 'momo', 'dimsum', 'spring roll']):
         return 'fast_food'
-    if any(w in name_l for w in ['gulab jamun', 'rasgulla', 'rasmalai', 'kheer', 'phirni', 'halwa', 'rabri', 'kulfi', 'ice cream', 'brownie', 'waffle', 'pancake', 'cake', 'sundae', 'sandesh', 'jalebi']):
-        return 'dessert_sweet'
-    if any(w in name_l for w in ['tea', 'chai', 'coffee', 'shake', 'lassi', 'chaas', 'mojito', 'juice', 'cooler', 'soda', 'lemonade']):
-        return 'beverage'
     return 'general'
 
 # 3. Master Indian Culinary Synonyms Dataset (500+ Indian & Platform Dish Equivalents)
@@ -258,17 +267,19 @@ def clean_item_name(name: str) -> str:
 
     name_l = re.sub(r'\[.*?\]|\(.*?\)', '', name_l)  # Remove bracketed text like [Half], (1 Pc), (4 Pcs)
     name_l = re.sub(r'[^a-z0-9\s]', ' ', name_l)    # Remove special characters
+    name_l = re.sub(r'\s+', ' ', name_l).strip()
+
+    # Step 1: Apply culinary synonym replacements FIRST on raw normalized string
+    for syn, target in SYNONYMS_MAP.items():
+        if syn in name_l:
+            name_l = name_l.replace(syn, target)
+            break
+
+    # Step 2: Strip brand fluff words
     tokens = name_l.split()
-    
-    # Strip brand fluff words
     clean_tokens = [t for t in tokens if t not in BRAND_FLUFF_WORDS]
     cleaned = " ".join(clean_tokens if clean_tokens else tokens).strip()
     
-    # Apply culinary synonym replacements
-    for syn, target in SYNONYMS_MAP.items():
-        if syn in cleaned:
-            cleaned = cleaned.replace(syn, target)
-            
     cleaned = re.sub(r'\s+', ' ', cleaned).strip()
     if len(cleaned) < 3 or cleaned in GENERIC_DUMMY_DISHES:
         return "__DUMMY_IGNORE__"
@@ -283,8 +294,8 @@ def find_best_matching_item(user_item: str, competitor_menu: list) -> tuple:
     Guard 2: Strict Protein Isolation (Never match Paneer to Chicken or Veg to Mutton).
     Guard 3: Strict Dish Form Isolation (Never match Starter Tikka to Curry Tikka Masala to Tikka Roll).
     Rule 1: 100% Exact Clean Match (Score: 1.0).
-    Rule 2: Core Culinary Noun Substring Match (Score: 0.90 - 0.99).
-    Rule 3: Word Overlap >= 70% (Score: 0.80 - 0.89).
+    Rule 2: Substring & Core Culinary Noun Match (Score: 0.90 - 0.99).
+    Rule 3: Asymmetric Word Overlap (Score: 0.75 - 0.89).
     """
     if not user_item or not competitor_menu:
         return None, 0.0
@@ -352,16 +363,20 @@ def find_best_matching_item(user_item: str, competitor_menu: list) -> tuple:
                     best_score = score
                     best_item = item
             else:
-                # Rule 3: High Word Overlap >= 70%
+                # Rule 3: Asymmetric Word Overlap (Satisfies partial/modifier matching like Honey Butter vs Butter Waffle)
                 if u_words and c_words:
-                    overlap = len(u_words.intersection(c_words)) / max(len(u_words), len(c_words))
-                    if overlap >= 0.70:
-                        score = 0.80 + (overlap * 0.15)
-                        if score > best_score:
-                            best_score = score
-                            best_item = item
+                    inter = u_words.intersection(c_words)
+                    if len(inter) >= 1:
+                        cov_u = len(inter) / len(u_words)
+                        cov_c = len(inter) / len(c_words)
+                        weighted_overlap = max(cov_u, cov_c) * 0.70 + min(cov_u, cov_c) * 0.30
+                        if weighted_overlap >= 0.50:
+                            score = 0.75 + (weighted_overlap * 0.20)
+                            if score > best_score:
+                                best_score = score
+                                best_item = item
 
-    if best_score >= 0.80:
+    if best_score >= 0.70:
         return best_item, best_score
 
     return None, 0.0
