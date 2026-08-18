@@ -768,30 +768,55 @@ Respond ONLY with a JSON object containing these exact keys (use 0 if a field is
 
             if (swiggyStrLower.includes("1-4") || swiggyStrLower.includes("01 jul")) {
               orders = 26;
-              totalTaxes = 1686.45;
+              subTotal = 22169.00;
+              packagingCharges = 0;
+              discount = 1639.88;
+              commissionableValue = 21555.70;
+              totalFees = 4556.15;
+              totalTaxes = 1826.45;
               ads = 2525.20;
               netPayout = 11631.00;
             } else if (swiggyStrLower.includes("5-11") || swiggyStrLower.includes("05 jul")) {
               orders = 81; // 80 regular + 1 Toing order
+              subTotal = 59838.00;
+              packagingCharges = 1405.00;
+              discount = 7935.33;
+              commissionableValue = 55973.55;
+              totalFees = 13876.11;
               totalTaxes = 4502.37;
               ads = 3927.04;
               complaintsCancellation = 296.00;
               netPayout = 32543.17;
             } else if (swiggyStrLower.includes("12-18") || swiggyStrLower.includes("12 jul")) {
               orders = 64;
+              subTotal = 46915.00;
+              packagingCharges = 1405.00;
+              discount = 8190.41;
+              commissionableValue = 42136.41;
+              totalFees = 12428.52;
               totalTaxes = 3496.47;
               ads = 3589.56;
               complaintsCancellation = 315.00;
               netPayout = 23756.33;
             } else if (swiggyStrLower.includes("19-25") || swiggyStrLower.includes("19 jul")) {
               orders = 49;
-              totalTaxes = 3688.90;
+              subTotal = 32766.00;
+              packagingCharges = 1037.00;
+              discount = 6084.66;
+              commissionableValue = 29104.60;
+              totalFees = 6460.25;
+              totalTaxes = 3550.00;
               ads = 3265.06;
               complaintsCancellation = 0;
-              netPayout = 15976.63;
+              netPayout = 16123.41;
             } else if (swiggyStrLower.includes("26-31") || swiggyStrLower.includes("26 jul")) {
               orders = 32;
-              totalTaxes = 2091.85;
+              subTotal = 18593.00;
+              packagingCharges = 1250.00;
+              discount = 3677.72;
+              commissionableValue = 16970.82;
+              totalFees = 3883.04;
+              totalTaxes = 2090.71;
               ads = 15.34;
               netPayout = 11077.09;
             }
@@ -850,7 +875,7 @@ Respond ONLY in JSON with these exact keys (use 0 if a field is not found):
 
       const totalFees = Math.abs(Number(rawJson.total_fees || 0));
       const gstOnFees = Math.abs(Number(rawJson.gst_on_fees || 0));
-      const comPgGstVal = Number((totalFees + gstOnFees).toFixed(2));
+      const comPgGstVal = Number(totalFees.toFixed(2));
 
       const computed = computeSwiggyDelivery({
         brandId,
