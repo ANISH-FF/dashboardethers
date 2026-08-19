@@ -769,6 +769,9 @@ Respond ONLY with a JSON object containing these exact keys (use 0 if a field is
         let totalTaxes = 0;
         let ads = manualAds;
         let netPayout = 0;
+        let gstSec19 = 0;
+        let tcs = 0;
+        let tds = 0;
 
         if (isCsv) {
           const text = new TextDecoder().decode(buffer);
@@ -870,12 +873,30 @@ Respond ONLY with a JSON object containing these exact keys (use 0 if a field is
                     ads = adVal;
                   }
                 }
+              } else if (particular.includes("GST on Service Fee")) {
+                gstOnFees = Math.abs(col4Val);
+              } else if (particular.includes("GST Deduction") || particular.includes("GST Sec 19")) {
+                gstSec19 = Math.abs(totVal || col4Val);
+              } else if (particular.includes("TCS") && !particular.includes("TCS Deduction")) {
+                tcs = Math.abs(totVal || col4Val);
+              } else if (particular.includes("TDS") && !particular.includes("TDS Deduction")) {
+                tds = Math.abs(totVal || col4Val);
               } else if (particular.includes("Total Taxes")) {
                 totalTaxes = Math.abs(totVal || col4Val);
               } else if (particular.includes("Net Payout")) {
                 netPayout = totVal || col4Val;
               }
             });
+
+            // If Total Taxes row included GST on Service Fee (new Swiggy statement format),
+            // separate GST on Service Fee into Swiggy Fees so Total Taxes reflects pure merchant tax
+            if (gstSec19 > 0 || tcs > 0 || tds > 0) {
+              const pureTax = gstSec19 + tcs + tds;
+              if (Math.abs(totalTaxes - (pureTax + gstOnFees)) < 2.0) {
+                totalTaxes = pureTax;
+                totalFees = totalFees + gstOnFees;
+              }
+            }
 
             // If netPayout was pre-Ads (e.g. 36470.21) and Ads exist, deduct Ads
             if (ads > 0 && netPayout > ads) {
