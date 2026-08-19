@@ -432,6 +432,7 @@ export async function POST(req: NextRequest) {
               // Read Ads & Hyperpure from 'Addition Deductions Details' with period-overlap date filtering
               let adSheetAds = 0;
               let adSheetHyperpure = 0;
+              let adSheetMisc = 0; // Miscellaneous (G): non-ADS entries in growth services section
               const adSheetName = workbook.SheetNames.find((s) => /addition/i.test(s) && /deduction/i.test(s));
 
               if (adSheetName && workbook.Sheets[adSheetName]) {
@@ -458,17 +459,22 @@ export async function POST(req: NextRequest) {
                   const typeStr = String(r[1] || "").trim();
                   if (!typeStr || typeStr.toLowerCase() === "type" || typeStr.toLowerCase() === "res id for which deduction created") return;
 
-                  // Column layout for deduction ADS rows:
+                  // Column layout for deduction rows:
                   // r[1]=Type, r[2]=ResId, r[3]=Invoice/Campaign ID, r[4]=Deduction time period, r[5]=Settlement status, r[6]=Total amount, r[7]=Adjusted amount
-                  // Use Adjusted amount (r[7]) as that's what was settled in this cycle
                   const val = Math.abs(parseNum(r[7]) || parseNum(r[6]) || 0);
                   if (!val) return;
 
-                  // r[4] = "Deduction time period" e.g. "27 July 26 - 31 July 26"
                   const periodStr = String(r[4] || "").trim();
 
                   if (section === "ads") {
-                    if (isPeriodInFilter(periodStr)) adSheetAds += val;
+                    // Only count actual ADS type — skip non-ADS entries (e.g. TDS_194O)
+                    // that Zomato places under growth services but shows as Miscellaneous (G) on dashboard
+                    if (typeStr.toUpperCase() === "ADS" && isPeriodInFilter(periodStr)) {
+                      adSheetAds += val;
+                    } else if (typeStr.toUpperCase() !== "ADS" && isPeriodInFilter(periodStr)) {
+                      // Non-ADS entries (e.g. TDS_194O) = Miscellaneous deductions (G)
+                      adSheetMisc += val;
+                    }
                   } else if (section === "hyperpure") {
                     adSheetHyperpure += val;
                   }
@@ -483,10 +489,10 @@ export async function POST(req: NextRequest) {
                 commissionableValue = subTotal + packagingCharges + olCustomerGst - discount;
                 orderLevelDeduction = olServiceFee;
                 taxDeduction = olGovtCharges;
-                cancelledOrderRefund = olAdditions; // Col 47: tips + refunds
+                cancelledOrderRefund = olAdditions;
                 if (!manualAds) ads = adSheetAds;
                 hyperpure = adSheetHyperpure;
-                netPayout = Number((commissionableValue + cancelledOrderRefund - orderLevelDeduction - taxDeduction - ads - hyperpure).toFixed(2));
+                netPayout = Number((commissionableValue + cancelledOrderRefund - orderLevelDeduction - taxDeduction - ads - hyperpure - adSheetMisc).toFixed(2));
               }
             }
 
