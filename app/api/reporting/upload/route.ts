@@ -210,7 +210,7 @@ export async function POST(req: NextRequest) {
             // --- HYBRID BYPASS FOR RAW UN-EDITED ZOMATO PORTAL DOWNLOADS ---
             // If Payout Breakup formulas evaluated to 0 (because Enable Editing was not clicked),
             // evaluate the formulas from the 'Order Level' sheet automatically!
-            if (totalOrders === 0 && subTotal === 0 && workbook.Sheets["Order Level"]) {
+            if ((totalOrders === 0 || (startDate && endDate)) && workbook.Sheets["Order Level"]) {
               const olSheet = workbook.Sheets["Order Level"];
               const olRows = XLSX.utils.sheet_to_json<any[]>(olSheet, { header: 1 });
 
@@ -382,7 +382,7 @@ export async function POST(req: NextRequest) {
 
                 const statusVal = String(r[statusIdx] || "").trim().toUpperCase();
 
-                if (statusVal.includes("DELIVERED")) {
+                if (statusVal.includes("DELIVERED") || statusVal.includes("CANCELLED") || statusVal.includes("REJECTED")) {
                   olOrders += 1;
                   if (subtotalIdx >= 0) olSubtotal += parseNum(r[subtotalIdx]);
                   if (pkgIdx >= 0) olPkg += parseNum(r[pkgIdx]);
@@ -407,18 +407,6 @@ export async function POST(req: NextRequest) {
                   olGovtCharges += Math.abs(rowTax);
 
                   if (netPayoutIdx >= 0) olNetPayout += parseNum(r[netPayoutIdx]);
-                } else if (statusVal.includes("CANCELLED") || statusVal.includes("REJECTED")) {
-                  let rowSf = parseNum(r[27]) || (parseNum(r[25]) + parseNum(r[26]));
-                  if (rowSf > 0) olServiceFee += Math.abs(rowSf);
-
-                  let rowTax = parseNum(r[36]);
-                  if (rowTax === 0) rowTax = parseNum(r[28]) + parseNum(r[32]) + parseNum(r[34]);
-                  if (rowTax > 0) olGovtCharges += Math.abs(rowTax);
-
-                  if (netPayoutIdx >= 0) {
-                    const cancelPayout = parseNum(r[netPayoutIdx]);
-                    if (cancelPayout > 0) olCancelledRefund += cancelPayout;
-                  }
                 }
               });
 
