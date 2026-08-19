@@ -816,17 +816,21 @@ Respond ONLY with a JSON object containing these exact keys (use 0 if a field is
               return isNaN(n) ? 0 : n;
             };
 
-            // Find column index for 'Swiggy Orders' (Delivered Orders)
+            // Find column indices for 'Total' and 'Swiggy Orders' (Delivered Orders)
             let swiggyDelivColIdx = 3; // Default Col 4 (zero-indexed 3)
+            let swiggyTotalColIdx = 5; // Default Col 6 (zero-indexed 5)
 
-            // Check header row (row index 2 or 3) for 'Swiggy Orders'
+            // Check header row (row index 2 or 3) for 'Total' and 'Swiggy Orders'
             for (let i = 0; i < Math.min(6, rows.length); i++) {
               const r = rows[i];
               if (Array.isArray(r)) {
+                const tIdx = r.findIndex((cell) => String(cell || "").toLowerCase().trim() === "total");
+                if (tIdx >= 0) {
+                  swiggyTotalColIdx = tIdx;
+                }
                 const sIdx = r.findIndex((cell) => String(cell || "").toLowerCase().includes("swiggy orders"));
                 if (sIdx >= 0) {
                   swiggyDelivColIdx = sIdx;
-                  break;
                 }
               }
             }
@@ -834,11 +838,11 @@ Respond ONLY with a JSON object containing these exact keys (use 0 if a field is
             rows.forEach((r) => {
               if (!Array.isArray(r)) return;
               const particular = r.map((x) => String(x || "").trim()).join(" ");
-              const col4Val = parseNum(r[swiggyDelivColIdx]);
-              const totVal = parseNum(r[r.length - 1]) || parseNum(r[7]) || parseNum(r[5]);
+              const totVal = parseNum(r[swiggyTotalColIdx]) || parseNum(r[r.length - 1]) || parseNum(r[7]) || parseNum(r[5]) || parseNum(r[swiggyDelivColIdx]);
+              const col4Val = totVal || parseNum(r[swiggyDelivColIdx]);
 
               if (particular.includes("Orders") && orders === 0 && !particular.includes("Cancelled") && !particular.includes("Paid")) {
-                orders = col4Val;
+                orders = Math.round(totVal || parseNum(r[swiggyDelivColIdx]));
               } else if (particular.includes("Item Total")) {
                 subTotal = col4Val;
               } else if (particular.includes("Packaging Charges")) {
@@ -869,7 +873,7 @@ Respond ONLY with a JSON object containing these exact keys (use 0 if a field is
               } else if (particular.includes("Total Taxes")) {
                 totalTaxes = Math.abs(totVal || col4Val);
               } else if (particular.includes("Net Payout")) {
-                netPayout = col4Val;
+                netPayout = totVal || col4Val;
               }
             });
 
