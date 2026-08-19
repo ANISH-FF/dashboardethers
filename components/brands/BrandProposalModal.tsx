@@ -473,9 +473,7 @@ export function BrandProposalModal({ brandName, proposal, mode, onClose, onSubmi
 
                   {/* Middle: Client Owner */}
                   <div className="flex flex-col items-center justify-end h-full">
-                    <div className="h-16 sm:h-20 w-full flex items-end justify-center pb-0.5">
-                      <span className="text-[9px] uppercase tracking-wider font-semibold text-zinc-400 font-sans -mb-0.5">(Client Signature)</span>
-                    </div>
+                    <div className="h-16 sm:h-20 w-full flex items-end justify-center pb-0.5"></div>
                     <div className="w-32 sm:w-40 h-0.5 bg-[#2F3119] mb-1"></div>
                     <div className="font-serif font-bold text-xs text-[#2C322C]">{activeProposal.clientOwnerName || "Client Name"}</div>
                     <div className="font-sans text-[10px] text-zinc-600 font-mono">{activeProposal.clientOwnerPhone || "Client Mobile"}</div>
