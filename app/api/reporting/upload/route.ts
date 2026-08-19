@@ -423,42 +423,22 @@ export async function POST(req: NextRequest) {
                 adRows.forEach((r) => {
                   if (!Array.isArray(r)) return;
                   const rowStr = r.map((x) => String(x || "").trim()).join(" ").toUpperCase();
-                  const periodStr = String(r.find((x) => typeof x === "string" && /Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec/i.test(x)) || "");
-                  const val = Math.abs(parseNum(r[r.length - 3]) || parseNum(r[6]) || parseNum(r[5]) || parseNum(r[7]));
+                  const val = Math.abs(parseNum(r[6]) || parseNum(r[5]) || parseNum(r[r.length - 3]));
 
-                  if (rowStr.includes("ADS") && !rowStr.includes("TOTAL ADS") && val > 0) {
-                    const pLower = periodStr.toLowerCase();
-                    if ((filterMonthPad === "07" || periodLabel.toLowerCase().includes("jul")) && (pLower.includes("august") || pLower.includes("01 august") || pLower.includes("02 august") || pLower.includes("29 june") || pLower.includes("30 june"))) {
-                      if (!pLower.includes("july") && !pLower.includes("01 july") && !pLower.includes("31 july")) {
-                        return;
-                      }
+                  if ((rowStr.includes("ADS") || rowStr.includes("INVESTMENTS IN GROWTH")) && !rowStr.includes("TOTAL ADS") && val > 0) {
+                    const dateVal = String(r[3] || "");
+                    if (isDateMatch(dateVal)) {
+                      adsRowSum += val;
                     }
-
-                    let curVal = val;
-                    if (pLower.includes("30 june 26 - 05 july 26")) {
-                      curVal = val * (5.0 / 6.0);
-                    }
-
-                    adsRowSum += curVal;
+                  } else if (rowStr.includes("TOTAL ADS & MISCELLANEOUS") || rowStr.includes("TOTAL ADS")) {
+                    if (adsRowSum === 0 && val > 0) adsRowSum = val;
                   }
-                  if (rowStr.includes("TOTAL HYPERPURE") || rowStr.includes("INVESTMENT IN HYPERPURE")) {
+                  if (rowStr.includes("HYPERPURE") && val > 0) {
                     adSheetHyperpure = val;
                   }
                 });
 
-                const fileNameStr = (files[0]?.name || "") + " " + periodLabel;
-                const fileStrLower = fileNameStr.toLowerCase();
-                if (periodLabel.includes("1-5") || fileStrLower.includes("29 jun") || fileStrLower.includes("05 jul")) {
-                  adSheetAds = 2060.00;
-                } else if (periodLabel.includes("6-12") || fileStrLower.includes("06 jul")) {
-                  adSheetAds = 5367.49;
-                } else if (periodLabel.includes("13-19") || fileStrLower.includes("13 jul")) {
-                  adSheetAds = 10457.36;
-                } else if (periodLabel.includes("20-26") || (fileStrLower.includes("20 jul") && !periodLabel.includes("26-31"))) {
-                  adSheetAds = 9744.82;
-                } else if (periodLabel.includes("26-31") || periodLabel.includes("27-31") || fileStrLower.includes("27 jul") || fileStrLower.includes("02 aug")) {
-                  adSheetAds = 15411.21;
-                } else if (adsRowSum > 0) {
+                if (adsRowSum > 0) {
                   adSheetAds = adsRowSum;
                 }
               }
