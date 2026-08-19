@@ -154,8 +154,11 @@ export function PricingTable({
       };
 
       for (let i = 0; i < competitorCount; i++) {
-        const c = item.competitors[i] || { name: `Competitor ${i + 1}`, price: 0 };
-        row[`${c.name || `Comp ${i + 1}`} (Price)`] = c.price;
+        const compHeader = competitorNames[i] 
+          ? `${competitorNames[i]} (Price)` 
+          : `Competitor ${i + 1} (Price)`;
+        const c = item.competitors[i];
+        row[compHeader] = (c && c.price !== null && c.price > 0) ? c.price : "-";
       }
 
       row["Suggestive Price"] = item.suggestivePrice;
@@ -171,6 +174,20 @@ export function PricingTable({
     });
 
     const worksheet = XLSX.utils.json_to_sheet(data);
+
+    // Auto-fit column widths for a clean & organized presentation
+    if (data.length > 0) {
+      const colWidths = Object.keys(data[0]).map((key) => {
+        let maxLen = key.length;
+        data.forEach((r) => {
+          const valStr = String(r[key] || "");
+          if (valStr.length > maxLen) maxLen = valStr.length;
+        });
+        return { wch: Math.max(maxLen + 3, 12) };
+      });
+      worksheet["!cols"] = colWidths;
+    }
+
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Pricing Strategy");
     XLSX.writeFile(workbook, `Ethers_Pricing_Strategy_${new Date().toISOString().split("T")[0]}.xlsx`);
