@@ -218,26 +218,18 @@ export async function POST(req: NextRequest) {
               let olSubtotal = 0;
               let olPkg = 0;
               let olPromoDisc = 0;
-              let olBogoDisc = 0;
-              let olNetOrder = 0;
               let olServiceFee = 0;
               let olGovtCharges = 0;
-              let olNetPayout = 0;
+              let olCustomerGst = 0;
+              let olAdditions = 0;
 
               let statusIdx = 8;
               let subtotalIdx = 14;
               let pkgIdx = 15;
-              let customerGstIdx = -1;
-              let promoDiscIdx = -1;
-              let bogoDiscIdx = -1;
-              let netOrderIdx = -1;
-              let serviceFeeIdx = -1;
-              let govtChargesIdx = -1;
-              let netPayoutIdx = -1;
-              let discColIndices: number[] = [];
-              let sfColIndices: number[] = [];
+              let customerGstIdx = 21;
+              let netPayoutIdx = 48;
 
-              // Check if header row exists
+              // Find header row and detect column indices dynamically
               for (let i = 0; i < Math.min(15, olRows.length); i++) {
                 const row = olRows[i];
                 if (Array.isArray(row)) {
@@ -248,60 +240,17 @@ export async function POST(req: NextRequest) {
                     const sI = getCol("order status");
                     const stI = getCol("subtotal");
                     const pI = getCol("packaging");
-                    const cgI = getCol("customer gst") >= 0 ? getCol("customer gst") : getCol("total gst");
-                    const prI = getCol("promo");
-                    const bgI = getCol("bogo");
-                    const noI = getCol("net order");
-                    const sfI = getCol("service fee & payment");
-                    const gcI = getCol("government charges");
+                    const cgI = getCol("total gst collected") >= 0 ? getCol("total gst collected") : getCol("customer gst");
                     const npI = getCol("order level payout");
-
                     if (sI >= 0) statusIdx = sI;
                     if (stI >= 0) subtotalIdx = stI;
                     if (pI >= 0) pkgIdx = pI;
                     if (cgI >= 0) customerGstIdx = cgI;
-                    if (prI >= 0) promoDiscIdx = prI;
-                    if (bgI >= 0) bogoDiscIdx = bgI;
-                    if (noI >= 0) netOrderIdx = noI;
-                    if (sfI >= 0) serviceFeeIdx = sfI;
-                    if (gcI >= 0) govtChargesIdx = gcI;
                     if (npI >= 0) netPayoutIdx = npI;
-
-                    row.forEach((h, hIdx) => {
-                      const hStr = String(h || "").toLowerCase().trim();
-                      if (
-                        (hStr.includes("discount") || hStr.includes("promo") || hStr.includes("bogo") || hStr.includes("flat off") || hStr.includes("freebie")) &&
-                        !hStr.includes("total order value") &&
-                        !hStr.includes("commissionable")
-                      ) {
-                        if (!discColIndices.includes(hIdx)) discColIndices.push(hIdx);
-                      }
-                      if (
-                        hStr.includes("service fee") ||
-                        hStr.includes("payment mechanism") ||
-                        hStr.includes("rejection penalty") ||
-                        hStr.includes("cancellation fee")
-                      ) {
-                        if (!sfColIndices.includes(hIdx)) sfColIndices.push(hIdx);
-                      }
-                    });
                     break;
                   }
                 }
               }
-
-              if (statusIdx === -1) statusIdx = 8;
-              if (subtotalIdx === -1) subtotalIdx = 14;
-              if (pkgIdx === -1) pkgIdx = 15;
-              if (customerGstIdx === -1) customerGstIdx = 21;
-              if (promoDiscIdx === -1) promoDiscIdx = 17;
-              if (bogoDiscIdx === -1) bogoDiscIdx = 18;
-              if (netOrderIdx === -1) netOrderIdx = 23;
-              if (serviceFeeIdx === -1) serviceFeeIdx = 27;
-              if (govtChargesIdx === -1) govtChargesIdx = 28;
-              if (netPayoutIdx === -1) netPayoutIdx = 48;
-              if (discColIndices.length === 0) discColIndices = [17, 18, 20, 41];
-              if (sfColIndices.length === 0) sfColIndices = [25, 26, 27];
 
               // Date filter range determination
               let filterStartStr = "";
@@ -357,60 +306,93 @@ export async function POST(req: NextRequest) {
                 return null;
               };
 
-              const isDateMatch = (dateStrRaw: any): boolean => {
+              const isOrderDateMatch = (dateStrRaw: any): boolean => {
                 if (!dateStrRaw) return true;
                 const ymd = parseYMD(dateStrRaw);
                 if (!ymd) return true;
                 if (!filterStartStr && !filterEndStr && !filterMonthPad) return true;
+                if (filterStartStr && filterEndStr) return ymd >= filterStartStr && ymd <= filterEndStr;
+                if (filterMonthPad) return ymd.includes(`-${filterMonthPad}-`);
+                return true;
+              };
 
+              // Parse period range string like "27 July 26 - 31 July 26" -> ["2026-07-27", "2026-07-31"]
+              const parsePeriodRange = (periodStr: string): [string, string] | null => {
+                const monthMap: Record<string, string> = {
+                  "jan":"01","feb":"02","mar":"03","apr":"04","may":"05","jun":"06",
+                  "jul":"07","aug":"08","sep":"09","oct":"10","nov":"11","dec":"12"
+                };
+                const parts = periodStr.split(/\s+-\s+/);
+                if (parts.length < 2) return null;
+                const parseOne = (s: string): string | null => {
+                  const m = s.trim().match(/(\d{1,2})\s+(\w+)\s+(\d{2,4})/);
+                  if (!m) return null;
+                  const y = m[3].length === 2 ? `20${m[3]}` : m[3];
+                  const mo = monthMap[m[2].toLowerCase().substring(0, 3)];
+                  if (!mo) return null;
+                  return `${y}-${mo}-${m[1].padStart(2, "0")}`;
+                };
+                const s = parseOne(parts[0]);
+                const e = parseOne(parts[parts.length - 1]);
+                if (!s || !e) return null;
+                return [s, e];
+              };
+
+              // Check if an ads period overlaps with our date filter window
+              const isPeriodInFilter = (periodStr: string): boolean => {
+                if (!filterStartStr && !filterEndStr && !filterMonthPad) return true;
+                const range = parsePeriodRange(periodStr);
+                if (!range) return true;
+                const [pStart, pEnd] = range;
                 if (filterStartStr && filterEndStr) {
-                  return ymd >= filterStartStr && ymd <= filterEndStr;
+                  return pStart <= filterEndStr && pEnd >= filterStartStr;
                 }
                 if (filterMonthPad) {
-                  return ymd.includes(`-${filterMonthPad}-`);
+                  const monthStr = `-${filterMonthPad}-`;
+                  const monthStart = `2026-${filterMonthPad}-01`;
+                  const monthEnd = `2026-${filterMonthPad}-31`;
+                  return pStart.includes(monthStr) || pEnd.includes(monthStr) ||
+                    (pStart <= monthStart && pEnd >= monthEnd);
                 }
                 return true;
               };
 
-              let olCustomerGst = 0;
-              let olCancelledRefund = 0;
-
               olRows.forEach((r) => {
                 if (!Array.isArray(r) || r.length < 5) return;
+                // Col 2 = Order Date
                 const dateVal = r[2] || r[3] || r[1];
-                if (!isDateMatch(dateVal)) return;
+                if (!isOrderDateMatch(dateVal)) return;
 
                 const statusVal = String(r[statusIdx] || "").trim().toUpperCase();
+                const isDelivered  = statusVal.includes("DELIVERED");
+                const isCancelled  = statusVal.includes("CANCELLED");
+                const isRejected   = statusVal.includes("REJECTED");
+                if (!isDelivered && !isCancelled && !isRejected) return;
 
-                if (statusVal.includes("DELIVERED") || statusVal.includes("CANCELLED") || statusVal.includes("REJECTED")) {
-                  olOrders += 1;
-                  if (subtotalIdx >= 0) olSubtotal += parseNum(r[subtotalIdx]);
-                  if (pkgIdx >= 0) olPkg += parseNum(r[pkgIdx]);
-                  if (customerGstIdx >= 0) olCustomerGst += parseNum(r[customerGstIdx]);
+                olOrders += 1;
 
-                  let rowDisc = 0;
-                  discColIndices.forEach((cIdx) => {
-                    rowDisc += Math.abs(parseNum(r[cIdx]));
-                  });
-                  if (rowDisc > 0) {
-                    olPromoDisc += rowDisc;
-                  } else {
-                    if (promoDiscIdx >= 0) olPromoDisc += Math.abs(parseNum(r[promoDiscIdx]));
-                    if (bogoDiscIdx >= 0) olBogoDisc += Math.abs(parseNum(r[bogoDiscIdx]));
-                  }
-
-                  let rowSf = parseNum(r[27]) || (parseNum(r[25]) + parseNum(r[26]));
-                  olServiceFee += Math.abs(rowSf);
-
-                  let rowTax = parseNum(r[36]);
-                  if (rowTax === 0) rowTax = parseNum(r[28]) + parseNum(r[32]) + parseNum(r[34]);
-                  olGovtCharges += Math.abs(rowTax);
-
-                  if (netPayoutIdx >= 0) olNetPayout += parseNum(r[netPayoutIdx]);
+                // Net Order Value (A): DELIVERED orders only
+                // (cancelled/rejected orders do NOT appear in Zomato's Net Order Value)
+                if (isDelivered) {
+                  olSubtotal    += parseNum(r[subtotalIdx >= 0 ? subtotalIdx : 14]);
+                  olPkg         += parseNum(r[pkgIdx >= 0 ? pkgIdx : 15]);
+                  olCustomerGst += parseNum(r[customerGstIdx >= 0 ? customerGstIdx : 21]);
+                  // Discounts: Col 17 (Promo) + Col 18 (BOGO) + Col 20 (Relisting)
+                  olPromoDisc   += Math.abs(parseNum(r[17])) + Math.abs(parseNum(r[18])) + Math.abs(parseNum(r[20]));
                 }
+
+                // Service Fee (C): Col 27 — all order statuses
+                olServiceFee  += Math.abs(parseNum(r[27]));
+
+                // Govt Charges (D): Col 36 — all order statuses
+                olGovtCharges += Math.abs(parseNum(r[36]));
+
+                // Additions (B): Col 47 = cancellation refunds + tips — all statuses
+                olAdditions   += parseNum(r[47]);
               });
 
-              // Read Ads & Hyperpure from 'Addition Deductions Details' sheet with row-level date filtering
+
+              // Read Ads & Hyperpure from 'Addition Deductions Details' with period-overlap date filtering
               let adSheetAds = 0;
               let adSheetHyperpure = 0;
               const adSheetName = workbook.SheetNames.find((s) => /addition/i.test(s) && /deduction/i.test(s));
@@ -418,48 +400,45 @@ export async function POST(req: NextRequest) {
               if (adSheetName && workbook.Sheets[adSheetName]) {
                 const adSheet = workbook.Sheets[adSheetName];
                 const adRows = XLSX.utils.sheet_to_json<any[]>(adSheet, { header: 1 });
-                
-                let adsRowSum = 0;
+                let section: string | null = null;
+
                 adRows.forEach((r) => {
                   if (!Array.isArray(r)) return;
-                  const rowStr = r.map((x) => String(x || "").trim()).join(" ").toUpperCase();
-                  const val = Math.abs(parseNum(r[6]) || parseNum(r[5]) || parseNum(r[r.length - 3]));
+                  const colA = String(r[0] || "").trim().toLowerCase();
+                  const colB = String(r[1] || "").trim().toLowerCase();
+                  const combined = colA + " " + colB;
 
-                  if ((rowStr.includes("ADS") || rowStr.includes("INVESTMENTS IN GROWTH")) && !rowStr.includes("TOTAL ADS") && val > 0) {
-                    const dateVal = String(r[3] || "");
-                    if (isDateMatch(dateVal)) {
-                      adsRowSum += val;
-                    }
-                  } else if (rowStr.includes("TOTAL ADS & MISCELLANEOUS") || rowStr.includes("TOTAL ADS")) {
-                    if (adsRowSum === 0 && val > 0) adsRowSum = val;
+                  // Section headers can appear in r[0] or r[1]
+                  if (combined.includes("investments in growth services")) { section = "ads"; return; }
+                  if (combined.includes("investments in hyperpure")) { section = "hyperpure"; return; }
+                  // Reset section on "total", "C)", "D)" rows
+                  if (colA.startsWith("total") || colA.startsWith("c)") || colA.startsWith("d)") ||
+                      colB.startsWith("total") || colB.startsWith("c)") || colB.startsWith("d)")) {
+                    section = null; return;
                   }
-                  if (rowStr.includes("HYPERPURE") && val > 0) {
-                    adSheetHyperpure = val;
+                  if (!section) return;
+
+                  const typeStr = String(r[1] || "").trim();
+                  if (!typeStr || typeStr.toLowerCase() === "type" || typeStr.toLowerCase() === "res id for which deduction created") return;
+
+                  // Column layout for deduction ADS rows:
+                  // r[1]=Type, r[2]=ResId, r[3]=Invoice/Campaign ID, r[4]=Deduction time period, r[5]=Settlement status, r[6]=Total amount, r[7]=Adjusted amount
+                  // Use Adjusted amount (r[7]) as that's what was settled in this cycle
+                  const val = Math.abs(parseNum(r[7]) || parseNum(r[6]) || 0);
+                  if (!val) return;
+
+                  // r[4] = "Deduction time period" e.g. "27 July 26 - 31 July 26"
+                  const periodStr = String(r[4] || "").trim();
+
+                  if (section === "ads") {
+                    if (isPeriodInFilter(periodStr)) adSheetAds += val;
+                  } else if (section === "hyperpure") {
+                    adSheetHyperpure += val;
                   }
                 });
-
-                if (adsRowSum > 0) {
-                  adSheetAds = adsRowSum;
-                }
               }
 
               if (olOrders > 0) {
-                const fileNameStr = (files[0]?.name || "") + " " + periodLabel;
-                const fileStrLower = fileNameStr.toLowerCase();
-                if (periodLabel.includes("20-26")) {
-                  olServiceFee = 18547.19;
-                }
-                if ((fileStrLower.includes("26-31") || fileStrLower.includes("27-31") || periodLabel.includes("26-31")) && (olOrders === 68 || olOrders === 14 || olOrders === 82)) {
-                  olOrders = 82;
-                  olSubtotal = 69645.00;
-                  olPkg = 2549.96;
-                  olPromoDisc = 10957.75;
-                  olCustomerGst = 3062.00;
-                  olServiceFee = 14130.35;
-                  olGovtCharges = 5666.78;
-                  olCancelledRefund = 450.86;
-                }
-
                 totalOrders = olOrders;
                 subTotal = olSubtotal;
                 packagingCharges = olPkg;
@@ -467,11 +446,10 @@ export async function POST(req: NextRequest) {
                 commissionableValue = subTotal + packagingCharges + olCustomerGst - discount;
                 orderLevelDeduction = olServiceFee;
                 taxDeduction = olGovtCharges;
-                cancelledOrderRefund = olCancelledRefund;
+                cancelledOrderRefund = olAdditions; // Col 47: tips + refunds
                 if (!manualAds) ads = adSheetAds;
                 hyperpure = adSheetHyperpure;
-                netPayout = Number(((commissionableValue + cancelledOrderRefund) - orderLevelDeduction - taxDeduction - ads - hyperpure).toFixed(2));
-                if (netPayout === 29541.73) netPayout = 29541.72;
+                netPayout = Number((commissionableValue + cancelledOrderRefund - orderLevelDeduction - taxDeduction - ads - hyperpure).toFixed(2));
               }
             }
 
