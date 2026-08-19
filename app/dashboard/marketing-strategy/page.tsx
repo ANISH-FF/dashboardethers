@@ -127,15 +127,15 @@ export default function MarketingStrategyPage() {
     const isSwiggy = platform === "swiggy";
     if (laOrders >= mmOrders && laOrders >= umOrders) {
       return {
-        code: isSwiggy ? "P1" : "LA",
-        name: isSwiggy ? "P1 (Less Affluent)" : "Less Affluent (LA)",
+        code: isSwiggy ? "P3" : "LA",
+        name: isSwiggy ? "P3 (Less Affluent)" : "Less Affluent (LA)",
         orders: laOrders,
       };
     }
     if (umOrders >= laOrders && umOrders >= mmOrders) {
       return {
-        code: isSwiggy ? "P3" : "UM",
-        name: isSwiggy ? "P3 (Upper Market)" : "Upper Market (UM)",
+        code: isSwiggy ? "P1" : "UM",
+        name: isSwiggy ? "P1 (Upper Market)" : "Upper Market (UM)",
         orders: umOrders,
       };
     }
@@ -1388,7 +1388,7 @@ export default function MarketingStrategyPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="flex items-center justify-between p-2.5 rounded-lg bg-paper-dark border border-line">
                       <span className="text-xs font-medium text-ink/70">
-                        {platform === "swiggy" ? "P1 (Less Affluent):" : "LA (Less Affluent):"}
+                        {platform === "swiggy" ? "P3 (Less Affluent):" : "LA (Less Affluent):"}
                       </span>
                       <div className="flex items-center gap-1.5">
                         <input
@@ -1418,7 +1418,7 @@ export default function MarketingStrategyPage() {
 
                     <div className="flex items-center justify-between p-2.5 rounded-lg bg-paper-dark border border-line">
                       <span className="text-xs font-medium text-ink/70">
-                        {platform === "swiggy" ? "P3 (Upper Market):" : "UM (Upper Market):"}
+                        {platform === "swiggy" ? "P1 (Upper Market):" : "UM (Upper Market):"}
                       </span>
                       <div className="flex items-center gap-1.5">
                         <input
