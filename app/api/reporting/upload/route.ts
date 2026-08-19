@@ -223,36 +223,75 @@ export async function POST(req: NextRequest) {
               let olCustomerGst = 0;
               let olAdditions = 0;
 
-              let statusIdx = 8;
-              let subtotalIdx = 14;
-              let pkgIdx = 15;
-              let customerGstIdx = 21;
-              let netPayoutIdx = 48;
 
-              // Find header row and detect column indices dynamically
+
+              // === DYNAMIC COLUMN DETECTION — works for ANY Zomato layout ===
+              // Find the header row first
+              let headerRowIdx = -1;
               for (let i = 0; i < Math.min(15, olRows.length); i++) {
                 const row = olRows[i];
                 if (Array.isArray(row)) {
                   const rStr = row.map((x) => String(x || "").toLowerCase()).join(" ");
-                  if (rStr.includes("order status") || rStr.includes("subtotal") || rStr.includes("payout")) {
-                    const getCol = (term: string) =>
-                      row.findIndex((h) => String(h || "").toLowerCase().includes(term));
-                    const sI = getCol("order status");
-                    const stI = getCol("subtotal");
-                    const pI = getCol("packaging");
-                    const cgI = getCol("total gst collected") >= 0 ? getCol("total gst collected") : getCol("customer gst");
-                    const npI = getCol("order level payout");
-                    if (sI >= 0) statusIdx = sI;
-                    if (stI >= 0) subtotalIdx = stI;
-                    if (pI >= 0) pkgIdx = pI;
-                    if (cgI >= 0) customerGstIdx = cgI;
-                    if (npI >= 0) netPayoutIdx = npI;
-                    break;
+                  if (rStr.includes("order status") && (rStr.includes("subtotal") || rStr.includes("payout"))) {
+                    headerRowIdx = i; break;
                   }
                 }
               }
 
-              // Date filter range determination
+              // Helper: find column index by searching for any of the given substrings
+              const findCol = (row: any[], ...terms: string[]): number => {
+                for (const term of terms) {
+                  const idx = row.findIndex((h) => String(h || "").toLowerCase().replace(/\n/g, " ").includes(term));
+                  if (idx >= 0) return idx;
+                }
+                return -1;
+              };
+
+              let cStatus = 8, cSubtotal = 14, cPkg = 15, cCustGst = 21;
+              let cDiscPromo = 17, cDiscBogo = 18, cDiscRelisting = 20;
+              let cSfPmf = 27;   // Combined SF + PMF (preferred)
+              let cBaseSf = -1;  // Individual base SF (fallback)
+              let cPmf = 26;     // Individual PMF (fallback)
+              let cRejPenalty = 37;   // Customer compensation / rejection penalty
+              let cGovtCharges = 36;  // Government charges (pre-computed D total)
+              let cAdditions = 47;    // Net additions (tips + refunds)
+
+              if (headerRowIdx >= 0) {
+                const hRow = olRows[headerRowIdx];
+                const s  = findCol(hRow, "order status (delivered");
+                const st = findCol(hRow, "subtotal (items total)");
+                const pk = findCol(hRow, "packaging charge");
+                const cg = findCol(hRow, "total gst collected from customers");
+                const dp = findCol(hRow, "restaurant discount (promo)", "restaurant discount [promo]");
+                const db = findCol(hRow, "restaurant discount (bogo", "restaurant discount [bogo");
+                const dr = findCol(hRow, "delivery charge discount/ relisting", "delivery charge discount / relisting");
+                // Service fee — prefer combined pre-computed column
+                const sf = findCol(hRow, "service fee & payment mechanism fee");
+                const bsf = findCol(hRow, "base service fee [");
+                const pmf = findCol(hRow, "payment mechanism fee");
+                const rp = findCol(hRow, "customer compensation/ recoupment", "customer compensation/recoupment");
+                const gc = findCol(hRow, "government charges [(");
+                const ad = findCol(hRow, "net additions");
+
+                if (s  >= 0) cStatus = s;
+                if (st >= 0) cSubtotal = st;
+                if (pk >= 0) cPkg = pk;
+                if (cg >= 0) cCustGst = cg;
+                if (dp >= 0) cDiscPromo = dp;
+                if (db >= 0) cDiscBogo = db;
+                if (dr >= 0) cDiscRelisting = dr;
+                if (sf >= 0) cSfPmf = sf;        // combined (e.g. col 27 or col 34)
+                if (bsf >= 0) cBaseSf = bsf;      // individual base sf
+                if (pmf >= 0) cPmf = pmf;
+                if (rp >= 0) cRejPenalty = rp;
+                if (gc >= 0) cGovtCharges = gc;
+                if (ad >= 0) cAdditions = ad;
+              }
+
+              const getN = (row: any[], idx: number) =>
+                idx >= 0 && idx < row.length ? Math.abs(parseNum(row[idx])) : 0;
+
+              // === DATE FILTER SETUP ===
               let filterStartStr = "";
               let filterEndStr = "";
               let filterMonthPad = "";
@@ -270,7 +309,7 @@ export async function POST(req: NextRequest) {
                   if (mIndex > 0) {
                     const mPad = mIndex < 10 ? `0${mIndex}` : `${mIndex}`;
                     filterStartStr = `2026-${mPad}-${d1}`;
-                    filterEndStr = `2026-${mPad}-${d2}`;
+                    filterEndStr   = `2026-${mPad}-${d2}`;
                     filterMonthPad = mPad;
                   }
                 } else {
@@ -316,7 +355,7 @@ export async function POST(req: NextRequest) {
                 return true;
               };
 
-              // Parse period range string like "27 July 26 - 31 July 26" -> ["2026-07-27", "2026-07-31"]
+              // Parse period string like "27 July 26 - 31 July 26" -> [startYMD, endYMD]
               const parsePeriodRange = (periodStr: string): [string, string] | null => {
                 const monthMap: Record<string, string> = {
                   "jan":"01","feb":"02","mar":"03","apr":"04","may":"05","jun":"06",
@@ -344,51 +383,49 @@ export async function POST(req: NextRequest) {
                 const range = parsePeriodRange(periodStr);
                 if (!range) return true;
                 const [pStart, pEnd] = range;
-                if (filterStartStr && filterEndStr) {
-                  return pStart <= filterEndStr && pEnd >= filterStartStr;
-                }
+                if (filterStartStr && filterEndStr) return pStart <= filterEndStr && pEnd >= filterStartStr;
                 if (filterMonthPad) {
-                  const monthStr = `-${filterMonthPad}-`;
                   const monthStart = `2026-${filterMonthPad}-01`;
-                  const monthEnd = `2026-${filterMonthPad}-31`;
-                  return pStart.includes(monthStr) || pEnd.includes(monthStr) ||
+                  const monthEnd   = `2026-${filterMonthPad}-31`;
+                  return pStart.includes(`-${filterMonthPad}-`) || pEnd.includes(`-${filterMonthPad}-`) ||
                     (pStart <= monthStart && pEnd >= monthEnd);
                 }
                 return true;
               };
 
+
               olRows.forEach((r) => {
                 if (!Array.isArray(r) || r.length < 5) return;
-                // Col 2 = Order Date
                 const dateVal = r[2] || r[3] || r[1];
                 if (!isOrderDateMatch(dateVal)) return;
 
-                const statusVal = String(r[statusIdx] || "").trim().toUpperCase();
-                const isDelivered  = statusVal.includes("DELIVERED");
-                const isCancelled  = statusVal.includes("CANCELLED");
-                const isRejected   = statusVal.includes("REJECTED");
+                const statusVal = String(r[cStatus] || "").trim().toUpperCase();
+                const isDelivered = statusVal.includes("DELIVERED");
+                const isCancelled = statusVal.includes("CANCELLED");
+                const isRejected  = statusVal.includes("REJECTED");
                 if (!isDelivered && !isCancelled && !isRejected) return;
 
                 olOrders += 1;
 
                 // Net Order Value (A): DELIVERED orders only
-                // (cancelled/rejected orders do NOT appear in Zomato's Net Order Value)
                 if (isDelivered) {
-                  olSubtotal    += parseNum(r[subtotalIdx >= 0 ? subtotalIdx : 14]);
-                  olPkg         += parseNum(r[pkgIdx >= 0 ? pkgIdx : 15]);
-                  olCustomerGst += parseNum(r[customerGstIdx >= 0 ? customerGstIdx : 21]);
-                  // Discounts: Col 17 (Promo) + Col 18 (BOGO) + Col 20 (Relisting)
-                  olPromoDisc   += Math.abs(parseNum(r[17])) + Math.abs(parseNum(r[18])) + Math.abs(parseNum(r[20]));
+                  olSubtotal    += parseNum(r[cSubtotal]);
+                  olPkg         += parseNum(r[cPkg]);
+                  olCustomerGst += parseNum(r[cCustGst]);
+                  olPromoDisc   += getN(r, cDiscPromo) + getN(r, cDiscBogo) + getN(r, cDiscRelisting);
                 }
 
-                // Service Fee (C): Col 27 — all order statuses
-                olServiceFee  += Math.abs(parseNum(r[27]));
+                // Service Fee (C): combined col if available, else base_sf + pmf
+                const sfVal = r[cSfPmf] !== undefined && r[cSfPmf] !== null && r[cSfPmf] !== "" && parseNum(r[cSfPmf]) !== 0
+                  ? Math.abs(parseNum(r[cSfPmf]))
+                  : (getN(r, cBaseSf) + getN(r, cPmf));
+                olServiceFee  += sfVal + getN(r, cRejPenalty);
 
-                // Govt Charges (D): Col 36 — all order statuses
-                olGovtCharges += Math.abs(parseNum(r[36]));
+                // Govt Charges (D): pre-computed total
+                olGovtCharges += getN(r, cGovtCharges);
 
-                // Additions (B): Col 47 = cancellation refunds + tips — all statuses
-                olAdditions   += parseNum(r[47]);
+                // Additions (B): tips + cancellation refunds
+                olAdditions   += parseNum(r[cAdditions] >= 0 ? r[cAdditions] : 47);
               });
 
 
