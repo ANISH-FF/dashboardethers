@@ -20,8 +20,8 @@ export function BrandProposalModal({ brandName, proposal, mode, onClose, onSubmi
     proposal?.category || "delivery"
   );
 
-  const [clientOwnerName, setClientOwnerName] = useState(proposal?.clientOwnerName || "Mr. Owner Name");
-  const [clientOwnerPhone, setClientOwnerPhone] = useState(proposal?.clientOwnerPhone || "+91 Mobile Number");
+  const [clientOwnerName, setClientOwnerName] = useState(proposal?.clientOwnerName || "");
+  const [clientOwnerPhone, setClientOwnerPhone] = useState(proposal?.clientOwnerPhone || "");
 
   const [proposalTitle, setProposalTitle] = useState(
     proposal?.proposalTitle ||

@@ -438,6 +438,8 @@ export function createBrandProposal(brandId: string, partial: Partial<BrandPropo
     brandId,
     brandName: brand?.name || partial.brandName || "Partner Brand",
     category: partial.category || "delivery",
+    clientOwnerName: partial.clientOwnerName || "",
+    clientOwnerPhone: partial.clientOwnerPhone || "",
     proposalTitle: partial.proposalTitle || `Proposal for Online Delivery Growth Strategy – ${brand?.name || "Brand"}`,
     date: partial.date || now.split("T")[0],
     retainerAmount: Number(partial.retainerAmount ?? 20000),
