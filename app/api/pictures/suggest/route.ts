@@ -7,8 +7,14 @@ const EXCLUDE_DOMAINS = [
   "instagram", "twitter", "twimg", "tiktok", "tumblr", "reddit",
 ];
 
+const BAD_KEYWORDS = [
+  "cat", "dog", "pet", "certificate", "award", "temple", "travel",
+  "map", "tower", "town", "switzerland", "vietnam", "breed", "kitten",
+  "tourism", "landmark", "monument", "scenery", "landscape"
+];
+
 async function fetchBingDishImages(itemName: string, count = 6): Promise<string[]> {
-  const query = `${itemName.trim()} Indian food recipe dish`;
+  const query = `Indian sweet mithai dish ${itemName.trim()} recipe`;
   const url = `https://www.bing.com/images/async?q=${encodeURIComponent(query)}&first=1&count=35&adlt=strict&mmasync=1`;
 
   const headers = {
@@ -32,6 +38,7 @@ async function fetchBingDishImages(itemName: string, count = 6): Promise<string[
       if (!imgUrl || seen.has(imgUrl)) continue;
       const lower = imgUrl.toLowerCase();
       if (EXCLUDE_DOMAINS.some(bad => lower.includes(bad))) continue;
+      if (BAD_KEYWORDS.some(bad => lower.includes(bad))) continue;
       seen.add(imgUrl);
       validImages.push(imgUrl);
     }

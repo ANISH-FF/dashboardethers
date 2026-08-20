@@ -107,10 +107,17 @@ def _fast_http_cdn_search(food_name, out_dir, count, platform="zomato", log_fn=N
         'instagram', 'twitter', 'twimg', 'tiktok', 'tumblr', 'reddit',
     }
 
-    # Food-specific queries with strict context
+    # Block non-food keywords in image URLs
+    bad_keywords = {
+        'cat', 'dog', 'pet', 'certificate', 'award', 'temple', 'travel',
+        'map', 'tower', 'town', 'switzerland', 'vietnam', 'breed', 'kitten',
+        'tourism', 'hotel-stay', 'landmark', 'monument', 'scenery', 'landscape'
+    }
+
+    # Targeted culinary queries (prevents non-food homonyms like Cham Cham Switzerland or Peda cats)
     queries = [
-        f"{food_name_clean} Indian food recipe dish",
-        f"{food_name_clean} restaurant dish photography",
+        f"Indian sweet mithai dish {food_name_clean} recipe",
+        f"Indian food dish {food_name_clean} photography",
     ]
 
     headers = {
@@ -138,9 +145,11 @@ def _fast_http_cdn_search(food_name, out_dir, count, platform="zomato", log_fn=N
                     if not img_url or img_url in seen:
                         continue
 
-                    # Block paid stock sites
+                    # Block paid stock sites and non-food domains
                     u_lower = img_url.lower()
                     if any(bad in u_lower for bad in exclude_domains):
+                        continue
+                    if any(bad in u_lower for bad in bad_keywords):
                         continue
 
                     seen.add(img_url)
