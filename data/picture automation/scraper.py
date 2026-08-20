@@ -105,10 +105,10 @@ def _fast_http_cdn_search(food_name, out_dir, count, platform="zomato", log_fn=N
         'tourism', 'hotel-stay', 'landmark', 'monument', 'scenery', 'landscape'
     }
 
-    # Universal culinary queries (works for both savory dishes like Paneer Butter Masala and sweets like Cham Cham)
+    # Simple queries — Bing auto-corrects spelling & food relevance (e.g. "Kaju Katli food")
     queries = [
-        f"{food_name_clean} Indian food recipe dish",
-        f"{food_name_clean} restaurant dish photography",
+        f"{food_name_clean} food",
+        f"{food_name_clean} recipe",
     ]
 
     headers = {

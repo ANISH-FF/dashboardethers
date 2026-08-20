@@ -14,7 +14,7 @@ const BAD_KEYWORDS = [
 ];
 
 async function fetchBingDishImages(itemName: string, count = 6): Promise<string[]> {
-  const query = `Indian food dish ${itemName.trim()} recipe photography`;
+  const query = `${itemName.trim()} food`;
   const url = `https://www.bing.com/images/async?q=${encodeURIComponent(query)}&first=1&count=35&adlt=strict&mmasync=1`;
 
   const headers = {
