@@ -10,7 +10,8 @@ from flask import Flask, render_template, request, jsonify, send_file, Response
 from scraper import parse_item_list, scrape_item, slugify
 
 app = Flask(__name__)
-app.config['DOWNLOADS_FOLDER'] = os.path.join(os.path.abspath("."), "downloads")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+app.config['DOWNLOADS_FOLDER'] = os.path.join(BASE_DIR, "downloads")
 os.makedirs(app.config['DOWNLOADS_FOLDER'], exist_ok=True)
 
 # Global dictionary of queues to handle multiple clients/jobs
