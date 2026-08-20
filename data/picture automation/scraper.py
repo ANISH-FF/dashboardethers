@@ -4,7 +4,7 @@ Food Image Batch Scraper — Bing Async HTTP Engine
 Flow per item:
   1. Hit Bing's async image endpoint (no browser, no CAPTCHA)
   2. Parse actual image result URLs using murl pattern
-  3. Filter out paid stock photo sites
+  3. Filter out paid stock photo sites and non-food homonyms
   4. Download and rename images (e.g. paneer_butter_masala_01.jpg ...)
 
 Requirements:
@@ -86,15 +86,6 @@ def _download_bytes(url, referer="https://www.bing.com/", timeout=10):
 # ─────────────────────────────────────────────
 
 def _fast_http_cdn_search(food_name, out_dir, count, platform="zomato", log_fn=None):
-    """
-    Fast Food Image Extractor — uses Bing's async image search endpoint.
-    Returns ONLY actual search result images (no sidebar ads, no sponsored content).
-
-    KEY RULE: Keep queries simple — just "<dish name> food" or "<dish name> recipe".
-    Bing auto-corrects spelling and understands food context. Do NOT add fancy
-    context words like "Indian starter recipe dish" — this confuses Bing and returns
-    wrong results (e.g. law/court images for "Seek Kabab Indian starter").
-    """
     food_name_clean = food_name.strip().title()
     saved = []
     seen = set()
@@ -156,7 +147,7 @@ def _fast_http_cdn_search(food_name, out_dir, count, platform="zomato", log_fn=N
 
                     try:
                         img_bytes = _download_bytes(img_url, timeout=5)
-                        if len(img_bytes) < 90 * 1024: # Discard files under 90 KB
+                        if len(img_bytes) < 90 * 1024:  # Minimum 90 KB quality threshold
                             continue
                         ext = "webp" if "webp" in img_url.lower() else ("png" if "png" in img_url.lower() else "jpg")
                         fname = f"img_{len(saved)+1:02d}.{ext}"

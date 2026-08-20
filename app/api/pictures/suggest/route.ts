@@ -14,7 +14,7 @@ const BAD_KEYWORDS = [
 ];
 
 async function fetchBingDishImages(itemName: string, count = 6): Promise<string[]> {
-  const query = `Indian sweet mithai dish ${itemName.trim()} recipe`;
+  const query = `Indian food dish ${itemName.trim()} recipe photography`;
   const url = `https://www.bing.com/images/async?q=${encodeURIComponent(query)}&first=1&count=35&adlt=strict&mmasync=1`;
 
   const headers = {
@@ -56,14 +56,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Item name is required." }, { status: 400 });
     }
 
-    // Use Bing Async Search Engine (same as Picture Automation engine)
     const images = await fetchBingDishImages(itemName, 6);
-
-    if (images.length > 0) {
-      return NextResponse.json({ images, source: "bing_async" });
-    }
-
-    return NextResponse.json({ images: [], error: "No relevant dish images found." });
+    return NextResponse.json({ images, source: "bing_async_engine" });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "Could not fetch image suggestions." }, { status: 500 });
   }
