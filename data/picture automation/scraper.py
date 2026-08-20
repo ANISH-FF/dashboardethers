@@ -105,10 +105,10 @@ def _fast_http_cdn_search(food_name, out_dir, count, platform="zomato", log_fn=N
         'tourism', 'hotel-stay', 'landmark', 'monument', 'scenery', 'landscape'
     }
 
-    # Targeted culinary queries (prevents non-food homonyms like Cham Cham Switzerland or Peda cats)
+    # Universal culinary queries (works for both savory dishes like Paneer Butter Masala and sweets like Cham Cham)
     queries = [
-        f"Indian sweet mithai dish {food_name_clean} recipe",
-        f"Indian food dish {food_name_clean} photography",
+        f"{food_name_clean} Indian food recipe dish",
+        f"{food_name_clean} restaurant dish photography",
     ]
 
     headers = {
