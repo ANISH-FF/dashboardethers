@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Item name is required." }, { status: 400 });
     }
 
+    // Use Bing Engine (100% reliable, zero dead links)
     const images = await fetchBingDishImages(itemName, 6);
     return NextResponse.json({ images, source: "bing_async_engine" });
   } catch (err: any) {

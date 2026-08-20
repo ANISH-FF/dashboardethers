@@ -32,7 +32,6 @@ export async function callGemini(prompt: string, options: CallOptions = {}): Pro
     temperature: options.temperature ?? 0.4,
   };
 
-  // Gemini API forbids responseMimeType: "application/json" when googleSearch tool is enabled
   if (options.expectJson && !options.useSearchGrounding) {
     generationConfig.responseMimeType = "application/json";
   }
@@ -47,6 +46,7 @@ export async function callGemini(prompt: string, options: CallOptions = {}): Pro
     });
   }
 
+  // Strictly gemini-2.5-flash as specified
   const candidateModels = ["gemini-2.5-flash"];
 
   for (let i = 0; i < candidateModels.length; i++) {
@@ -55,8 +55,7 @@ export async function callGemini(prompt: string, options: CallOptions = {}): Pro
       const model = genAI.getGenerativeModel({
         model: modelName,
         generationConfig,
-        // Search Grounding 100% disabled across entire application to eliminate query fees
-        tools: undefined
+        tools: options.useSearchGrounding ? [{ googleSearch: {} }] : undefined
       });
 
       const result = await model.generateContent(parts);
@@ -64,7 +63,7 @@ export async function callGemini(prompt: string, options: CallOptions = {}): Pro
     } catch (err: any) {
       console.warn(`Gemini model [${modelName}] failed (${err?.message || err}). Trying next model...`);
       if (i === candidateModels.length - 1) {
-        throw new Error("AI request failed across all models. Please try again in a moment.");
+        throw new Error(`AI request failed (${err?.message || err}).`);
       }
     }
   }
