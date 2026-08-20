@@ -30,6 +30,9 @@ export default function PricingStrategyPage() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
 
+  // Target profit % for bulk price calculation
+  const [targetProfitPct, setTargetProfitPct] = useState<number>(20);
+
   // Initial seed items matching Excel sheet examples with live verification links
   const [items, setItems] = useState<StrategyItem[]>([
     {
@@ -85,6 +88,10 @@ export default function PricingStrategyPage() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [terminalLogs, setTerminalLogs] = useState<{ text: string; color?: string }[]>([]);
 
+  // ─── Auto-save debounce refs ──────────────────────────────────────────────
+  const saveTimerRef   = useRef<any>(null);
+  const isFirstLoadRef = useRef(true);  // skip save on initial hydration from server
+
   useEffect(() => {
     let timer: any;
     if (isGenerating) {
@@ -125,6 +132,7 @@ export default function PricingStrategyPage() {
           if (json.data.commissionPct !== undefined) setCommissionPct(json.data.commissionPct);
           if (json.data.adsPct !== undefined) setAdsPct(json.data.adsPct);
           if (json.data.foodCostPct !== undefined) setFoodCostPct(json.data.foodCostPct);
+          if (json.data.targetProfitPct !== undefined) setTargetProfitPct(json.data.targetProfitPct);
           if (json.data.items && Array.isArray(json.data.items) && json.data.items.length > 0) {
             setItems(json.data.items);
           }
@@ -132,12 +140,33 @@ export default function PricingStrategyPage() {
       }
     } catch (e) {
       console.error("Failed to load brand pricing strategy:", e);
+    } finally {
+      // Allow auto-save to start watching AFTER initial load completes
+      isFirstLoadRef.current = false;
     }
   };
 
   useEffect(() => {
     terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [terminalLogs]);
+
+  // ─── Auto-save: fires 1.5 s after any items change ───────────────────────
+  // Skips the very first render / initial server load to avoid unnecessary saves
+  useEffect(() => {
+    if (isFirstLoadRef.current) return;   // still loading — skip
+    if (!activeBrand?.id) return;
+
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+
+    saveTimerRef.current = setTimeout(() => {
+      saveBrandPricingStrategy(items);
+    }, 1500);
+
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items]);
 
   const saveBrandPricingStrategy = (newItems?: StrategyItem[]) => {
     if (!activeBrand?.id) return;
@@ -156,11 +185,13 @@ export default function PricingStrategyPage() {
         commissionPct,
         adsPct,
         foodCostPct,
+        targetProfitPct,
         priceEnding,
         items: newItems || items,
       }),
     }).catch(() => null);
   };
+
 
   const handleGenerateStrategy = async () => {
     if (items.length === 0) return;
@@ -436,6 +467,8 @@ export default function PricingStrategyPage() {
                 adsPct={adsPct}
                 foodCostPct={foodCostPct}
                 priceEnding={priceEnding}
+                targetProfitPct={targetProfitPct}
+                onTargetProfitPctChange={setTargetProfitPct}
               />
             );
           })()}
