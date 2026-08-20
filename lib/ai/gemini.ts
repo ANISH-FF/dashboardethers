@@ -55,7 +55,7 @@ export async function callGemini(prompt: string, options: CallOptions = {}): Pro
       const model = genAI.getGenerativeModel({
         model: modelName,
         generationConfig,
-        tools: options.useSearchGrounding ? [{ googleSearch: {} }] : undefined
+        tools: options.useSearchGrounding ? [{ googleSearch: {} }] as any : undefined
       });
 
       const result = await model.generateContent(parts);
