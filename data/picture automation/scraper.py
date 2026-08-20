@@ -90,12 +90,13 @@ def _fast_http_cdn_search(food_name, out_dir, count, platform="zomato", log_fn=N
     saved = []
     seen = set()
 
-    # Block paid stock photo sites & social/adult pin collages
+    # Block paid stock photo sites, social pins, news collages, and wallpaper sites
     exclude_domains = {
         'shutterstock', 'istockphoto', 'gettyimages', 'dreamstime',
         'alamy', 'depositphotos', 'adobe.com', '123rf.com',
         'pinterest', 'pinimg', 'ytimg', 'youtube', 'facebook', 'fbcdn',
         'instagram', 'twitter', 'twimg', 'tiktok', 'tumblr', 'reddit',
+        'wallpaper', 'news', 'collage', 'befunky', 'vector', 'stock',
     }
 
     # Block non-food keywords in image URLs
@@ -105,16 +106,17 @@ def _fast_http_cdn_search(food_name, out_dir, count, platform="zomato", log_fn=N
         'tourism', 'hotel-stay', 'landmark', 'monument', 'scenery', 'landscape'
     }
 
-    # Simple queries — Bing auto-corrects spelling & food relevance (e.g. "Kaju Katli food")
+    # Food recipe queries
     queries = [
-        f"{food_name_clean} food",
-        f"{food_name_clean} recipe",
+        f"{food_name_clean} food recipe dish",
+        f"{food_name_clean} food recipe",
     ]
 
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
         "Referer": "https://www.bing.com/",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-IN,en-US;q=0.9,en;q=0.8",
         "Cookie": "SRCHHPGUSR=ADLT=DEMAND&NRSL=35; _EDGE_S=F=1;"
     }
 
@@ -125,8 +127,8 @@ def _fast_http_cdn_search(food_name, out_dir, count, platform="zomato", log_fn=N
         if len(saved) >= count:
             break
         try:
-            # Bing async endpoint — Strict SafeSearch enforced for Datacenter / VPS IPs
-            url = f"https://www.bing.com/images/async?q={requests.utils.quote(query)}&first=1&count=35&adlt=strict&mmasync=1"
+            # Bing async endpoint — Enforces Indian Food Dataset & Strict SafeSearch for VPS IPs
+            url = f"https://www.bing.com/images/async?q={requests.utils.quote(query)}&first=1&count=35&adlt=strict&cc=IN&setlang=en-US&mmasync=1"
             r = requests.get(url, headers=headers, timeout=8)
             if r.status_code == 200:
                 murls = re.findall(r'murl&quot;:&quot;(https?://[^&]+)&quot;', r.text)
