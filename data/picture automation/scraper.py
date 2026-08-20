@@ -147,7 +147,7 @@ def _fast_http_cdn_search(food_name, out_dir, count, platform="zomato", log_fn=N
 
                     try:
                         img_bytes = _download_bytes(img_url, timeout=5)
-                        if len(img_bytes) < 5000:
+                        if len(img_bytes) < 90 * 1024: # Discard files under 90 KB
                             continue
                         ext = "webp" if "webp" in img_url.lower() else ("png" if "png" in img_url.lower() else "jpg")
                         fname = f"img_{len(saved)+1:02d}.{ext}"
