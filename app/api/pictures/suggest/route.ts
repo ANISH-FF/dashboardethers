@@ -1,22 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
 
-function getFallbackImages(itemName: string) {
-  const slug = itemName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-  return {
-    images: [
-      `https://source.unsplash.com/400x300/?${encodeURIComponent(itemName)}-food`,
-      `https://source.unsplash.com/400x300/?${encodeURIComponent(itemName)}-dish`,
-      `https://source.unsplash.com/400x300/?indian-restaurant-food`,
-      `https://source.unsplash.com/400x300/?${slug}-cuisine`,
-    ],
-    source: "fallback",
-    disclaimer: "Stock photo suggestions — add valid GEMINI_API_KEY for real dish photos",
-  };
-}
+const EXCLUDE_DOMAINS = [
+  "shutterstock", "istockphoto", "gettyimages", "dreamstime",
+  "alamy", "depositphotos", "adobe.com", "123rf.com",
+];
 
-function hasValidGeminiKey() {
-  const key = process.env.GEMINI_API_KEY;
-  return key && key.startsWith("AIza");
+async function fetchBingDishImages(itemName: string, count = 6): Promise<string[]> {
+  const query = `${itemName.trim()} food`;
+  const url = `https://www.bing.com/images/async?q=${encodeURIComponent(query)}&first=1&count=35&adlt=moderate&mmasync=1`;
+
+  const headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+    "Referer": "https://www.bing.com/",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+  };
+
+  try {
+    const res = await fetch(url, { headers, cache: "no-store" });
+    if (!res.ok) return [];
+    const html = await res.text();
+    const murls = [...html.matchAll(/murl&quot;:&quot;(https?:\/\/[^&]+)&quot;/g)].map(m => m[1]);
+
+    const validImages: string[] = [];
+    const seen = new Set<string>();
+
+    for (const imgUrl of murls) {
+      if (validImages.length >= count) break;
+      if (!imgUrl || seen.has(imgUrl)) continue;
+      const lower = imgUrl.toLowerCase();
+      if (EXCLUDE_DOMAINS.some(bad => lower.includes(bad))) continue;
+      seen.add(imgUrl);
+      validImages.push(imgUrl);
+    }
+    return validImages;
+  } catch (err) {
+    console.error("Bing image search error:", err);
+    return [];
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -26,24 +46,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Item name is required." }, { status: 400 });
     }
 
-    if (hasValidGeminiKey()) {
-      try {
-        const { callGeminiJSON } = await import("@/lib/ai/gemini");
-        const prompt = `Find 4 publicly accessible, direct image URLs (ending in .jpg, .jpeg, .png,
-or .webp) that show the Indian restaurant dish "${itemName}", suitable for a menu photo.
-Prefer clean, appetizing, well-lit food photography. Respond ONLY with JSON:
-{"images": ["url1", "url2", "url3", "url4"]}
-Only include URLs you are reasonably confident actually resolve to an image.`;
+    // Use Bing Async Search Engine (same as Picture Automation engine)
+    const images = await fetchBingDishImages(itemName, 6);
 
-        const result = await callGeminiJSON<{ images: string[] }>(prompt);
-        return NextResponse.json({ images: result.images || [] });
-      } catch {
-        // Fall through to fallback
-      }
+    if (images.length > 0) {
+      return NextResponse.json({ images, source: "bing_async" });
     }
 
-    const fallback = getFallbackImages(itemName);
-    return NextResponse.json(fallback);
+    return NextResponse.json({ images: [], error: "No relevant dish images found." });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "Could not fetch image suggestions." }, { status: 500 });
   }
