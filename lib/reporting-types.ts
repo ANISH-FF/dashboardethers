@@ -414,8 +414,8 @@ export function computeCombinedDeliveryRecords(
     const commissionableValue = (z?.commissionableValue || 0) + (s?.commissionableValue || 0);
 
     const zDeductions = (z?.orderLevelDeduction || 0) + (z?.taxDeduction || 0);
-    const sDeductions = (s?.comPgGst || 0) + (s?.complaintsCancellation || 0) + (s?.tax || 0);
-    const platformFeesDeductions = zDeductions + sDeductions;
+    const sDeductions = (s?.comPgGst || 0) + (s?.tax || 0);
+    const platformFeesDeductions = Number((zDeductions + sDeductions).toFixed(2));
 
     const ads = (z?.ads || 0) + (s?.ads || 0);
     const adsPct = subTotalWithPkg > 0 ? Number(((ads / subTotalWithPkg) * 100).toFixed(2)) : 0;

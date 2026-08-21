@@ -333,7 +333,6 @@ export default function ReportingPage() {
             : Number(b.orderLevelDeduction || 0) +
               Number(b.taxDeduction || 0) +
               Number(b.comPgGst || 0) +
-              Number(b.complaintsCancellation || 0) +
               Number(b.tax || 0)),
         0
       );
