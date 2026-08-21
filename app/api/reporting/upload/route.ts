@@ -399,6 +399,24 @@ export async function POST(req: NextRequest) {
         netPayout += amountRec;
       }
 
+      let finalAds = manualAds;
+      if (manualAds > 0 && startDate && endDate) {
+        const s = new Date(startDate);
+        const e = new Date(endDate);
+        if (!isNaN(s.getTime()) && !isNaN(e.getTime()) && e >= s) {
+          const year = s.getFullYear();
+          const month = s.getMonth() + 1;
+          const totalDaysInMonth = new Date(year, month, 0).getDate();
+
+          const diffMs = e.getTime() - s.getTime();
+          const selectedDays = Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1;
+
+          if (selectedDays > 0 && selectedDays < totalDaysInMonth) {
+            finalAds = Number(((manualAds / totalDaysInMonth) * selectedDays).toFixed(2));
+          }
+        }
+      }
+
       const computed = computeSwiggyDineout({
         brandId,
         periodLabel,
@@ -409,7 +427,7 @@ export async function POST(req: NextRequest) {
         postGmv,
         discount,
         commission,
-        ads: manualAds,
+        ads: finalAds,
         netPayout,
       });
 
