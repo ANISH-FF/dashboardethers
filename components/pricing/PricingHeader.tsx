@@ -19,7 +19,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
-export type ResearchMode = "ethers" | "gemini" | "names" | "links";
+export type ResearchMode = "names" | "links";
 
 interface HeaderProps {
   location: string;
@@ -40,8 +40,8 @@ interface HeaderProps {
   setAdsPct: (val: number) => void;
   foodCostPct: number;
   setFoodCostPct: (val: number) => void;
-  priceEnding: "9_7_5" | "round" | "none";
-  setPriceEnding: (val: "9_7_5" | "round" | "none") => void;
+  priceEnding?: "9_7_5" | "round" | "none";
+  setPriceEnding?: (val: "9_7_5" | "round" | "none") => void;
   onOpenUploadModal: () => void;
   onOpenPromptModal: () => void;
   onGenerate: () => void;
@@ -67,53 +67,34 @@ export function PricingHeader({
   setAdsPct,
   foodCostPct,
   setFoodCostPct,
-  priceEnding,
-  setPriceEnding,
   onOpenUploadModal,
   onOpenPromptModal,
   onGenerate,
   isGenerating,
 }: HeaderProps) {
-  // Individual competitor name inputs — one per slot
-  const [compInputs, setCompInputs] = useState<string[]>(() => {
-    const parts = manualCompetitors
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    return Array.from({ length: competitorCount }, (_, i) => parts[i] || "");
-  });
+  // Internal competitor name and URL inputs synchronized with count
+  const [compInputs, setCompInputs] = useState<string[]>([]);
+  const [linkInputs, setLinkInputs] = useState<string[]>([]);
 
-  // Individual competitor URL link inputs — one per slot
-  const [linkInputs, setLinkInputs] = useState<string[]>(() => {
-    const parts = manualCompetitorLinks
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    return Array.from({ length: competitorCount }, (_, i) => parts[i] || "");
-  });
-
-  // Resize arrays when competitor count changes
   useEffect(() => {
-    setCompInputs((prev) => Array.from({ length: competitorCount }, (_, i) => prev[i] ?? ""));
-    setLinkInputs((prev) => Array.from({ length: competitorCount }, (_, i) => prev[i] ?? ""));
-  }, [competitorCount]);
+    const nameParts = manualCompetitors.split(",").map((s) => s.trim());
+    const linkParts = manualCompetitorLinks.split(",").map((s) => s.trim());
+    setCompInputs(Array.from({ length: competitorCount }, (_, i) => nameParts[i] || ""));
+    setLinkInputs(Array.from({ length: competitorCount }, (_, i) => linkParts[i] || ""));
+  }, [competitorCount, manualCompetitors, manualCompetitorLinks]);
 
   const handleCompInput = (idx: number, value: string) => {
-    setCompInputs((prev) => {
-      const next = [...prev];
-      next[idx] = value;
-      setManualCompetitors(next.filter(Boolean).join(", "));
-      return next;
-    });
+    const next = [...compInputs];
+    next[idx] = value;
+    setCompInputs(next);
+    setManualCompetitors(next.filter(Boolean).join(", "));
   };
 
   const handleLinkInput = (idx: number, value: string) => {
-    setLinkInputs((prev) => {
-      const next = [...prev];
-      next[idx] = value;
-      setManualCompetitorLinks(next.filter(Boolean).join(", "));
-      return next;
-    });
+    const next = [...linkInputs];
+    next[idx] = value;
+    setLinkInputs(next);
+    setManualCompetitorLinks(next.filter(Boolean).join(", "));
   };
 
   const filledNamesCount = compInputs.filter((v) => v.trim().length > 0).length;
@@ -132,7 +113,7 @@ export function PricingHeader({
             <h1 className="text-2xl font-extrabold text-ink tracking-tight">Pricing Strategy Engine</h1>
           </div>
           <p className="mt-1 text-sm text-ink/50">
-            Benchmark competitor prices, auto-calculate 9/7/5 ending prices, commission, ads & food cost margins.
+            Benchmark competitor prices, auto-calculate suggestive prices, commission, ads & food cost margins.
           </p>
         </div>
 
@@ -159,8 +140,8 @@ export function PricingHeader({
       {/* Control Panel */}
       <div className="card bg-paper-dark border-line p-4 space-y-4 shadow-xl">
 
-        {/* Row 1: Location | Count | Price Ending */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Row 1: Location | Competition Count (Max 10) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
           {/* Location */}
           <div>
@@ -176,18 +157,18 @@ export function PricingHeader({
             />
           </div>
 
-          {/* Competition Count */}
+          {/* Competition Count (1 to 10) */}
           <div>
             <label className="label text-[10px] flex items-center gap-1">
-              <Users className="w-3 h-3 text-blue-400" /> Competition Count
+              <Users className="w-3 h-3 text-blue-400" /> Competition Count (Max 10)
             </label>
-            <div className="flex items-center gap-1">
-              {[2, 3, 4, 5].map((num) => (
+            <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
                 <button
                   key={num}
                   type="button"
                   onClick={() => setCompetitorCount(num)}
-                  className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all ${
+                  className={`flex-1 min-w-[28px] py-2 text-xs font-bold rounded-lg border transition-all ${
                     competitorCount === num
                       ? "bg-blue-500/20 border-blue-500 text-blue-400 shadow-sm"
                       : "bg-paper border-line text-ink/60 hover:text-ink"
@@ -196,37 +177,6 @@ export function PricingHeader({
                   {num}
                 </button>
               ))}
-            </div>
-          </div>
-
-          {/* Price Ending */}
-          <div>
-            <label className="label text-[10px] flex items-center gap-1">
-              <Layers className="w-3 h-3 text-purple-400" /> Psychological Price Endings
-            </label>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setPriceEnding("9_7_5")}
-                className={`flex-1 py-2 px-2 text-[11px] font-bold rounded-lg border transition-all ${
-                  priceEnding === "9_7_5"
-                    ? "bg-purple-500/20 border-purple-500 text-purple-300 shadow-sm"
-                    : "bg-paper border-line text-ink/60 hover:text-ink"
-                }`}
-              >
-                Ends with 9, 7 or 5
-              </button>
-              <button
-                type="button"
-                onClick={() => setPriceEnding("round")}
-                className={`py-2 px-3 text-[11px] font-bold rounded-lg border transition-all ${
-                  priceEnding === "round"
-                    ? "bg-paper-dark border-ink text-ink"
-                    : "bg-paper border-line text-ink/60 hover:text-ink"
-                }`}
-              >
-                Standard
-              </button>
             </div>
           </div>
         </div>
@@ -239,40 +189,19 @@ export function PricingHeader({
             <label className="label text-[10px] flex items-center gap-1 mb-1.5">
               <Sparkles className="w-3 h-3 text-amber-400" /> Competitor Pricing Research Method
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                         {/* Mode 1: Ethers AI */}
-              <button
-                type="button"
-                onClick={() => setResearchMode("ethers")}
-                className={`p-2.5 rounded-xl border text-left flex items-center justify-between transition-all ${
-                  researchMode === "ethers" || researchMode === "gemini"
-                    ? "bg-amber-500/15 border-amber-500/80 text-amber-300 shadow-md ring-1 ring-amber-500/40"
-                    : "bg-paper border-line text-ink/60 hover:text-ink hover:border-line/80"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Bot className="w-4 h-4 text-amber-400 shrink-0" />
-                  <div>
-                    <div className="text-xs font-bold text-ink">Ethers AI Estimation</div>
-                    <div className="text-[10px] text-ink/40">Auto AI market benchmark</div>
-                  </div>
-                </div>
-                <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 shrink-0">
-                  50% Accuracy
-                </span>
-              </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 
-              {/* Mode 2: Competitor Brand Names */}
+              {/* Mode 1: Competitor Brand Names */}
               <button
                 type="button"
                 onClick={() => setResearchMode("names")}
-                className={`p-2.5 rounded-xl border text-left flex items-center justify-between transition-all ${
+                className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
                   researchMode === "names"
                     ? "bg-blue-500/15 border-blue-500/80 text-blue-300 shadow-md ring-1 ring-blue-500/40"
                     : "bg-paper border-line text-ink/60 hover:text-ink hover:border-line/80"
                 }`}
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
                   <Building2 className="w-4 h-4 text-blue-400 shrink-0" />
                   <div>
                     <div className="text-xs font-bold text-ink">Competitor Brand Names</div>
@@ -284,17 +213,17 @@ export function PricingHeader({
                 </span>
               </button>
 
-              {/* Mode 3: Direct Store Links */}
+              {/* Mode 2: Direct Store Links */}
               <button
                 type="button"
                 onClick={() => setResearchMode("links")}
-                className={`p-2.5 rounded-xl border text-left flex items-center justify-between transition-all ${
+                className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
                   researchMode === "links"
                     ? "bg-emerald-500/15 border-emerald-500/80 text-emerald-300 shadow-md ring-1 ring-emerald-500/40"
                     : "bg-paper border-line text-ink/60 hover:text-ink hover:border-line/80"
                 }`}
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
                   <Link className="w-4 h-4 text-emerald-400 shrink-0" />
                   <div>
                     <div className="text-xs font-bold text-ink">Direct Store Links</div>
@@ -309,16 +238,6 @@ export function PricingHeader({
             </div>
           </div>
 
-          {/* Conditional Inputs based on active Research Mode */}
-          {(researchMode === "ethers" || researchMode === "gemini") && (
-            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2 animate-in fade-in duration-200">
-              <Bot className="w-4 h-4 shrink-0 text-amber-400" />
-              <span>
-                <strong>Ethers AI Active (~50% Accuracy):</strong> Ethers AI will estimate typical competitor prices for your location without needing competitor links or brand names.
-              </span>
-            </div>
-          )}
-
           {researchMode === "names" && (
             <div className="space-y-2 animate-in fade-in duration-200">
               <div className="flex items-center justify-between">
@@ -332,10 +251,7 @@ export function PricingHeader({
                   {filledNamesCount}/{competitorCount} Names Filled · 80% Accuracy
                 </span>
               </div>
-              <div
-                className="grid gap-2"
-                style={{ gridTemplateColumns: `repeat(${Math.min(competitorCount, 5)}, 1fr)` }}
-              >
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
                 {compInputs.map((val, idx) => (
                   <div key={idx} className="relative">
                     <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-ink/30 select-none pointer-events-none">
@@ -367,10 +283,7 @@ export function PricingHeader({
                   {filledLinksCount}/{competitorCount} URLs Pasted · 100% Accuracy
                 </span>
               </div>
-              <div
-                className="grid gap-2"
-                style={{ gridTemplateColumns: `repeat(${Math.min(competitorCount, 5)}, 1fr)` }}
-              >
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
                 {linkInputs.map((val, idx) => (
                   <div key={idx} className="relative">
                     <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-500/50 select-none pointer-events-none">

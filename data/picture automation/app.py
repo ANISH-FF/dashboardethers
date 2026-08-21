@@ -1,5 +1,4 @@
 import os
-import re
 import shutil
 import zipfile
 import threading
@@ -10,8 +9,7 @@ from flask import Flask, render_template, request, jsonify, send_file, Response
 from scraper import parse_item_list, scrape_item, slugify
 
 app = Flask(__name__)
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-app.config['DOWNLOADS_FOLDER'] = os.path.join(BASE_DIR, "downloads")
+app.config['DOWNLOADS_FOLDER'] = os.path.join(os.path.abspath("."), "downloads")
 os.makedirs(app.config['DOWNLOADS_FOLDER'], exist_ok=True)
 
 # Global dictionary of queues to handle multiple clients/jobs
@@ -181,40 +179,20 @@ def serve_image(brand_slug, filename):
 
 @app.route('/api/zip', methods=['POST'])
 def create_zip():
-    import re
     data = request.json or {}
     brand_slug = data.get('brand_slug')
     images = data.get('images', [])
     
     run_dir = os.path.join(app.config['DOWNLOADS_FOLDER'], brand_slug)
     zip_dir = os.path.join(app.config['DOWNLOADS_FOLDER'], f"{brand_slug}_zip_temp")
-    
-    if os.path.exists(zip_dir):
-        shutil.rmtree(zip_dir, ignore_errors=True)
     os.makedirs(zip_dir, exist_ok=True)
     
-    used_names = set()
     for img in images:
         src = os.path.join(run_dir, img['rel_path'])
+        folder_name = os.path.dirname(img['rel_path'])
+        dst = os.path.join(zip_dir, folder_name, img['new'])
         
-        # Raw name from card input box or dish_name
-        raw_input = (img.get('new') or img.get('dish_name') or "Item").strip()
-        clean_name = raw_input.replace("_", " ").strip()
-        clean_name = re.sub(r'[\/:*?"<>|]', '', clean_name)
-        
-        base_name, ext = os.path.splitext(clean_name)
-        if not ext:
-            ext = ".jpg"
-            
-        final_name = f"{base_name}{ext}"
-        counter = 2
-        while final_name.lower() in used_names:
-            final_name = f"{base_name} ({counter}){ext}"
-            counter += 1
-            
-        used_names.add(final_name.lower())
-            
-        dst = os.path.join(zip_dir, final_name)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
         if os.path.exists(src):
             shutil.copy2(src, dst)
             

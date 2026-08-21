@@ -363,10 +363,12 @@ export default function ProjectionsPage() {
           setBrandName(data.brandName);
         }
         if (data.historicalMonths && data.historicalMonths.length === 3) {
-          setHistoricalMonths(data.historicalMonths);
+          const recomputed = data.historicalMonths.map((m) => calculateMonthMetrics(m));
+          setHistoricalMonths(recomputed);
         }
         if (data.projectedMonths && data.projectedMonths.length === 3) {
-          setProjectedMonths(data.projectedMonths);
+          const recomputed = data.projectedMonths.map((m) => calculateMonthMetrics(m));
+          setProjectedMonths(recomputed);
         }
         setNotes(data.notes || "");
       }
@@ -380,6 +382,43 @@ export default function ProjectionsPage() {
   useEffect(() => {
     loadProjections();
   }, [activeBrand?.id]);
+
+  // Synchronize Modal Cards with loaded historicalMonths
+  useEffect(() => {
+    if (historicalMonths && historicalMonths.length === 3) {
+      setMonthCardStatus((prev) =>
+        historicalMonths.map((hm, idx) => {
+          const cardData = prev[idx]?.data || {};
+          const effectiveOrders = (cardData.orders && cardData.orders > 0) ? cardData.orders : (hm.orders || 0);
+          const m2oDecimal = hm.m2o || 0.07;
+          const m2oPct = Number((m2oDecimal * 100).toFixed(1));
+          const computedMenuOpens = (effectiveOrders > 0 && m2oDecimal > 0)
+            ? Math.round(effectiveOrders / m2oDecimal)
+            : (hm.menuOpens || (prev[idx]?.menuOpens || 5000));
+
+          return {
+            platform: prev[idx]?.platform || "zomato",
+            files: prev[idx]?.files || [],
+            isLoaded: true,
+            source: prev[idx]?.source || "reporting",
+            m2oPct: m2oPct || 7.0,
+            menuOpens: computedMenuOpens,
+            aov: hm.aov || 300,
+            data: {
+              name: hm.name,
+              orders: effectiveOrders,
+              subTotal: cardData.subTotal || hm.subTotal,
+              packagingCharges: cardData.packagingCharges !== undefined ? cardData.packagingCharges : hm.packagingCharges,
+              merchantDiscountBurn: cardData.merchantDiscountBurn !== undefined ? cardData.merchantDiscountBurn : hm.merchantDiscountBurn,
+              commissionPgGst: cardData.commissionPgGst !== undefined ? cardData.commissionPgGst : hm.commissionPgGst,
+              advertisement: cardData.advertisement !== undefined ? cardData.advertisement : hm.advertisement,
+              netPayout: cardData.netPayout !== undefined ? cardData.netPayout : hm.netPayout,
+            },
+          };
+        })
+      );
+    }
+  }, [historicalMonths]);
 
   // Update a single assumption for a historical baseline month
   const handleUpdateHistoricalMonth = (index: number, patch: Partial<MonthData>) => {
@@ -438,20 +477,24 @@ export default function ProjectionsPage() {
       }
 
       let newSubTotal = current.subTotal;
-      if (patch.m2o !== undefined || patch.menuOpens !== undefined || patch.aov !== undefined) {
+      if (patch.m2o !== undefined || patch.menuOpens !== undefined || patch.aov !== undefined || patch.orders !== undefined) {
         newSubTotal = Math.round(newOrders * newAov);
       } else if (patch.subTotal !== undefined) {
         newSubTotal = patch.subTotal;
       }
 
       const updatedPartial: Partial<MonthData> = {
-        ...current,
-        ...patch,
+        name: patch.name || current.name,
+        isProjection: true,
         m2o: newM2o,
         menuOpens: newMenuOpens,
         aov: newAov,
         orders: newOrders,
         subTotal: newSubTotal,
+        effectiveDiscountPct: patch.effectiveDiscountPct !== undefined ? patch.effectiveDiscountPct : current.effectiveDiscountPct,
+        advertisementPct: patch.advertisementPct !== undefined ? patch.advertisementPct : current.advertisementPct,
+        commissionPct: patch.commissionPct !== undefined ? patch.commissionPct : current.commissionPct,
+        packagingCharges: patch.packagingCharges !== undefined ? patch.packagingCharges : Math.round(newOrders * 15),
       };
 
       next[index] = calculateMonthMetrics(updatedPartial);
@@ -501,11 +544,13 @@ export default function ProjectionsPage() {
 
         if (matchedRollup) {
           const aov = matchedRollup.orders > 0 ? Math.round(matchedRollup.subTotal / matchedRollup.orders) : nextStatus[idx].aov;
+          const menuOpens = (matchedRollup.orders > 0 && nextStatus[idx].m2oPct > 0) ? Math.round(matchedRollup.orders / (nextStatus[idx].m2oPct / 100)) : nextStatus[idx].menuOpens;
           nextStatus[idx] = {
             ...nextStatus[idx],
             isLoaded: true,
             source: "reporting",
             aov,
+            menuOpens,
             data: {
               name: hist.name,
               orders: matchedRollup.orders,
@@ -545,12 +590,14 @@ export default function ProjectionsPage() {
           });
 
           const aov = aggOrders > 0 ? Math.round(aggSubTotal / aggOrders) : nextStatus[idx].aov;
+          const menuOpens = (aggOrders > 0 && nextStatus[idx].m2oPct > 0) ? Math.round(aggOrders / (nextStatus[idx].m2oPct / 100)) : nextStatus[idx].menuOpens;
 
           nextStatus[idx] = {
             ...nextStatus[idx],
             isLoaded: true,
             source: "reporting",
             aov,
+            menuOpens,
             data: {
               name: hist.name,
               orders: aggOrders,
@@ -650,11 +697,16 @@ export default function ProjectionsPage() {
         netPayout = card.data.netPayout !== undefined ? card.data.netPayout : netPayout;
       }
 
+      let computedMenuOpens = card.menuOpens;
+      if (orders > 0 && m2oDecimal > 0) {
+        computedMenuOpens = Math.round(orders / m2oDecimal);
+      }
+
       const mergedPartial: Partial<MonthData> = {
         name: monthName,
         isProjection: false,
         m2o: m2oDecimal,
-        menuOpens: card.menuOpens,
+        menuOpens: computedMenuOpens,
         orders,
         subTotal,
         aov: card.aov,
@@ -947,13 +999,8 @@ export default function ProjectionsPage() {
                 <tr className="hover:bg-paper/30">
                   <td className="p-3 font-bold sticky left-0 bg-paper-dark border-r border-line">Orders</td>
                   {historicalMonths.map((m, i) => (
-                    <td key={`h-${i}`} className="p-2 text-center font-mono border-r border-line/40">
-                      <input
-                        type="number"
-                        value={m.orders}
-                        onChange={(e) => handleUpdateHistoricalMonth(i, { orders: Number(e.target.value) })}
-                        className="w-20 text-center bg-transparent border-b border-line focus:border-emerald-400 outline-none font-bold text-ink"
-                      />
+                    <td key={`h-${i}`} className="p-3 text-center font-mono font-bold text-ink border-r border-line/40">
+                      {m.orders}
                     </td>
                   ))}
                   {projectedMonths.map((m, i) => (
@@ -973,13 +1020,8 @@ export default function ProjectionsPage() {
                 <tr className="hover:bg-paper/30 bg-paper/10">
                   <td className="p-3 font-bold sticky left-0 bg-paper-dark border-r border-line">Sub Total (Sales ₹)</td>
                   {historicalMonths.map((m, i) => (
-                    <td key={`h-${i}`} className="p-2 text-center font-mono border-r border-line/40">
-                      <input
-                        type="number"
-                        value={m.subTotal}
-                        onChange={(e) => handleUpdateHistoricalMonth(i, { subTotal: Number(e.target.value) })}
-                        className="w-24 text-center bg-transparent border-b border-line focus:border-emerald-400 outline-none font-extrabold text-ink"
-                      />
+                    <td key={`h-${i}`} className="p-3 text-center font-mono font-extrabold text-ink border-r border-line/40">
+                      ₹{m.subTotal.toLocaleString("en-IN")}
                     </td>
                   ))}
                   {projectedMonths.map((m, i) => (
@@ -1002,13 +1044,8 @@ export default function ProjectionsPage() {
                 <tr className="hover:bg-paper/30">
                   <td className="p-3 font-medium text-ink/70 sticky left-0 bg-paper-dark border-r border-line">AOV (₹)</td>
                   {historicalMonths.map((m, i) => (
-                    <td key={`h-${i}`} className="p-2 text-center font-mono border-r border-line/40">
-                      <input
-                        type="number"
-                        value={m.aov}
-                        onChange={(e) => handleUpdateHistoricalMonth(i, { aov: Number(e.target.value) })}
-                        className="w-16 text-center bg-transparent border-b border-line focus:border-emerald-400 outline-none font-mono text-ink/80"
-                      />
+                    <td key={`h-${i}`} className="p-3 text-center font-mono font-bold text-ink/80 border-r border-line/40">
+                      ₹{m.aov}
                     </td>
                   ))}
                   {projectedMonths.map((m, i) => (
@@ -1031,13 +1068,8 @@ export default function ProjectionsPage() {
                 <tr className="hover:bg-paper/30">
                   <td className="p-3 font-medium text-ink/70 sticky left-0 bg-paper-dark border-r border-line">Packaging Charges (₹)</td>
                   {historicalMonths.map((m, i) => (
-                    <td key={`h-${i}`} className="p-2 text-center font-mono border-r border-line/40">
-                      <input
-                        type="number"
-                        value={m.packagingCharges}
-                        onChange={(e) => handleUpdateHistoricalMonth(i, { packagingCharges: Number(e.target.value) })}
-                        className="w-20 text-center bg-transparent border-b border-line focus:border-emerald-400 outline-none text-ink/80"
-                      />
+                    <td key={`h-${i}`} className="p-3 text-center font-mono font-medium text-ink/80 border-r border-line/40">
+                      ₹{m.packagingCharges.toLocaleString("en-IN")}
                     </td>
                   ))}
                   {projectedMonths.map((m, i) => (
@@ -1082,14 +1114,8 @@ export default function ProjectionsPage() {
                 <tr className="hover:bg-paper/30 text-amber-400/80">
                   <td className="p-3 font-medium sticky left-0 bg-paper-dark border-r border-line">Effective Discount %</td>
                   {historicalMonths.map((m, i) => (
-                    <td key={`h-${i}`} className="p-2 text-center font-mono border-r border-line/40">
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={Number((m.effectiveDiscountPct * 100).toFixed(1))}
-                        onChange={(e) => handleUpdateHistoricalMonth(i, { effectiveDiscountPct: Number(e.target.value) / 100 })}
-                        className="w-16 text-center bg-transparent border-b border-line focus:border-amber-400 outline-none text-amber-400"
-                      />%
+                    <td key={`h-${i}`} className="p-3 text-center font-mono font-bold text-amber-400 border-r border-line/40">
+                      {Number((m.effectiveDiscountPct * 100).toFixed(1))}%
                     </td>
                   ))}
                   {projectedMonths.map((m, i) => (
@@ -1135,14 +1161,8 @@ export default function ProjectionsPage() {
                 <tr className="hover:bg-paper/30">
                   <td className="p-3 font-medium text-ink/70 sticky left-0 bg-paper-dark border-r border-line">Advertisement %</td>
                   {historicalMonths.map((m, i) => (
-                    <td key={`h-${i}`} className="p-2 text-center font-mono border-r border-line/40">
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={Number((m.advertisementPct * 100).toFixed(1))}
-                        onChange={(e) => handleUpdateHistoricalMonth(i, { advertisementPct: Number(e.target.value) / 100 })}
-                        className="w-16 text-center bg-transparent border-b border-line focus:border-purple-400 outline-none text-purple-400"
-                      />%
+                    <td key={`h-${i}`} className="p-3 text-center font-mono font-bold text-purple-400 border-r border-line/40">
+                      {Number((m.advertisementPct * 100).toFixed(1))}%
                     </td>
                   ))}
                   {projectedMonths.map((m, i) => (
@@ -1213,14 +1233,8 @@ export default function ProjectionsPage() {
                 <tr className="hover:bg-paper/30 text-blue-400">
                   <td className="p-3 font-semibold sticky left-0 bg-paper-dark border-r border-line">M2O (Menu to Order %)</td>
                   {historicalMonths.map((m, i) => (
-                    <td key={`h-${i}`} className="p-2 text-center font-mono border-r border-line/40">
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={Number((m.m2o * 100).toFixed(1))}
-                        onChange={(e) => handleUpdateHistoricalMonth(i, { m2o: Number(e.target.value) / 100 })}
-                        className="w-16 text-center bg-transparent border-b border-line focus:border-blue-400 outline-none text-blue-400 font-bold"
-                      />%
+                    <td key={`h-${i}`} className="p-3 text-center font-mono font-bold text-blue-400 border-r border-line/40">
+                      {Number((m.m2o * 100).toFixed(1))}%
                     </td>
                   ))}
                   {projectedMonths.map((m, i) => (
@@ -1244,13 +1258,8 @@ export default function ProjectionsPage() {
                 <tr className="hover:bg-paper/30">
                   <td className="p-3 font-medium text-ink/70 sticky left-0 bg-paper-dark border-r border-line">Menu Opens</td>
                   {historicalMonths.map((m, i) => (
-                    <td key={`h-${i}`} className="p-2 text-center font-mono border-r border-line/40">
-                      <input
-                        type="number"
-                        value={m.menuOpens}
-                        onChange={(e) => handleUpdateHistoricalMonth(i, { menuOpens: Number(e.target.value) })}
-                        className="w-20 text-center bg-transparent border-b border-line focus:border-emerald-400 outline-none font-bold text-ink"
-                      />
+                    <td key={`h-${i}`} className="p-3 text-center font-mono font-bold text-ink border-r border-line/40">
+                      {m.menuOpens.toLocaleString("en-IN")}
                     </td>
                   ))}
                   {projectedMonths.map((m, i) => (
@@ -1312,8 +1321,8 @@ export default function ProjectionsPage() {
                         max="0.20"
                         step="0.005"
                         value={month.m2o}
-                        onChange={(e) => handleUpdateHistoricalMonth(idx, { m2o: Number(e.target.value) })}
-                        className="w-full accent-blue-400 cursor-pointer"
+                        disabled
+                        className="w-full accent-blue-400 opacity-50 cursor-not-allowed"
                       />
                     </div>
 
@@ -1326,8 +1335,9 @@ export default function ProjectionsPage() {
                       <input
                         type="number"
                         value={month.menuOpens}
-                        onChange={(e) => handleUpdateHistoricalMonth(idx, { menuOpens: Number(e.target.value) })}
-                        className="input text-xs font-mono w-full"
+                        readOnly
+                        disabled
+                        className="input text-xs font-mono w-full opacity-60 cursor-not-allowed bg-paper-dark/50"
                       />
                     </div>
 
@@ -1340,8 +1350,9 @@ export default function ProjectionsPage() {
                       <input
                         type="number"
                         value={month.aov}
-                        onChange={(e) => handleUpdateHistoricalMonth(idx, { aov: Number(e.target.value) })}
-                        className="input text-xs font-mono w-full"
+                        readOnly
+                        disabled
+                        className="input text-xs font-mono w-full opacity-60 cursor-not-allowed bg-paper-dark/50"
                       />
                     </div>
 
@@ -1357,8 +1368,8 @@ export default function ProjectionsPage() {
                         max="0.25"
                         step="0.005"
                         value={month.effectiveDiscountPct}
-                        onChange={(e) => handleUpdateHistoricalMonth(idx, { effectiveDiscountPct: Number(e.target.value) })}
-                        className="w-full accent-amber-400 cursor-pointer"
+                        disabled
+                        className="w-full accent-amber-400 opacity-50 cursor-not-allowed"
                       />
                     </div>
 
@@ -1809,6 +1820,10 @@ export default function ProjectionsPage() {
                                     setMonthCardStatus((prev) => {
                                       const next = [...prev];
                                       next[idx].m2oPct = val;
+                                      const orders = next[idx].data?.orders || 0;
+                                      if (orders > 0 && val > 0) {
+                                        next[idx].menuOpens = Math.round(orders / (val / 100));
+                                      }
                                       return next;
                                     });
                                   }}
@@ -1819,19 +1834,32 @@ export default function ProjectionsPage() {
                             </td>
 
                             <td className="p-4 align-top pt-5">
-                              <input
-                                type="number"
-                                value={card.menuOpens}
-                                onChange={(e) => {
-                                  const val = Number(e.target.value);
-                                  setMonthCardStatus((prev) => {
-                                    const next = [...prev];
-                                    next[idx].menuOpens = val;
-                                    return next;
-                                  });
-                                }}
-                                className="w-full bg-zinc-900/80 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono outline-none focus:border-zinc-500 transition-colors"
-                              />
+                              {(() => {
+                                const liveCardOrders = card.data?.orders || 0;
+                                const liveCardM2o = card.m2oPct > 0 ? card.m2oPct / 100 : 0.07;
+                                const liveComputedMenuOpens = liveCardOrders > 0
+                                  ? Math.round(liveCardOrders / liveCardM2o)
+                                  : card.menuOpens;
+                                return (
+                                  <input
+                                    type="number"
+                                    value={liveComputedMenuOpens}
+                                    onChange={(e) => {
+                                      const val = Number(e.target.value);
+                                      setMonthCardStatus((prev) => {
+                                        const next = [...prev];
+                                        next[idx].menuOpens = val;
+                                        const orders = next[idx].data?.orders || 0;
+                                        if (orders > 0 && val > 0) {
+                                          next[idx].m2oPct = Number(((orders / val) * 100).toFixed(1));
+                                        }
+                                        return next;
+                                      });
+                                    }}
+                                    className="w-full bg-zinc-900/80 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono outline-none focus:border-zinc-500 transition-colors"
+                                  />
+                                );
+                              })()}
                             </td>
 
                             <td className="p-4 align-top pt-5">

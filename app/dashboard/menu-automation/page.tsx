@@ -510,68 +510,57 @@ function determineSmartVariantTitle(selectedItems: MenuItem[]): string {
 
     try {
       for (const file of Array.from(files)) {
-        if (/\.xlsx?$/i.test(file.name)) {
-          setLoadingMsg("Parsing Excel: " + file.name);
+        setLoadingMsg("AI Extracting: " + file.name);
+        let extractPayload: any = {};
+
+        if (/\.(xlsx?|csv)$/i.test(file.name)) {
           const buffer = await file.arrayBuffer();
-          const wb = XLSX.read(buffer);
-          const rows = XLSX.utils.sheet_to_json<any>(wb.Sheets[wb.SheetNames[0]]);
-          rows.forEach((row, idx) => {
-            const name = String(row["Item Name"] || row["Name"] || "");
-            const base = parseFloat(String(row["Base Price"] || "0")) || 0;
-            const online = calcOnline(base, onlineHike);
-            allItems.push({
-              id: `${Date.now()}-xl-${idx}`,
-              name,
-              category: String(row["Category"] || "Main Course"),
-              subcategory: String(row["Sub-Category"] || ""),
-              description: String(row["Description"] || ""),
-              quantity_num: String(row["Quantity"] || ""),
-              quantity_unit: String(row["Unit"] || "Unit"),
-              spice_level: resolveSpice(String(row["Spice Level"] || ""), name),
-              variants: String(row["Variants"] || ""),
-              base_price: base > 0 ? String(base) : "",
-              online_price: online,
-              half_price: calcHalf(online, halfPct),
-              is_veg: String(row["Diet"]) !== "Non-Veg",
-              has_half: !!row["Half Portion"],
-              addons: String(row["Add-ons"] || ""),
-              custom_columns: {},
-            });
+          const wb = XLSX.read(buffer, { type: "array" });
+          let combinedCsv = "";
+          wb.SheetNames.forEach((sheetName) => {
+            const csv = XLSX.utils.sheet_to_csv(wb.Sheets[sheetName]);
+            if (csv.trim()) {
+              combinedCsv += `\n--- SHEET: ${sheetName} ---\n${csv}\n`;
+            }
           });
+          extractPayload = { rawText: combinedCsv };
         } else {
-          setLoadingMsg("Extracting: " + file.name);
           const { data, mediaType } = await fileToBase64(file);
-          const res = await fetch("/api/extract", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ imageBase64: data, mediaType }),
-          });
-          const json = await res.json();
-          if (json.error) throw new Error(json.error);
-          (json.items || []).forEach((item: any, idx: number) => {
-            const name = String(item.name || "");
-            const base = parseFloat(String(item.base_price || "0")) || 0;
-            const online = calcOnline(base, onlineHike);
-            allItems.push({
-              id: `${Date.now()}-${idx}-${Math.random().toString(36).slice(2)}`,
-              name,
-              category: String(item.category || "Main Course"),
-              subcategory: String(item.subcategory || ""),
-              description: String(item.description || ""),
-              quantity_num: String(item.quantity || ""),
-              quantity_unit: "Unit",
-              spice_level: resolveSpice(String(item.spice_level || ""), name),
-              variants: String(item.variants || ""),
-              base_price: base > 0 ? String(base) : "",
-              online_price: online,
-              half_price: calcHalf(online, halfPct),
-              is_veg: item.is_veg !== false,
-              has_half: false,
-              addons: String(item.addons || ""),
-              custom_columns: {},
-            });
-          });
+          extractPayload = { imageBase64: data, mediaType };
         }
+
+        const res = await fetch("/api/extract", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(extractPayload),
+        });
+
+        const json = await res.json();
+        if (json.error) throw new Error(json.error);
+
+        (json.items || []).forEach((item: any, idx: number) => {
+          const name = String(item.name || "");
+          const base = parseFloat(String(item.base_price || "0")) || 0;
+          const online = calcOnline(base, onlineHike);
+          allItems.push({
+            id: `${Date.now()}-${idx}-${Math.random().toString(36).slice(2)}`,
+            name,
+            category: String(item.category || "Main Course"),
+            subcategory: String(item.subcategory || ""),
+            description: String(item.description || ""),
+            quantity_num: String(item.quantity || ""),
+            quantity_unit: "Unit",
+            spice_level: resolveSpice(String(item.spice_level || ""), name),
+            variants: String(item.variants || ""),
+            base_price: base > 0 ? String(base) : "",
+            online_price: online,
+            half_price: calcHalf(online, halfPct),
+            is_veg: item.is_veg !== false,
+            has_half: false,
+            addons: String(item.addons || ""),
+            custom_columns: {},
+          });
+        });
       }
       commitItems([...items, ...allItems]);
     } catch (err) {

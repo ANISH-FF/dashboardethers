@@ -33,10 +33,17 @@ export async function GET(req: NextRequest) {
     const brandId = searchParams.get("brandId") || "default";
 
     const store = getProjectionsStoreServer();
-    const data = store[brandId] || {
+    const rawData = store[brandId] || {
       ...DEFAULT_PROJECTION_DATA,
       brandId,
     };
+
+    const data = {
+      ...rawData,
+      historicalMonths: (rawData.historicalMonths || []).map((m: any) => calculateMonthMetrics(m)),
+      projectedMonths: (rawData.projectedMonths || []).map((m: any) => calculateMonthMetrics(m)),
+    };
+
     return NextResponse.json(data);
   } catch (error: any) {
     return NextResponse.json({ error: "Failed to load projections data" }, { status: 500 });
@@ -61,9 +68,17 @@ export async function POST(req: NextRequest) {
 
     if (body.brandName && body.historicalMonths && body.projectedMonths) {
       const store = getProjectionsStoreServer();
-      store[brandId] = { ...body, brandId };
+      const cleanHistorical = body.historicalMonths.map((m: any) => calculateMonthMetrics(m));
+      const cleanProjected = body.projectedMonths.map((m: any) => calculateMonthMetrics(m));
+
+      store[brandId] = {
+        ...body,
+        brandId,
+        historicalMonths: cleanHistorical,
+        projectedMonths: cleanProjected,
+      };
       saveProjectionsStoreServer(store);
-      return NextResponse.json({ ok: true, data: body });
+      return NextResponse.json({ ok: true, data: store[brandId] });
     }
 
     return NextResponse.json({ error: "Invalid data format" }, { status: 400 });

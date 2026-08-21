@@ -1,5 +1,5 @@
 export type MonthData = {
-  name: string; // e.g. "April", "Month - 1"
+  name: string; // e.g. "Feb '26", "Month - 1"
   isProjection: boolean;
   orders: number;
   subTotal: number;
@@ -27,173 +27,195 @@ export type ProjectionBrandState = {
   notes?: string;
 };
 
-// Seed dataset matching the exact values from projections.xlsx
+// Seed dataset matching the exact values from the reference Excel sheet (Moon Delivery)
 export const DEFAULT_PROJECTION_DATA: ProjectionBrandState = {
-  brandName: "The Qwality Kitchen",
+  brandName: "Moon (Delivery)",
   notes: "After ensuring that all organic elements are properly in place such as item reels, high-quality product pictures, engaging thumbnails, discount codes, and timely flash sales, the M2O (Menu-to-Order) ratio is expected to improve. An increase in M2O will directly enhance the order conversion rate, resulting in higher order volumes, increased sales, and overall better revenue performance.",
   historicalMonths: [
     {
-      name: "April",
+      name: "Feb '26",
       isProjection: false,
-      orders: 904,
-      subTotal: 277215,
-      aov: 285,
-      packagingCharges: 12318,
-      subTotalWithPkg: 289533,
-      merchantDiscountBurn: 35894,
-      effectiveDiscountPct: 0.124,
-      commissionableValue: 266320,
-      advertisement: 35081,
-      advertisementPct: 0.1317,
-      commissionPgGst: 74581,
-      commissionPct: 0.28,
-      netPayout: 146298,
-      payoutPct: 50.53,
-      burnPct: 49.47,
-      m2o: 0.074,
-      menuOpens: 12353
+      orders: 357,
+      subTotal: 284760,
+      aov: 759,
+      packagingCharges: 3550,
+      subTotalWithPkg: 288310,
+      merchantDiscountBurn: 18916,
+      effectiveDiscountPct: 0.0656,
+      commissionableValue: 269394,
+      advertisement: 20946,
+      advertisementPct: 0.0727,
+      commissionPgGst: 72896,
+      commissionPct: 0.2706,
+      netPayout: 175804,
+      payoutPct: 60.98,
+      burnPct: 39.02,
+      m2o: 0.076,
+      menuOpens: 4702
     },
     {
-      name: "May",
+      name: "Mar '26",
       isProjection: false,
-      orders: 1279,
-      subTotal: 432311,
-      aov: 317,
-      packagingCharges: 17521,
-      subTotalWithPkg: 449832,
-      merchantDiscountBurn: 50025,
-      effectiveDiscountPct: 0.1112,
-      commissionableValue: 419797,
-      advertisement: 103809,
-      advertisementPct: 0.2473,
-      commissionPgGst: 113973,
-      commissionPct: 0.2715,
-      netPayout: 184969,
-      payoutPct: 41.12,
-      burnPct: 58.88,
-      m2o: 0.07,
-      menuOpens: 18674
-    },
-    {
-      name: "June",
-      isProjection: false,
-      orders: 1269,
-      subTotal: 407581,
-      aov: 328,
-      packagingCharges: 17812,
-      subTotalWithPkg: 425393,
-      merchantDiscountBurn: 16747,
-      effectiveDiscountPct: 0.0394,
-      commissionableValue: 429078,
-      advertisement: 126933,
-      advertisementPct: 0.2958,
-      commissionPgGst: 119400,
-      commissionPct: 0.2783,
-      netPayout: 166459,
-      payoutPct: 39.13,
-      burnPct: 60.87,
+      orders: 298,
+      subTotal: 239735,
+      aov: 766,
+      packagingCharges: 2940,
+      subTotalWithPkg: 242675,
+      merchantDiscountBurn: 16539,
+      effectiveDiscountPct: 0.0682,
+      commissionableValue: 226136,
+      advertisement: 17881,
+      advertisementPct: 0.0737,
+      commissionPgGst: 61296,
+      commissionPct: 0.2711,
+      netPayout: 148210,
+      payoutPct: 61.07,
+      burnPct: 38.93,
       m2o: 0.063,
-      menuOpens: 20137
+      menuOpens: 4784
+    },
+    {
+      name: "Apr '26",
+      isProjection: false,
+      orders: 341,
+      subTotal: 264750,
+      aov: 740,
+      packagingCharges: 3390,
+      subTotalWithPkg: 268140,
+      merchantDiscountBurn: 17310,
+      effectiveDiscountPct: 0.0646,
+      commissionableValue: 250830,
+      advertisement: 19860,
+      advertisementPct: 0.0741,
+      commissionPgGst: 67873,
+      commissionPct: 0.2706,
+      netPayout: 163191,
+      payoutPct: 60.86,
+      burnPct: 39.14,
+      m2o: 0.06,
+      menuOpens: 5582
     }
   ],
   projectedMonths: [
     {
       name: "Month - 1",
       isProjection: true,
-      orders: 1440,
-      subTotal: 504000,
-      aov: 350,
-      packagingCharges: 21600,
-      subTotalWithPkg: 525600,
-      merchantDiscountBurn: 25200,
-      effectiveDiscountPct: 0.05,
-      commissionableValue: 500400,
-      advertisement: 95076,
-      advertisementPct: 0.19,
-      commissionPgGst: 140112,
-      commissionPct: 0.28,
-      netPayout: 265212,
-      payoutPct: 50.46,
-      burnPct: 49.54,
-      m2o: 0.08,
-      menuOpens: 18000
+      orders: 430,
+      subTotal: 322332,
+      aov: 750,
+      packagingCharges: 6876,
+      subTotalWithPkg: 329209,
+      merchantDiscountBurn: 26337,
+      effectiveDiscountPct: 0.08,
+      commissionableValue: 302872,
+      advertisement: 20000,
+      advertisementPct: 0.0608,
+      commissionPgGst: 81955,
+      commissionPct: 0.2706,
+      netPayout: 200917,
+      payoutPct: 61.03,
+      burnPct: 38.97,
+      m2o: 0.07,
+      menuOpens: 6143
     },
     {
       name: "Month - 2",
       isProjection: true,
-      orders: 1800,
-      subTotal: 666000,
-      aov: 370,
-      packagingCharges: 27000,
-      subTotalWithPkg: 693000,
-      merchantDiscountBurn: 53280,
+      orders: 497,
+      subTotal: 382931,
+      aov: 770,
+      packagingCharges: 7957,
+      subTotalWithPkg: 390888,
+      merchantDiscountBurn: 31271,
       effectiveDiscountPct: 0.08,
-      commissionableValue: 639720,
-      advertisement: 121547,
-      advertisementPct: 0.15,
-      commissionPgGst: 179122,
-      commissionPct: 0.28,
-      netPayout: 339052,
-      payoutPct: 48.93,
-      burnPct: 51.07,
-      m2o: 0.10,
-      menuOpens: 18000
+      commissionableValue: 359617,
+      advertisement: 20000,
+      advertisementPct: 0.0512,
+      commissionPgGst: 97310,
+      commissionPct: 0.2706,
+      netPayout: 242307,
+      payoutPct: 61.99,
+      burnPct: 38.01,
+      m2o: 0.08,
+      menuOpens: 6213
     },
     {
       name: "Month - 3",
       isProjection: true,
-      orders: 1800,
-      subTotal: 720000,
-      aov: 400,
-      packagingCharges: 27000,
-      subTotalWithPkg: 747000,
-      merchantDiscountBurn: 57600,
+      orders: 544,
+      subTotal: 435200,
+      aov: 800,
+      packagingCharges: 8704,
+      subTotalWithPkg: 443904,
+      merchantDiscountBurn: 35512,
       effectiveDiscountPct: 0.08,
-      commissionableValue: 689400,
-      advertisement: 130986,
-      advertisementPct: 0.15,
-      commissionPgGst: 193032,
-      commissionPct: 0.28,
-      netPayout: 365382,
-      payoutPct: 48.91,
-      burnPct: 51.09,
-      m2o: 0.10,
-      menuOpens: 18000
+      commissionableValue: 408392,
+      advertisement: 20000,
+      advertisementPct: 0.0451,
+      commissionPgGst: 110511,
+      commissionPct: 0.2706,
+      netPayout: 277881,
+      payoutPct: 62.60,
+      burnPct: 37.40,
+      m2o: 0.08,
+      menuOpens: 6800
     }
   ]
 };
 
 // Calculate projection metrics from inputs
 export function calculateMonthMetrics(month: Partial<MonthData>): MonthData {
-  const m2o = month.m2o || 0.08;
-  const menuOpens = month.menuOpens || 18000;
-  const orders = month.orders !== undefined && month.orders !== null ? month.orders : Math.round(menuOpens * m2o);
+  const m2o = month.m2o !== undefined && month.m2o !== null ? month.m2o : 0.08;
+  const orders = month.orders !== undefined && month.orders !== null ? month.orders : 0;
   
-  const aov = month.aov || 350;
+  // Dynamic formula: Menu Opens = Orders / M2O ratio
+  const menuOpens = (orders > 0 && m2o > 0)
+    ? Math.round(orders / m2o)
+    : (month.menuOpens !== undefined && month.menuOpens !== null ? month.menuOpens : 0);
+  
+  const aov = month.aov !== undefined && month.aov !== null ? month.aov : 750;
   const subTotal = month.subTotal !== undefined && month.subTotal !== null ? month.subTotal : Math.round(orders * aov);
   
-  const packagingCharges = month.packagingCharges !== undefined ? month.packagingCharges : Math.round(orders * 15);
+  const packagingCharges = month.packagingCharges !== undefined && month.packagingCharges !== null
+    ? month.packagingCharges
+    : Math.round(orders * 16);
   const subTotalWithPkg = subTotal + packagingCharges;
 
   const effectiveDiscountPct = month.effectiveDiscountPct !== undefined && month.effectiveDiscountPct !== null 
     ? month.effectiveDiscountPct 
     : (month.merchantDiscountBurn !== undefined && month.merchantDiscountBurn !== null && subTotal > 0 
         ? month.merchantDiscountBurn / subTotal 
-        : 0);
+        : 0.08);
 
-  const merchantDiscountBurn = month.merchantDiscountBurn !== undefined && month.merchantDiscountBurn !== null
-    ? month.merchantDiscountBurn
-    : Math.round(subTotal * effectiveDiscountPct);
+  const merchantDiscountBurn = (month.effectiveDiscountPct !== undefined && month.effectiveDiscountPct !== null)
+    ? Math.round(subTotal * effectiveDiscountPct)
+    : (month.merchantDiscountBurn !== undefined && month.merchantDiscountBurn !== null
+        ? month.merchantDiscountBurn
+        : Math.round(subTotal * effectiveDiscountPct));
 
   const commissionableValue = subTotalWithPkg - merchantDiscountBurn;
 
-  const advertisementPct = month.advertisementPct || 0.15;
-  const advertisement = Math.round(commissionableValue * advertisementPct);
+  const advertisement = month.advertisement !== undefined && month.advertisement !== null
+    ? month.advertisement
+    : Math.round(commissionableValue * (month.advertisementPct !== undefined ? month.advertisementPct : 0.06));
 
-  const commissionPct = month.commissionPct || 0.28;
-  const commissionPgGst = Math.round(commissionableValue * commissionPct);
+  const advertisementPct = month.advertisementPct !== undefined && month.advertisementPct !== null
+    ? month.advertisementPct
+    : (commissionableValue > 0 ? Number((advertisement / commissionableValue).toFixed(4)) : 0.06);
 
-  const netPayout = commissionableValue - advertisement - commissionPgGst;
+  const commissionPct = month.commissionPct !== undefined && month.commissionPct !== null
+    ? month.commissionPct
+    : (month.commissionPgGst !== undefined && month.commissionPgGst !== null && commissionableValue > 0
+        ? Number((month.commissionPgGst / commissionableValue).toFixed(4))
+        : 0.2706);
+
+  const commissionPgGst = month.commissionPgGst !== undefined && month.commissionPgGst !== null && !month.commissionPct
+    ? month.commissionPgGst
+    : Math.round(commissionableValue * commissionPct);
+
+  const netPayout = month.netPayout !== undefined && month.netPayout !== null && !month.effectiveDiscountPct && !month.advertisementPct
+    ? month.netPayout
+    : commissionableValue - advertisement - commissionPgGst;
 
   const payoutPct = subTotal > 0 ? Number(((netPayout / subTotal) * 100).toFixed(2)) : 0;
   const burnPct = Number((100 - payoutPct).toFixed(2));

@@ -13,7 +13,7 @@ export default function PricingStrategyPage() {
   const { activeBrand } = useBrand();
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const [location, setLocation] = useState("Bistupur, Jamshedpur");
-  const [researchMode, setResearchMode] = useState<"ethers" | "gemini" | "names" | "links">("names");
+  const [researchMode, setResearchMode] = useState<"names" | "links">("names");
   const [manualCompetitors, setManualCompetitors] = useState("");
   const [manualCompetitorLinks, setManualCompetitorLinks] = useState("");
   const [competitorCount, setCompetitorCount] = useState<number>(4);
@@ -111,8 +111,12 @@ export default function PricingStrategyPage() {
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+
   useEffect(() => {
     if (activeBrand?.id) {
+      isFirstLoadRef.current = true;
       loadBrandPricingStrategy(activeBrand.id);
     }
   }, [activeBrand?.id]);
@@ -124,7 +128,8 @@ export default function PricingStrategyPage() {
         const json = await res.json();
         if (json.data) {
           if (json.data.location) setLocation(json.data.location);
-          if (json.data.researchMode) setResearchMode(json.data.researchMode);
+          if (json.data.researchMode === "links") setResearchMode("links");
+          else setResearchMode("names");
           if (json.data.manualCompetitors !== undefined) setManualCompetitors(json.data.manualCompetitors);
           if (json.data.manualCompetitorLinks !== undefined) setManualCompetitorLinks(json.data.manualCompetitorLinks);
           if (json.data.competitorCount) setCompetitorCount(json.data.competitorCount);
@@ -135,6 +140,7 @@ export default function PricingStrategyPage() {
           if (json.data.targetProfitPct !== undefined) setTargetProfitPct(json.data.targetProfitPct);
           if (json.data.items && Array.isArray(json.data.items) && json.data.items.length > 0) {
             setItems(json.data.items);
+            itemsRef.current = json.data.items;
           }
         }
       }
@@ -150,8 +156,7 @@ export default function PricingStrategyPage() {
     terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [terminalLogs]);
 
-  // ─── Auto-save: fires 1.5 s after any items change ───────────────────────
-  // Skips the very first render / initial server load to avoid unnecessary saves
+  // ─── Auto-save: fires 1.5 s after any items change, or IMMEDIATELY on page switch ─────────
   useEffect(() => {
     if (isFirstLoadRef.current) return;   // still loading — skip
     if (!activeBrand?.id) return;
@@ -163,13 +168,20 @@ export default function PricingStrategyPage() {
     }, 1500);
 
     return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        // Save immediately on page switch / unmount so no data is ever lost!
+        if (!isFirstLoadRef.current && activeBrand?.id) {
+          saveBrandPricingStrategy(itemsRef.current);
+        }
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items]);
 
   const saveBrandPricingStrategy = (newItems?: StrategyItem[]) => {
     if (!activeBrand?.id) return;
+    const targetItems = newItems || itemsRef.current || items;
     fetch("/api/pricing-strategy/store", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -187,7 +199,7 @@ export default function PricingStrategyPage() {
         foodCostPct,
         targetProfitPct,
         priceEnding,
-        items: newItems || items,
+        items: targetItems,
       }),
     }).catch(() => null);
   };
@@ -198,7 +210,7 @@ export default function PricingStrategyPage() {
     setIsGenerating(true);
     setFetchedLinks([]);
     const jobId = `job_${Date.now()}`;
-    const modeLabel = researchMode === "ethers" || researchMode === "gemini" ? "Ethers AI (~50% Accuracy)" : researchMode === "links" ? "Direct Store Links (100% Accuracy)" : "Competitor Names (~80% Accuracy)";
+    const modeLabel = researchMode === "links" ? "Direct Store Links (100% Accuracy)" : "Competitor Names (~80% Accuracy)";
     setTerminalLogs([
       { text: `[INIT] Initializing Pricing Intelligence Engine [Mode: ${modeLabel}]...`, color: "text-emerald-400 font-bold" },
       { text: `[LOCATION] Target Location: ${location}`, color: "text-zinc-400" },

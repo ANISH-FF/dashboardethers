@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {
-    const { imageBase64, mediaType, customPrompt } = await req.json();
+    const { imageBase64, mediaType, rawText, customPrompt } = await req.json();
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error("Missing GEMINI_API_KEY");
 
-    let prompt = `You are a world-class AI menu extraction engine. Extract ALL menu items from this image with 100% precision. Return ONLY valid JSON (no markdown, no explanation):
+    let prompt = `You are a world-class AI menu extraction engine. Extract ALL menu items from this document / image / spreadsheet with 100% precision. Return ONLY valid JSON (no markdown, no explanation):
 {
   "items": [
     {
@@ -49,7 +49,24 @@ CRITICAL EXTRACTION RULES:
       prompt += `\n\nAdditional Instructions from User:\n${customPrompt}`;
     }
 
-    const MODELS = ["gemini-2.5-flash"];
+    const parts: any[] = [];
+    if (rawText) {
+      parts.push({
+        text: `${prompt}\n\nRAW MENU DATA (FROM SPREADSHEET / CSV / DOCUMENT):\n${rawText}`,
+      });
+    } else if (imageBase64) {
+      parts.push({ text: prompt });
+      parts.push({
+        inlineData: {
+          mimeType: mediaType || "image/jpeg",
+          data: imageBase64,
+        },
+      });
+    } else {
+      throw new Error("No imageBase64 or rawText provided for extraction");
+    }
+
+    const MODELS = ["gemini-2.5-flash", "gemini-3.1-flash-lite", "gemini-3.5-flash-lite"];
     let lastError: Error | null = null;
     let data: any = null;
 
@@ -61,19 +78,7 @@ CRITICAL EXTRACTION RULES:
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              contents: [
-                {
-                  parts: [
-                    { text: prompt },
-                    {
-                      inlineData: {
-                        mimeType: mediaType || "image/jpeg",
-                        data: imageBase64,
-                      },
-                    },
-                  ],
-                },
-              ],
+              contents: [{ parts }],
               generationConfig: {
                 temperature: 0.1,
                 responseMimeType: "application/json",
@@ -83,13 +88,19 @@ CRITICAL EXTRACTION RULES:
           }
         );
 
+        if (response.status === 503 || response.status === 429) {
+          console.warn(`Model ${modelName} returned ${response.status}. Retrying fallback...`);
+          lastError = new Error(`Gemini API (${modelName}) error: ${response.status}`);
+          continue;
+        }
+
         if (response.ok) {
           data = await response.json();
           break;
         }
 
         const errText = await response.text();
-        console.warn(`Model ${modelName} failed (${response.status}). Retrying next model...`);
+        console.warn(`Model ${modelName} failed (${response.status}): ${errText}`);
         lastError = new Error(`Gemini API (${modelName}) error: ${response.status}`);
       } catch (err: any) {
         console.warn(`Model ${modelName} exception:`, err);
