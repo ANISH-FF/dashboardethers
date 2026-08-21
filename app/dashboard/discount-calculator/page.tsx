@@ -221,8 +221,8 @@ export default function DiscountCalculator() {
     const parsedCodes: DiscountCode[] = [];
 
     lines.forEach((line) => {
-      // Check for Primary Code e.g. "30% upto 75 on 199" or "30% up to 75 on 199"
-      const primaryMatch = line.match(/(\d+)%\s*(?:upto|up to)?\s*(\d+)\s*on\s*(\d+)/i);
+      // Check for Primary Code e.g. "10% off upto 40 on 179", "30% upto 75 on 199", "30% off max 75 on ₹199"
+      const primaryMatch = line.match(/(\d+)\s*%\s*(?:off|get|extra)?\s*(?:upto|up to|max)?\s*₹?\s*(\d+)\s*(?:off)?\s*on\s*₹?\s*(\d+)/i);
       if (primaryMatch) {
         parsedCodes.push({
           id: crypto.randomUUID(),
@@ -236,15 +236,18 @@ export default function DiscountCalculator() {
         return;
       }
 
-      // Check for Stepper Code e.g. "Flat 125 on 599" or "125 on 599"
-      const stepperMatch = line.match(/(?:flat)?\s*(\d+)\s*on\s*(\d+)/i);
+      // Check for Stepper Code e.g. "Flat 125 off on 799", "Flat 125 on 599", "125 off on 799", "Flat ₹125 off on ₹799"
+      const stepperMatch = line.match(/(?:flat|get|extra)?\s*₹?\s*(\d+)\s*(?:off)?\s*on\s*₹?\s*(\d+)/i);
       if (stepperMatch) {
+        const discVal = parseFloat(stepperMatch[1]);
+        const minVal = parseFloat(stepperMatch[2]);
+        const formattedName = line.toLowerCase().startsWith("flat") ? line : `Flat ${line}`;
         parsedCodes.push({
           id: crypto.randomUUID(),
-          name: line.startsWith("Flat") || line.startsWith("flat") ? line : `Flat ${line}`,
+          name: formattedName,
           type: "stepper",
-          discount: parseFloat(stepperMatch[1]),
-          minOrder: parseFloat(stepperMatch[2]),
+          discount: discVal,
+          minOrder: minVal,
           enabled: true,
         });
         return;
@@ -260,7 +263,7 @@ export default function DiscountCalculator() {
       setBulkText("");
       setShowBulkInput(false);
     } else {
-      setBulkParseError("Could not automatically parse lines. Please format as e.g. '30% upto 75 on 199' or 'Flat 125 on 599'.");
+      setBulkParseError("Could not automatically parse lines. Please format as e.g. '10% off upto 40 on 179' or 'Flat 125 off on 799'.");
     }
   };
 
