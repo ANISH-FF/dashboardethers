@@ -1,4 +1,13 @@
 import sys
+import io
+
+if hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
+
 import json
 import re
 import urllib.request
@@ -385,8 +394,10 @@ class SwiggyHygieneAuditor:
                     'total_items': 0,
                     'photos_present': 0,
                     'photos_missing': 0,
+                    'photos_missing_items': [],
                     'descs_present': 0,
-                    'descs_missing': 0
+                    'descs_missing': 0,
+                    'descs_missing_items': []
                 }
 
             cat_entry = categories_map[category]
@@ -400,6 +411,7 @@ class SwiggyHygieneAuditor:
             else:
                 dishes_without_desc += 1
                 cat_entry['descs_missing'] += 1
+                cat_entry['descs_missing_items'].append(name)
                 missing_descs_all.append({'category': category, 'dish': name})
 
             # Check Image / Photo
@@ -419,6 +431,7 @@ class SwiggyHygieneAuditor:
             else:
                 dishes_without_photo += 1
                 cat_entry['photos_missing'] += 1
+                cat_entry['photos_missing_items'].append(name)
                 missing_photos_all.append({'category': category, 'dish': name})
 
         categories_summary = list(categories_map.values())
@@ -479,16 +492,33 @@ class ZomatoHygieneAuditor:
             self.raw_html = response.read().decode('utf-8', errors='ignore')
 
     def extract_state(self):
-        match = re.search(r'window\.__PRELOADED_STATE__\s*=\s*JSON\.parse\((.*?)\);', self.raw_html)
-        if match:
-            json_raw = match.group(1)
-            self.preloaded_state = json.loads(json.loads(json_raw))
-        else:
-            match_direct = re.search(r'window\.__PRELOADED_STATE__\s*=\s*(\{.*?\});</script>', self.raw_html)
-            if match_direct:
-                self.preloaded_state = json.loads(match_direct.group(1))
+        try:
+            match = re.search(r'window\.__PRELOADED_STATE__\s*=\s*JSON\.parse\((.*?)\);', self.raw_html)
+            if match:
+                json_raw = match.group(1)
+                self.preloaded_state = json.loads(json.loads(json_raw))
             else:
-                raise ValueError("Could not find window.__PRELOADED_STATE__ in page source.")
+                match_direct = re.search(r'window\.__PRELOADED_STATE__\s*=\s*(\{.*?\});</script>', self.raw_html)
+                if match_direct:
+                    self.preloaded_state = json.loads(match_direct.group(1))
+                else:
+                    self.preloaded_state = {}
+        except Exception as e:
+            print(f"[!] Warning: Could not parse window.__PRELOADED_STATE__: {e}")
+            self.preloaded_state = {}
+
+    def extract_name_from_url(self, url: str) -> str:
+        try:
+            clean_path = urllib.parse.urlparse(url).path.strip('/')
+            parts = clean_path.split('/')
+            valid_parts = [p for p in parts if p not in ['order', 'info', 'reviews', 'menu', 'book', 'photos', 'overview', 'restaurants', 'city']]
+            if not valid_parts: return "Restaurant Listing"
+            last = valid_parts[-1]
+            last = re.sub(r'-rest\d+$', '', last)
+            last = re.sub(r'-\d+$', '', last)
+            return " ".join([w.capitalize() for w in last.split('-') if w])
+        except Exception:
+            return "Restaurant Listing"
 
     def run_audit(self):
         if not self.raw_html:
@@ -498,14 +528,29 @@ class ZomatoHygieneAuditor:
 
         pages = self.preloaded_state.get('pages', {})
         restaurant_pages = pages.get('restaurant', {})
-        if not restaurant_pages:
-            raise ValueError("No restaurant data found in state.")
+        if not restaurant_pages and 'current' in pages:
+            restaurant_pages = pages['current']
 
-        res_id = list(restaurant_pages.keys())[0]
-        res_data = restaurant_pages[res_id]
+        res_data = {}
+        if restaurant_pages and isinstance(restaurant_pages, dict):
+            res_id = list(restaurant_pages.keys())[0]
+            res_data = restaurant_pages.get(res_id, {})
+        else:
+            for p_val in pages.values():
+                if isinstance(p_val, dict) and 'sections' in p_val:
+                    res_data = p_val
+                    break
 
         basic_info = res_data.get('sections', {}).get('SECTION_BASIC_INFO', {})
-        restaurant_name = basic_info.get('name', 'Unknown Restaurant')
+        restaurant_name = basic_info.get('name', '')
+        if not restaurant_name and self.raw_html:
+            title_match = re.search(r'<title>(.*?)</title>', self.raw_html, re.IGNORECASE)
+            if title_match:
+                raw_title = title_match.group(1).split('|')[0].split('-')[0].strip()
+                if raw_title and len(raw_title) > 2 and 'zomato' not in raw_title.lower():
+                    restaurant_name = raw_title
+        if not restaurant_name:
+            restaurant_name = self.extract_name_from_url(self.target_url)
         cuisines = basic_info.get('cuisine_string', '') or "Multi-Cuisine"
         rating_obj = basic_info.get('rating_new', {}).get('ratings', {})
 
@@ -658,24 +703,37 @@ class ZomatoHygieneAuditor:
             ]
             for sec_key in target_sec_keys:
                 sec = sections.get(sec_key, {})
-                if isinstance(sec, dict):
+                offers_list = []
+                if isinstance(sec, list):
+                    offers_list = sec
+                elif isinstance(sec, dict):
                     offers_list = sec.get('offers', [])
-                    if isinstance(offers_list, list):
-                        for off in offers_list:
-                            if isinstance(off, dict):
-                                title = off.get('title') or off.get('offer_value') or off.get('header') or ''
-                                sub = off.get('sub_title') or off.get('description') or off.get('subtitle') or ''
-                                code = off.get('voucher_code') or off.get('code') or ''
-                                
-                                full_str = str(title)
-                                if sub and str(sub) not in full_str:
-                                    full_str += f" — {sub}"
-                                if code and str(code) not in full_str:
-                                    full_str += f" (Code: {code})"
-                                
-                                full_str = full_str.replace('\u20b9', '₹').strip(' —')
-                                if full_str and full_str not in offers:
-                                    offers.append(full_str)
+                    if not offers_list and 'data' in sec and isinstance(sec['data'], list):
+                        offers_list = sec['data']
+
+                for off in offers_list:
+                    if isinstance(off, dict):
+                        heading = off.get('heading') or ''
+                        title = off.get('title') or off.get('offer_value') or off.get('header') or ''
+                        sub = off.get('sub_title') or off.get('subtitle') or off.get('description') or ''
+                        code = off.get('voucher_code') or off.get('code') or ''
+                        
+                        clean_title = str(title).replace('\n', ' ').strip()
+                        clean_sub = str(sub).replace('\n', ' ').strip()
+                        
+                        full_str = ""
+                        if heading and heading not in clean_title:
+                            full_str += f"[{heading}] "
+                        full_str += clean_title
+                        
+                        if clean_sub and clean_sub.lower() not in clean_title.lower():
+                            full_str += f" — {clean_sub}"
+                        if code and str(code) not in full_str:
+                            full_str += f" (Code: {code})"
+                            
+                        full_str = full_str.replace('\u20b9', '₹').strip(' —')
+                        if full_str and full_str not in offers:
+                            offers.append(full_str)
 
             def extract_offers_recursive(obj):
                 found = []
@@ -720,6 +778,7 @@ class ZomatoHygieneAuditor:
                         break
             except Exception:
                 pass
+            dining_info['offers'] = offers[:10]
             dining_info['photos'] = photos
 
         except Exception as e:

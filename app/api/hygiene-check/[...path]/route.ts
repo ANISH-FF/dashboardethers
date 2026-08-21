@@ -26,11 +26,31 @@ function parseLocationSlugs(locationStr: string) {
   return { citySlug, fullLocSlug };
 }
 
+function extractNameFromUrl(url?: string): string {
+  if (!url) return "Restaurant Listing";
+  try {
+    const parsed = new URL(url);
+    const cleanPath = parsed.pathname.replace(/\/$/, "");
+    const parts = cleanPath.split("/").filter(Boolean);
+    const validParts = parts.filter(
+      (p) => !["order", "info", "reviews", "menu", "book", "photos", "overview", "restaurants", "city"].includes(p)
+    );
+    if (validParts.length === 0) return "Restaurant Listing";
+
+    let last = validParts[validParts.length - 1];
+    last = last.replace(/-rest\d+$/i, "").replace(/-\d+$/, "");
+    const words = last.split("-").filter(Boolean);
+    return words.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  } catch {
+    return "Restaurant Listing";
+  }
+}
+
 function getAuditResponse(targetUrl?: string, name?: string, location?: string) {
   const auditFile = getHygieneAuditJson();
   
   const platform = targetUrl?.toLowerCase().includes("swiggy") ? "Swiggy" : "Zomato";
-  const defaultName = name || auditFile?.restaurant_info?.name || "Novelty Multicuisine Restaurant";
+  const defaultName = name || (targetUrl ? extractNameFromUrl(targetUrl) : (auditFile?.restaurant_info?.name || "Restaurant Listing"));
   const defaultCity = location || "Jamshedpur";
   const { citySlug, fullLocSlug } = parseLocationSlugs(defaultCity);
   const cleanName = defaultName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -225,7 +245,7 @@ async function handleRoute(req: NextRequest, { params }: { params: { path: strin
     const action = targetPath.includes("search") ? "search" : "audit";
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000);
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
 
       const pyRes = await fetch(`http://127.0.0.1:8000/api/${action}`, {
         method: "POST",

@@ -621,10 +621,11 @@ export default function ProjectionsPage() {
     }
   };
 
-  // Run AI OCR on screenshots for a specific month card
-  const handleRunCardOcrScan = async (cardIdx: number) => {
+  // Run scanning on screenshots for a specific month card
+  const handleRunCardOcrScan = async (cardIdx: number, overrideFiles?: File[]) => {
     const card = monthCardStatus[cardIdx];
-    if (card.files.length === 0) {
+    const filesToScan = overrideFiles || card.files;
+    if (!filesToScan || filesToScan.length === 0) {
       setProjNotification({ type: "info", message: "Please select payout screenshots first." });
       return;
     }
@@ -636,7 +637,7 @@ export default function ProjectionsPage() {
       const targetMonthName = historicalMonths[cardIdx]?.name || `Month - ${3 - cardIdx}`;
       formData.append("monthName", targetMonthName);
 
-      card.files.forEach((file) => formData.append("files", file));
+      filesToScan.forEach((file) => formData.append("files", file));
 
       const res = await fetch("/api/projections/ocr", {
         method: "POST",
@@ -662,8 +663,9 @@ export default function ProjectionsPage() {
         };
         return next;
       });
+      setProjNotification({ type: "success", message: `Data extracted for ${targetMonthName} successfully.` });
     } catch (err: any) {
-      setProjNotification({ type: "error", message: "OCR Processing Error: " + String(err.message || err) });
+      setProjNotification({ type: "error", message: "Processing Error: " + String(err.message || err) });
     } finally {
       setOcrLoadingIdx(null);
     }
@@ -1616,35 +1618,13 @@ export default function ProjectionsPage() {
             </div>
 
             <div className="p-6 md:p-8 space-y-6">
-              {/* Option 1: Quick 1-Click Auto Sync Banner */}
-              <div className="p-5 rounded-2xl bg-zinc-900/40 border border-zinc-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2 text-white font-bold text-sm">
-                    <Layers className="w-4 h-4 text-emerald-400" />
-                    <span>Option 1: Auto-Sync from Reporting Engine</span>
-                  </div>
-                  <p className="text-xs text-zinc-400 max-w-2xl leading-relaxed">
-                    Instantly pull your verified payout numbers for {historical.map(h => h.name).join(", ")} directly from your saved reporting periods.
-                  </p>
-                </div>
-
-                <button
-                  onClick={handleAutoSyncFromReporting}
-                  disabled={autoSyncLoading}
-                  className="text-xs font-bold px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black transition-all flex items-center justify-center gap-2 shrink-0 shadow-sm"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${autoSyncLoading ? "animate-spin" : ""}`} />
-                  <span>{autoSyncLoading ? "Syncing Data..." : "Run Auto-Sync"}</span>
-                </button>
-              </div>
-
-              {/* Option 2: Upload Combined 3-Month Report Dropzone */}
+              {/* Option 1: Upload Combined 3-Month Report Dropzone */}
               <div className="p-5 rounded-2xl bg-zinc-950/80 border border-dashed border-zinc-700/80 hover:border-zinc-500 transition-all space-y-3">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-white font-bold text-sm">
                       <FileSpreadsheet className="w-4 h-4 text-purple-400" />
-                      <span>Option 2: Upload Combined 3-Month Report (1 Photo / Excel File)</span>
+                      <span>Option 1: Upload Combined 3-Month Report (1 Photo / Excel File)</span>
                     </div>
                     <p className="text-xs text-zinc-400">
                       Upload a single photo of your 3-month summary report (or an Excel sheet) to extract all 3 months ({historical.map(h => h.name).join(", ")}) at once!
@@ -1688,10 +1668,10 @@ export default function ProjectionsPage() {
                 </div>
               </div>
 
-              {/* Consolidated 3-Month Data Grid */}
+              {/* Option 2: Consolidated 3-Month Data Grid */}
               <div className="space-y-3">
                 <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest pl-1">
-                  Historical Baseline Input
+                  Option 2: Month-by-Month Baseline Input
                 </h4>
                 
                 <div className="rounded-2xl border border-zinc-800 bg-zinc-950/50 overflow-hidden">
@@ -1769,34 +1749,35 @@ export default function ProjectionsPage() {
                                     multiple
                                     className="hidden"
                                     onChange={(e) => {
-                                      if (e.target.files) {
+                                      if (e.target.files && e.target.files.length > 0) {
                                         const files = Array.from(e.target.files);
                                         setMonthCardStatus((prev) => {
                                           const next = [...prev];
                                           next[idx].files = files;
                                           return next;
                                         });
+                                        handleRunCardOcrScan(idx, files);
                                       }
                                     }}
                                   />
                                   <button
                                     onClick={() => ref.current?.click()}
-                                    className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-lg text-[10px] font-medium text-zinc-300 flex items-center gap-1.5 transition-all"
+                                    disabled={ocrLoadingIdx === idx}
+                                    className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-lg text-[10px] font-medium text-zinc-300 flex items-center gap-1.5 transition-all disabled:opacity-50"
                                   >
-                                    <Upload className="w-3 h-3 text-zinc-400" /> 
-                                    {card.files.length > 0 ? `${card.files.length} Selected` : 'Upload File'}
+                                    {ocrLoadingIdx === idx ? (
+                                      <RefreshCw className="w-3 h-3 animate-spin text-emerald-400" />
+                                    ) : (
+                                      <Upload className="w-3 h-3 text-zinc-400" />
+                                    )}
+                                    <span>
+                                      {ocrLoadingIdx === idx
+                                        ? "Scanning..."
+                                        : card.files.length > 0
+                                        ? `${card.files.length} Selected`
+                                        : "Upload File"}
+                                    </span>
                                   </button>
-                                  
-                                  {card.files.length > 0 && !card.isLoaded && (
-                                    <button
-                                      onClick={() => handleRunCardOcrScan(idx)}
-                                      disabled={ocrLoadingIdx === idx}
-                                      className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-600 rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-all"
-                                    >
-                                      {ocrLoadingIdx === idx ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                                      {ocrLoadingIdx === idx ? "Scanning..." : "Run OCR"}
-                                    </button>
-                                  )}
                                 </div>
 
                                 {card.data && (

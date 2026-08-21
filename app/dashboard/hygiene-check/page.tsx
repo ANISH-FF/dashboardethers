@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Fragment } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as XLSX from "xlsx";
 import {
@@ -37,6 +37,7 @@ import {
   Printer,
   Copy,
   FileSpreadsheet,
+  RotateCcw,
 } from "lucide-react";
 
 interface AuditResult {
@@ -125,6 +126,7 @@ export default function HygieneCheckPage() {
   // Active Tab & Search inside tab
   const [activeTab, setActiveTab] = useState<"photos" | "descs" | "categories" | "ai">("photos");
   const [tabSearchQuery, setTabSearchQuery] = useState("");
+  const [expandedCategoryIdx, setExpandedCategoryIdx] = useState<number | null>(null);
 
   // Vision Scan States
   const [scanningVision, setScanningVision] = useState(false);
@@ -142,6 +144,74 @@ export default function HygieneCheckPage() {
   // Dual Audit Breakdown Tab States
   const [zomatoTab, setZomatoTab] = useState<"photos" | "descs">("photos");
   const [swiggyTab, setSwiggyTab] = useState<"photos" | "descs">("photos");
+
+  // Load persisted audit data from sessionStorage on mount
+  useEffect(() => {
+    try {
+      const savedSingle = sessionStorage.getItem("ethers_hygiene_single_audit");
+      if (savedSingle) {
+        const parsed = JSON.parse(savedSingle);
+        if (parsed && parsed.restaurant_name) {
+          setAuditData(parsed);
+          if (parsed.url) setUrlInput(parsed.url);
+        }
+      }
+
+      const savedDual = sessionStorage.getItem("ethers_hygiene_dual_audit");
+      if (savedDual) {
+        const parsedDual = JSON.parse(savedDual);
+        if (parsedDual && parsedDual.restaurant_name) {
+          setDualCompareData(parsedDual);
+        }
+      }
+
+      const savedMode = sessionStorage.getItem("ethers_hygiene_audit_mode");
+      if (savedMode === "single" || savedMode === "dual") {
+        setAuditMode(savedMode as "single" | "dual");
+      }
+    } catch (e) {
+      console.warn("Could not restore session audit data:", e);
+    }
+  }, []);
+
+  // Save auditData to sessionStorage whenever it updates
+  useEffect(() => {
+    if (auditData) {
+      try {
+        sessionStorage.setItem("ethers_hygiene_single_audit", JSON.stringify(auditData));
+      } catch (e) {}
+    }
+  }, [auditData]);
+
+  // Save dualCompareData to sessionStorage whenever it updates
+  useEffect(() => {
+    if (dualCompareData) {
+      try {
+        sessionStorage.setItem("ethers_hygiene_dual_audit", JSON.stringify(dualCompareData));
+      } catch (e) {}
+    }
+  }, [dualCompareData]);
+
+  // Save auditMode to sessionStorage
+  useEffect(() => {
+    try {
+      sessionStorage.setItem("ethers_hygiene_audit_mode", auditMode);
+    } catch (e) {}
+  }, [auditMode]);
+
+  // Start New Audit Handler
+  const startNewAudit = () => {
+    setAuditData(null);
+    setDualCompareData(null);
+    setUrlInput("");
+    setErrorMsg(null);
+    setExecutiveReportText(null);
+    setDiningReportText(null);
+    try {
+      sessionStorage.removeItem("ethers_hygiene_single_audit");
+      sessionStorage.removeItem("ethers_hygiene_dual_audit");
+    } catch (e) {}
+  };
 
   // Run Direct Audit by URL
   const runAuditByUrl = async (urlToAudit?: string) => {
@@ -366,7 +436,7 @@ export default function HygieneCheckPage() {
 
       // Sheet 2: Missing Photos
       const missingPhotosRows = (auditData.missing_photos_all || []).map((item: any) => ({
-        "Item Name": item.name || item.item_name || "",
+        "Item Name": item.dish || item.name || item.item_name || "",
         "Category": item.category || "",
         "Price (₹)": item.price || item.base_price || 0,
         "Has Description": item.description ? "Yes" : "No",
@@ -377,7 +447,7 @@ export default function HygieneCheckPage() {
 
       // Sheet 3: Missing Descriptions
       const missingDescsRows = (auditData.missing_descs_all || []).map((item: any) => ({
-        "Item Name": item.name || item.item_name || "",
+        "Item Name": item.dish || item.name || item.item_name || "",
         "Category": item.category || "",
         "Price (₹)": item.price || item.base_price || 0,
         "Has Photo": item.has_image ? "Yes" : "No",
@@ -388,22 +458,38 @@ export default function HygieneCheckPage() {
 
       // Sheet 4: Full Menu Audit Catalog
       const allItemsRows: any[] = [];
+      const missingPhotoSet = new Set((auditData.missing_photos_all || []).map((i: any) => `${i.category}||${i.dish || i.name}`));
+      const missingDescSet = new Set((auditData.missing_descs_all || []).map((i: any) => `${i.category}||${i.dish || i.name}`));
+
       (auditData.categories || []).forEach((cat: any) => {
-        (cat.items || []).forEach((item: any) => {
-          allItemsRows.push({
-            "Category": cat.name || cat.category || "",
-            "Item Name": item.name || item.item_name || "",
-            "Price (₹)": item.price || item.base_price || 0,
-            "Veg / Non-Veg": item.is_veg === false ? "Non-Veg" : "Veg",
-            "Has Photo": item.has_image ? "YES" : "NO (MISSING)",
-            "Has Description": item.description ? "YES" : "NO (MISSING)",
-            "Spice Level": item.spice_level || "Standard",
-            "Description": item.description || "—"
+        const catName = cat.category_name || cat.category || cat.name || "General";
+        if (Array.isArray(cat.items) && cat.items.length > 0) {
+          cat.items.forEach((item: any) => {
+            const dishName = item.dish || item.name || item.item_name || "";
+            allItemsRows.push({
+              "Category": catName,
+              "Item Name": dishName,
+              "Price (₹)": item.price || item.base_price || 0,
+              "Has Photo": (item.has_image || !missingPhotoSet.has(`${catName}||${dishName}`)) ? "YES" : "NO (MISSING)",
+              "Has Description": (item.description || !missingDescSet.has(`${catName}||${dishName}`)) ? "YES" : "NO (MISSING)",
+              "Description": item.description || "—"
+            });
           });
-        });
+        } else {
+          allItemsRows.push({
+            "Category": catName,
+            "Total Items Audited": cat.total_items || 0,
+            "Photos Present": cat.photos_present || 0,
+            "Photos Missing": cat.photos_missing || 0,
+            "Descriptions Present": cat.descs_present || 0,
+            "Descriptions Missing": cat.descs_missing || 0,
+            "Dishes Missing Photos": (cat.photos_missing_items || []).join(", ") || "None",
+            "Dishes Missing Descriptions": (cat.descs_missing_items || []).join(", ") || "None"
+          });
+        }
       });
       const wsFull = XLSX.utils.json_to_sheet(allItemsRows.length > 0 ? allItemsRows : [{ "Status": "No menu items found" }]);
-      XLSX.utils.book_append_sheet(wb, wsFull, "Full Menu Audit");
+      XLSX.utils.book_append_sheet(wb, wsFull, "Full Category Audit");
 
       const fileName = `${restName.replace(/\s+/g, "_")}_Hygiene_Audit_Report.xlsx`;
       XLSX.writeFile(wb, fileName);
@@ -419,57 +505,71 @@ export default function HygieneCheckPage() {
       const restName = dualCompareData.restaurant_name || "Restaurant";
       const wb = XLSX.utils.book_new();
 
+      const missingSwiggyList = dualCompareData.comparison?.missingOnSwiggy || dualCompareData.missing_on_swiggy || [];
+      const missingZomatoList = dualCompareData.comparison?.missingOnZomato || dualCompareData.missing_on_zomato || [];
+      const photoGapList = dualCompareData.comparison?.photoGaps || [];
+      const descGapList = dualCompareData.comparison?.descGaps || [];
+
       // Sheet 1: Executive Comparison Summary
       const summaryData = [
         ["ZOMATO VS SWIGGY HYGIENE COMPARISON REPORT", ""],
         ["Restaurant Name", restName],
-        ["Zomato Score", `${dualCompareData.zomatoScorecard?.overall_score || 0}%`],
-        ["Swiggy Score", `${dualCompareData.swiggyScorecard?.overall_score || 0}%`],
+        ["Zomato Hygiene Score", `${dualCompareData.zomatoScorecard?.overall_score || 0}%`],
+        ["Swiggy Hygiene Score", `${dualCompareData.swiggyScorecard?.overall_score || 0}%`],
         ["Overall Cross-Sync Score", `${dualCompareData.overall_sync_score || 0}%`],
         [""],
         ["TELEMETRY SUMMARY", ""],
-        ["Zomato Total Dishes", dualCompareData.zomatoScorecard?.total_dishes || 0],
-        ["Swiggy Total Dishes", dualCompareData.swiggyScorecard?.total_dishes || 0],
-        ["Price Discrepancies Count", dualCompareData.price_mismatches?.length || 0],
-        ["Missing on Swiggy Count", dualCompareData.missing_on_swiggy?.length || 0],
-        ["Missing on Zomato Count", dualCompareData.missing_on_zomato?.length || 0],
+        ["Zomato Total Dishes Audited", dualCompareData.zomatoScorecard?.total_dishes || 0],
+        ["Swiggy Total Dishes Audited", dualCompareData.swiggyScorecard?.total_dishes || 0],
+        ["Cross-Platform Photo Gaps", photoGapList.length],
+        ["Cross-Platform Description Gaps", descGapList.length],
+        ["Zomato Exclusive Items (Missing on Swiggy)", missingSwiggyList.length],
+        ["Swiggy Exclusive Items (Missing on Zomato)", missingZomatoList.length],
       ];
       const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
       XLSX.utils.book_append_sheet(wb, wsSummary, "Sync Overview");
 
-      // Sheet 2: Price Discrepancies (Mismatches)
-      const priceRows = (dualCompareData.price_mismatches || []).map((item: any) => ({
-        "Dish Name": item.name || item.dish_name || "",
-        "Category": item.category || "",
-        "Zomato Price (₹)": item.zomato_price || 0,
-        "Swiggy Price (₹)": item.swiggy_price || 0,
-        "Price Difference (₹)": Math.abs((item.zomato_price || 0) - (item.swiggy_price || 0)),
-        "Lower On Platform": (item.zomato_price || 0) < (item.swiggy_price || 0) ? "Zomato" : "Swiggy"
-      }));
-      const wsPrice = XLSX.utils.json_to_sheet(priceRows.length > 0 ? priceRows : [{ "Status": "No price discrepancies found!" }]);
-      XLSX.utils.book_append_sheet(wb, wsPrice, "Price Mismatches");
-
-      // Sheet 3: Missing on Swiggy
-      const swiggyMissingRows = (dualCompareData.missing_on_swiggy || []).map((item: any) => ({
-        "Dish Name": item.name || item.dish_name || "",
-        "Category": item.category || "",
-        "Zomato Price (₹)": item.zomato_price || item.price || 0,
-        "Status": "Available on Zomato but MISSING on Swiggy",
-        "Action": "Add item to Swiggy menu catalog"
+      // Sheet 2: Zomato Exclusive Items (Listed on Zomato, MISSING on Swiggy)
+      const swiggyMissingRows = missingSwiggyList.map((item: any) => ({
+        "Category": item.category || "General",
+        "Dish Name": item.dish || item.name || item.dish_name || "",
+        "Price (₹)": item.price || item.zomato_price || 0,
+        "Platform Status": "Available on Zomato — MISSING on Swiggy"
       }));
       const wsMissingSwiggy = XLSX.utils.json_to_sheet(swiggyMissingRows.length > 0 ? swiggyMissingRows : [{ "Status": "All Zomato items present on Swiggy!" }]);
-      XLSX.utils.book_append_sheet(wb, wsMissingSwiggy, "Missing on Swiggy");
+      XLSX.utils.book_append_sheet(wb, wsMissingSwiggy, "Zomato Exclusive Items");
 
-      // Sheet 4: Missing on Zomato
-      const zomatoMissingRows = (dualCompareData.missing_on_zomato || []).map((item: any) => ({
-        "Dish Name": item.name || item.dish_name || "",
-        "Category": item.category || "",
-        "Swiggy Price (₹)": item.swiggy_price || item.price || 0,
-        "Status": "Available on Swiggy but MISSING on Zomato",
-        "Action": "Add item to Zomato menu catalog"
+      // Sheet 3: Swiggy Exclusive Items (Listed on Swiggy, MISSING on Zomato)
+      const zomatoMissingRows = missingZomatoList.map((item: any) => ({
+        "Category": item.category || "General",
+        "Dish Name": item.dish || item.name || item.dish_name || "",
+        "Price (₹)": item.price || item.swiggy_price || 0,
+        "Platform Status": "Available on Swiggy — MISSING on Zomato"
       }));
       const wsMissingZomato = XLSX.utils.json_to_sheet(zomatoMissingRows.length > 0 ? zomatoMissingRows : [{ "Status": "All Swiggy items present on Zomato!" }]);
-      XLSX.utils.book_append_sheet(wb, wsMissingZomato, "Missing on Zomato");
+      XLSX.utils.book_append_sheet(wb, wsMissingZomato, "Swiggy Exclusive Items");
+
+      // Sheet 4: Photo Gaps Audit
+      const photoGapRows = photoGapList.map((item: any) => ({
+        "Category": item.category || "General",
+        "Dish Name": item.dish || item.name || "",
+        "Zomato Photo": (item.hasOnZomato || item.zomato_has_photo) ? "YES" : "NO (MISSING)",
+        "Swiggy Photo": (item.hasOnSwiggy || item.swiggy_has_photo) ? "YES" : "NO (MISSING)",
+        "Status": "Photo Gap on one or both platforms"
+      }));
+      const wsPhotoGaps = XLSX.utils.json_to_sheet(photoGapRows.length > 0 ? photoGapRows : [{ "Status": "No photo gaps found across platforms!" }]);
+      XLSX.utils.book_append_sheet(wb, wsPhotoGaps, "Photo Gaps Audit");
+
+      // Sheet 5: Description Gaps Audit
+      const descGapRows = descGapList.map((item: any) => ({
+        "Category": item.category || "General",
+        "Dish Name": item.dish || item.name || "",
+        "Zomato Desc": (item.hasOnZomato || item.zomato_has_desc) ? "YES" : "NO (MISSING)",
+        "Swiggy Desc": (item.hasOnSwiggy || item.swiggy_has_desc) ? "YES" : "NO (MISSING)",
+        "Status": "Description Gap on one or both platforms"
+      }));
+      const wsDescGaps = XLSX.utils.json_to_sheet(descGapRows.length > 0 ? descGapRows : [{ "Status": "No description gaps found across platforms!" }]);
+      XLSX.utils.book_append_sheet(wb, wsDescGaps, "Desc Gaps Audit");
 
       const fileName = `${restName.replace(/\s+/g, "_")}_Zomato_vs_Swiggy_Audit.xlsx`;
       XLSX.writeFile(wb, fileName);
@@ -726,14 +826,14 @@ export default function HygieneCheckPage() {
         </div>
 
         {/* Action Controls Header */}
-        <div className="flex flex-wrap items-center gap-2 self-end md:self-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 w-full md:w-auto">
           {/* Mode Switcher Tabs */}
-          <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 p-1 rounded-xl text-xs">
+          <div className="inline-flex items-center p-1 rounded-xl bg-zinc-950/80 border border-zinc-800 shadow-inner">
             <button
               onClick={() => setAuditMode("single")}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 auditMode === "single"
-                  ? "bg-zinc-800 text-white shadow-sm"
+                  ? "bg-zinc-800 text-white shadow-md border border-zinc-700"
                   : "text-zinc-400 hover:text-zinc-200"
               }`}
             >
@@ -741,9 +841,9 @@ export default function HygieneCheckPage() {
             </button>
             <button
               onClick={() => setAuditMode("dual")}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 auditMode === "dual"
-                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm"
+                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-md"
                   : "text-zinc-400 hover:text-zinc-200"
               }`}
             >
@@ -751,52 +851,37 @@ export default function HygieneCheckPage() {
             </button>
           </div>
 
+          {/* Download Excel Button */}
           {auditMode === "single" && auditData && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={downloadSingleExcelReport}
-                className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white transition-all shadow-md active:scale-95"
-              >
-                <FileSpreadsheet className="w-3.5 h-3.5" />
-                <span>Download Executive Excel Report (.xlsx)</span>
-              </button>
-              <button
-                onClick={downloadSinglePdfReport}
-                disabled={isDownloadingSinglePdf}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-all border border-zinc-700 active:scale-95 disabled:opacity-50"
-              >
-                {isDownloadingSinglePdf ? (
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Download className="w-3.5 h-3.5" />
-                )}
-                <span>PDF</span>
-              </button>
-            </div>
+            <button
+              onClick={downloadSingleExcelReport}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white transition-all shadow-lg active:scale-95 border border-emerald-500/30"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>Download Executive Excel Report (.xlsx)</span>
+            </button>
           )}
 
           {auditMode === "dual" && dualCompareData && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={downloadDualExcelReport}
-                className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white transition-all shadow-md active:scale-95"
-              >
-                <FileSpreadsheet className="w-3.5 h-3.5" />
-                <span>Download Dual Comparison Excel (.xlsx)</span>
-              </button>
-              <button
-                onClick={downloadDualPdfReport}
-                disabled={isDownloadingDualPdf}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-all border border-zinc-700 active:scale-95 disabled:opacity-50"
-              >
-                {isDownloadingDualPdf ? (
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Download className="w-3.5 h-3.5" />
-                )}
-                <span>PDF</span>
-              </button>
-            </div>
+            <button
+              onClick={downloadDualExcelReport}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white transition-all shadow-lg active:scale-95 border border-emerald-500/30"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>Download Dual Comparison Excel (.xlsx)</span>
+            </button>
+          )}
+
+          {/* New Audit Button */}
+          {(auditData || dualCompareData) && (
+            <button
+              onClick={startNewAudit}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-zinc-900 hover:bg-zinc-800 text-zinc-300 transition-all border border-zinc-800 shadow-md active:scale-95 shrink-0"
+              title="Start a new audit or clear active session data"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-zinc-400" />
+              <span>New Audit</span>
+            </button>
           )}
         </div>
       </motion.div>
@@ -1654,10 +1739,15 @@ export default function HygieneCheckPage() {
                 {/* Tab 3: Category Matrix Table */}
                 {activeTab === "categories" && (
                   <div className="space-y-4 overflow-x-auto">
-                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                      <Layers className="w-4 h-4 text-emerald-400" />
-                      <span>Category Coverage Matrix</span>
-                    </h3>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                      <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                        <Layers className="w-4 h-4 text-emerald-400" />
+                        <span>Category Coverage Matrix</span>
+                      </h3>
+                      <span className="text-[11px] text-zinc-400 font-mono">
+                        💡 Click any row to expand exact dish item names
+                      </span>
+                    </div>
                     <table className="w-full text-left border-collapse text-xs">
                       <thead>
                         <tr className="border-b border-zinc-800 text-zinc-400 uppercase text-[10px] tracking-wider">
@@ -1666,31 +1756,131 @@ export default function HygieneCheckPage() {
                           <th className="py-3 px-4 text-center">Photo Coverage</th>
                           <th className="py-3 px-4 text-center">Photos Missing</th>
                           <th className="py-3 px-4 text-center">Descriptions Missing</th>
+                          <th className="py-3 px-4 text-center">Action / View</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-zinc-800/60">
                         {filteredCategories.map((cat, idx) => {
                           const pct = cat.total_items > 0 ? Math.round((cat.photos_present / cat.total_items) * 100) : 0;
+                          const isExpanded = expandedCategoryIdx === idx;
+                          const catName = cat.category_name || (cat as any).name || "";
+                          let missingPhotosList = (cat.photos_missing_items && cat.photos_missing_items.length > 0)
+                            ? cat.photos_missing_items
+                            : (auditData?.missing_photos_all || [])
+                                .filter((i: any) => i.category === catName || i.category === cat.menu_group)
+                                .map((i: any) => i.dish || i.name || "");
+
+                          let missingDescsList = (cat.descs_missing_items && cat.descs_missing_items.length > 0)
+                            ? cat.descs_missing_items
+                            : (auditData?.missing_descs_all || [])
+                                .filter((i: any) => i.category === catName || i.category === cat.menu_group)
+                                .map((i: any) => i.dish || i.name || "");
+
                           return (
-                            <tr key={idx} className="hover:bg-zinc-950/60 transition-colors">
-                              <td className="py-3 px-4 text-zinc-300 font-semibold">
-                                <strong className="text-zinc-100">{cat.menu_group || "Menu"}</strong> &rarr; {cat.category_name || "General"}
-                              </td>
-                              <td className="py-3 px-4 text-center text-zinc-300 font-bold">{cat.total_items}</td>
-                              <td className="py-3 px-4 text-center">
-                                <div className="flex items-center justify-center gap-2">
-                                  <div className="w-16 bg-zinc-950 h-2 rounded-full overflow-hidden border border-zinc-800">
-                                    <div
-                                      className={`h-full rounded-full ${pct >= 70 ? "bg-emerald-400" : "bg-rose-400"}`}
-                                      style={{ width: `${pct}%` }}
-                                    />
+                            <Fragment key={idx}>
+                              <tr
+                                onClick={() => setExpandedCategoryIdx(isExpanded ? null : idx)}
+                                className={`hover:bg-zinc-900/80 transition-colors cursor-pointer ${
+                                  isExpanded ? "bg-zinc-900/90 border-l-2 border-emerald-400" : ""
+                                }`}
+                              >
+                                <td className="py-3.5 px-4 text-zinc-300 font-semibold flex items-center gap-2">
+                                  <ChevronRight
+                                    className={`w-3.5 h-3.5 text-zinc-500 transition-transform duration-200 ${
+                                      isExpanded ? "rotate-90 text-emerald-400" : ""
+                                    }`}
+                                  />
+                                  <span>
+                                    <strong className="text-zinc-100">{cat.menu_group || "Menu"}</strong> &rarr; {cat.category_name || "General"}
+                                  </span>
+                                </td>
+                                <td className="py-3.5 px-4 text-center text-zinc-300 font-bold">{cat.total_items}</td>
+                                <td className="py-3.5 px-4 text-center">
+                                  <div className="flex items-center justify-center gap-2">
+                                    <div className="w-16 bg-zinc-950 h-2 rounded-full overflow-hidden border border-zinc-800">
+                                      <div
+                                        className={`h-full rounded-full ${pct >= 70 ? "bg-emerald-400" : "bg-rose-400"}`}
+                                        style={{ width: `${pct}%` }}
+                                      />
+                                    </div>
+                                    <span className="font-bold text-[11px] text-zinc-300">{pct}%</span>
                                   </div>
-                                  <span className="font-bold text-[11px] text-zinc-300">{pct}%</span>
-                                </div>
-                              </td>
-                              <td className="py-3 px-4 text-center text-rose-400 font-bold">{cat.photos_missing}</td>
-                              <td className="py-3 px-4 text-center font-bold text-amber-400">{cat.descs_missing}</td>
-                            </tr>
+                                </td>
+                                <td className="py-3.5 px-4 text-center text-rose-400 font-bold">{cat.photos_missing}</td>
+                                <td className="py-3.5 px-4 text-center font-bold text-amber-400">{cat.descs_missing}</td>
+                                <td className="py-3.5 px-4 text-center">
+                                  <span className="px-2.5 py-1 rounded-lg bg-zinc-950 border border-zinc-800 text-[10px] font-mono text-zinc-400 hover:text-white transition-colors">
+                                    {isExpanded ? "Hide Items ▲" : "View Items ▼"}
+                                  </span>
+                                </td>
+                              </tr>
+
+                              {/* Accordion Expand Drawer */}
+                              {isExpanded && (
+                                <tr>
+                                  <td colSpan={6} className="bg-zinc-950/90 p-4 border-b border-zinc-800/80">
+                                    <div className="space-y-3 pl-6 border-l border-emerald-500/30">
+                                      <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 pb-1 border-b border-zinc-900">
+                                        <span>Category Breakdown: <strong className="text-zinc-200">{cat.menu_group} &rarr; {cat.category_name}</strong></span>
+                                        <span>{cat.total_items} Total Items Audited ({cat.photos_present} Photos Present, {cat.photos_missing} Missing)</span>
+                                      </div>
+
+                                      {/* Photos Missing Items Badges */}
+                                      <div className="space-y-1.5">
+                                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-rose-400 flex items-center gap-1.5">
+                                          <Camera className="w-3 h-3 text-rose-400" />
+                                          <span>Dishes Missing Photos ({missingPhotosList.length}):</span>
+                                        </span>
+                                        {missingPhotosList.length > 0 ? (
+                                          <div className="flex flex-wrap gap-1.5">
+                                            {missingPhotosList.map((dish: string, dIdx: number) => (
+                                              <span
+                                                key={dIdx}
+                                                className="px-2.5 py-1 rounded-md bg-rose-500/10 border border-rose-500/25 text-rose-300 text-xs font-mono font-medium flex items-center gap-1"
+                                              >
+                                                <XCircle className="w-3 h-3 text-rose-400 shrink-0" />
+                                                <span>{dish}</span>
+                                              </span>
+                                            ))}
+                                          </div>
+                                        ) : (
+                                          <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1">
+                                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                            <span>All dishes in this category have food photos!</span>
+                                          </span>
+                                        )}
+                                      </div>
+
+                                      {/* Descriptions Missing Items Badges */}
+                                      <div className="space-y-1.5 pt-1">
+                                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-400 flex items-center gap-1.5">
+                                          <FileText className="w-3 h-3 text-amber-400" />
+                                          <span>Dishes Missing Descriptions ({missingDescsList.length}):</span>
+                                        </span>
+                                        {missingDescsList.length > 0 ? (
+                                          <div className="flex flex-wrap gap-1.5">
+                                            {missingDescsList.map((dish: string, dIdx: number) => (
+                                              <span
+                                                key={dIdx}
+                                                className="px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-mono font-medium flex items-center gap-1"
+                                              >
+                                                <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
+                                                <span>{dish}</span>
+                                              </span>
+                                            ))}
+                                          </div>
+                                        ) : (
+                                          <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1">
+                                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                            <span>All dishes in this category have descriptive copy!</span>
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </Fragment>
                           );
                         })}
                       </tbody>
@@ -1817,216 +2007,15 @@ export default function HygieneCheckPage() {
             <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
               <button
                 onClick={downloadDualExcelReport}
-                className="flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs transition-all shadow-lg active:scale-95"
+                className="flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs transition-all shadow-lg active:scale-95 border border-emerald-500/30"
               >
                 <FileSpreadsheet className="w-4 h-4" />
                 <span>Download Executive Comparison Excel (.xlsx)</span>
               </button>
-              <button
-                onClick={downloadDualPdfReport}
-                disabled={isDownloadingDualPdf}
-                className="flex items-center gap-2 px-3 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 font-bold text-xs transition-all shadow-md active:scale-95 disabled:opacity-50"
-              >
-                {isDownloadingDualPdf ? (
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Download className="w-4 h-4" />
-                )}
-                <span>PDF</span>
-              </button>
             </div>
           </div>
 
-          {/* Side-by-Side Platform Scorecards & Single Hygiene Audits (TOP SECTION) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Zomato Single Hygiene Audit Column */}
-            <div className="bg-zinc-900/90 border-t-4 border-t-rose-500 border-zinc-800 rounded-2xl p-6 shadow-xl space-y-5">
-              <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
-                <span className="text-sm font-extrabold text-rose-400 uppercase tracking-wider flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
-                  ZOMATO HYGIENE AUDIT
-                </span>
-                <span className="text-xs font-mono text-zinc-400">{dualCompareData.zomatoScorecard?.total_dishes} Total Items</span>
-              </div>
 
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-black text-white">{dualCompareData.zomatoScorecard?.overall_score}</span>
-                <span className="text-sm text-zinc-500 font-bold">/ 100 Hygiene Score</span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3">
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Photo Coverage</span>
-                  <p className="text-lg font-extrabold text-rose-400 mt-0.5">{dualCompareData.zomatoScorecard?.photo_coverage_pct}%</p>
-                  <p className="text-[10px] text-zinc-500">{dualCompareData.zomatoScorecard?.dishes_with_photos} / {dualCompareData.zomatoScorecard?.total_dishes} photos</p>
-                </div>
-                <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3">
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Description Coverage</span>
-                  <p className="text-lg font-extrabold text-rose-400 mt-0.5">{dualCompareData.zomatoScorecard?.desc_coverage_pct}%</p>
-                  <p className="text-[10px] text-zinc-500">{dualCompareData.zomatoScorecard?.dishes_with_descs} / {dualCompareData.zomatoScorecard?.total_dishes} descs</p>
-                </div>
-              </div>
-
-              {/* Zomato Missing Items List Breakdown */}
-              <div className="space-y-3 pt-2">
-                <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-                  <span className="text-xs font-bold text-zinc-300">Zomato Audit Items Breakdown</span>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setZomatoTab("photos")}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
-                        zomatoTab === "photos"
-                          ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
-                          : "bg-zinc-950 text-zinc-400 hover:bg-zinc-800"
-                      }`}
-                    >
-                      Missing Photos ({dualCompareData.zomatoMissingPhotos?.length || dualCompareData.zomatoScorecard?.dishes_missing_photos || 0})
-                    </button>
-                    <button
-                      onClick={() => setZomatoTab("descs")}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
-                        zomatoTab === "descs"
-                          ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                          : "bg-zinc-950 text-zinc-400 hover:bg-zinc-800"
-                      }`}
-                    >
-                      Missing Descs ({dualCompareData.zomatoMissingDescs?.length || dualCompareData.zomatoScorecard?.dishes_missing_descs || 0})
-                    </button>
-                  </div>
-                </div>
-
-                <div className="max-h-64 overflow-y-auto pr-1 space-y-1.5 scrollbar-thin scrollbar-thumb-zinc-800">
-                  {zomatoTab === "photos" ? (
-                    (dualCompareData.zomatoMissingPhotos || []).length === 0 ? (
-                      <p className="text-xs text-zinc-500 py-4 text-center">No missing photos on Zomato</p>
-                    ) : (
-                      (dualCompareData.zomatoMissingPhotos || []).map((item: any, idx: number) => (
-                        <div key={idx} className="bg-zinc-950/80 border border-zinc-800/80 rounded-xl p-2.5 flex justify-between items-center text-xs">
-                          <div>
-                            <span className="text-[9px] text-zinc-500 uppercase font-bold block">{item.category || "Menu"}</span>
-                            <span className="font-semibold text-zinc-200">{typeof item === "string" ? item : item.dish}</span>
-                          </div>
-                          <span className="text-[9px] font-extrabold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded">
-                            Photo Missing
-                          </span>
-                        </div>
-                      ))
-                    )
-                  ) : (
-                    (dualCompareData.zomatoMissingDescs || []).length === 0 ? (
-                      <p className="text-xs text-zinc-500 py-4 text-center">No missing descriptions on Zomato</p>
-                    ) : (
-                      (dualCompareData.zomatoMissingDescs || []).map((item: any, idx: number) => (
-                        <div key={idx} className="bg-zinc-950/80 border border-zinc-800/80 rounded-xl p-2.5 flex justify-between items-center text-xs">
-                          <div>
-                            <span className="text-[9px] text-zinc-500 uppercase font-bold block">{item.category || "Menu"}</span>
-                            <span className="font-semibold text-zinc-200">{typeof item === "string" ? item : item.dish}</span>
-                          </div>
-                          <span className="text-[9px] font-extrabold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded">
-                            Desc Missing
-                          </span>
-                        </div>
-                      ))
-                    )
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Swiggy Single Hygiene Audit Column */}
-            <div className="bg-zinc-900/90 border-t-4 border-t-orange-500 border-zinc-800 rounded-2xl p-6 shadow-xl space-y-5">
-              <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
-                <span className="text-sm font-extrabold text-orange-400 uppercase tracking-wider flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
-                  SWIGGY HYGIENE AUDIT
-                </span>
-                <span className="text-xs font-mono text-zinc-400">{dualCompareData.swiggyScorecard?.total_dishes} Total Items</span>
-              </div>
-
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-black text-white">{dualCompareData.swiggyScorecard?.overall_score}</span>
-                <span className="text-sm text-zinc-500 font-bold">/ 100 Hygiene Score</span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3">
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Photo Coverage</span>
-                  <p className="text-lg font-extrabold text-orange-400 mt-0.5">{dualCompareData.swiggyScorecard?.photo_coverage_pct}%</p>
-                  <p className="text-[10px] text-zinc-500">{dualCompareData.swiggyScorecard?.dishes_with_photos} / {dualCompareData.swiggyScorecard?.total_dishes} photos</p>
-                </div>
-                <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3">
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Description Coverage</span>
-                  <p className="text-lg font-extrabold text-orange-400 mt-0.5">{dualCompareData.swiggyScorecard?.desc_coverage_pct}%</p>
-                  <p className="text-[10px] text-zinc-500">{dualCompareData.swiggyScorecard?.dishes_with_descs} / {dualCompareData.swiggyScorecard?.total_dishes} descs</p>
-                </div>
-              </div>
-
-              {/* Swiggy Missing Items List Breakdown */}
-              <div className="space-y-3 pt-2">
-                <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-                  <span className="text-xs font-bold text-zinc-300">Swiggy Audit Items Breakdown</span>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setSwiggyTab("photos")}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
-                        swiggyTab === "photos"
-                          ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
-                          : "bg-zinc-950 text-zinc-400 hover:bg-zinc-800"
-                      }`}
-                    >
-                      Missing Photos ({dualCompareData.swiggyMissingPhotos?.length || dualCompareData.swiggyScorecard?.dishes_missing_photos || 0})
-                    </button>
-                    <button
-                      onClick={() => setSwiggyTab("descs")}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
-                        swiggyTab === "descs"
-                          ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                          : "bg-zinc-950 text-zinc-400 hover:bg-zinc-800"
-                      }`}
-                    >
-                      Missing Descs ({dualCompareData.swiggyMissingDescs?.length || dualCompareData.swiggyScorecard?.dishes_missing_descs || 0})
-                    </button>
-                  </div>
-                </div>
-
-                <div className="max-h-64 overflow-y-auto pr-1 space-y-1.5 scrollbar-thin scrollbar-thumb-zinc-800">
-                  {swiggyTab === "photos" ? (
-                    (dualCompareData.swiggyMissingPhotos || []).length === 0 ? (
-                      <p className="text-xs text-zinc-500 py-4 text-center">No missing photos on Swiggy</p>
-                    ) : (
-                      (dualCompareData.swiggyMissingPhotos || []).map((item: any, idx: number) => (
-                        <div key={idx} className="bg-zinc-950/80 border border-zinc-800/80 rounded-xl p-2.5 flex justify-between items-center text-xs">
-                          <div>
-                            <span className="text-[9px] text-zinc-500 uppercase font-bold block">{item.category || "Menu"}</span>
-                            <span className="font-semibold text-zinc-200">{typeof item === "string" ? item : item.dish}</span>
-                          </div>
-                          <span className="text-[9px] font-extrabold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded">
-                            Photo Missing
-                          </span>
-                        </div>
-                      ))
-                    )
-                  ) : (
-                    (dualCompareData.swiggyMissingDescs || []).length === 0 ? (
-                      <p className="text-xs text-zinc-500 py-4 text-center">No missing descriptions on Swiggy</p>
-                    ) : (
-                      (dualCompareData.swiggyMissingDescs || []).map((item: any, idx: number) => (
-                        <div key={idx} className="bg-zinc-950/80 border border-zinc-800/80 rounded-xl p-2.5 flex justify-between items-center text-xs">
-                          <div>
-                            <span className="text-[9px] text-zinc-500 uppercase font-bold block">{item.category || "Menu"}</span>
-                            <span className="font-semibold text-zinc-200">{typeof item === "string" ? item : item.dish}</span>
-                          </div>
-                          <span className="text-[9px] font-extrabold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded">
-                            Desc Missing
-                          </span>
-                        </div>
-                      ))
-                    )
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* SECOND PART: Cross-Platform Telemetry Comparison Tables (BOTTOM SECTION) */}
           <div className="space-y-6 pt-4 border-t border-zinc-800/80">
