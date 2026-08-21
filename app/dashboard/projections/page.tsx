@@ -651,6 +651,9 @@ export default function ProjectionsPage() {
 
       const resData = json.data || {};
       const newAov = resData.aov || card.aov;
+      const orders = resData.orders || 0;
+      const m2oPct = card.m2oPct || 7.0;
+      const computedMenuOpens = orders > 0 ? Math.round(orders / (m2oPct / 100)) : card.menuOpens;
 
       setMonthCardStatus((prev) => {
         const next = [...prev];
@@ -659,6 +662,7 @@ export default function ProjectionsPage() {
           isLoaded: true,
           source: "ocr",
           aov: newAov,
+          menuOpens: computedMenuOpens,
           data: resData,
         };
         return next;
@@ -1815,32 +1819,23 @@ export default function ProjectionsPage() {
                             </td>
 
                             <td className="p-4 align-top pt-5">
-                              {(() => {
-                                const liveCardOrders = card.data?.orders || 0;
-                                const liveCardM2o = card.m2oPct > 0 ? card.m2oPct / 100 : 0.07;
-                                const liveComputedMenuOpens = liveCardOrders > 0
-                                  ? Math.round(liveCardOrders / liveCardM2o)
-                                  : card.menuOpens;
-                                return (
-                                  <input
-                                    type="number"
-                                    value={liveComputedMenuOpens}
-                                    onChange={(e) => {
-                                      const val = Number(e.target.value);
-                                      setMonthCardStatus((prev) => {
-                                        const next = [...prev];
-                                        next[idx].menuOpens = val;
-                                        const orders = next[idx].data?.orders || 0;
-                                        if (orders > 0 && val > 0) {
-                                          next[idx].m2oPct = Number(((orders / val) * 100).toFixed(1));
-                                        }
-                                        return next;
-                                      });
-                                    }}
-                                    className="w-full bg-zinc-900/80 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono outline-none focus:border-zinc-500 transition-colors"
-                                  />
-                                );
-                              })()}
+                              <input
+                                type="number"
+                                value={card.menuOpens || ""}
+                                onChange={(e) => {
+                                  const val = Number(e.target.value);
+                                  setMonthCardStatus((prev) => {
+                                    const next = [...prev];
+                                    next[idx].menuOpens = val;
+                                    const orders = next[idx].data?.orders || 0;
+                                    if (orders > 0 && val > 0) {
+                                      next[idx].m2oPct = Number(((orders / val) * 100).toFixed(1));
+                                    }
+                                    return next;
+                                  });
+                                }}
+                                className="w-full bg-zinc-900/80 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono outline-none focus:border-zinc-500 transition-colors"
+                              />
                             </td>
 
                             <td className="p-4 align-top pt-5">

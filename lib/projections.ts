@@ -166,12 +166,13 @@ export const DEFAULT_PROJECTION_DATA: ProjectionBrandState = {
 // Calculate projection metrics from inputs
 export function calculateMonthMetrics(month: Partial<MonthData>): MonthData {
   const m2o = month.m2o !== undefined && month.m2o !== null ? month.m2o : 0.08;
-  const orders = month.orders !== undefined && month.orders !== null ? month.orders : 0;
+  const menuOpens = month.menuOpens !== undefined && month.menuOpens !== null
+    ? month.menuOpens
+    : ((month.orders !== undefined && month.orders > 0 && m2o > 0) ? Math.round(month.orders / m2o) : 0);
   
-  // Dynamic formula: Menu Opens = Orders / M2O ratio
-  const menuOpens = (orders > 0 && m2o > 0)
-    ? Math.round(orders / m2o)
-    : (month.menuOpens !== undefined && month.menuOpens !== null ? month.menuOpens : 0);
+  const orders = month.orders !== undefined && month.orders !== null
+    ? month.orders
+    : Math.round(menuOpens * m2o);
   
   const aov = month.aov !== undefined && month.aov !== null ? month.aov : 750;
   const subTotal = month.subTotal !== undefined && month.subTotal !== null ? month.subTotal : Math.round(orders * aov);
