@@ -571,6 +571,18 @@ export default function HygieneCheckPage() {
       const wsDescGaps = XLSX.utils.json_to_sheet(descGapRows.length > 0 ? descGapRows : [{ "Status": "No description gaps found across platforms!" }]);
       XLSX.utils.book_append_sheet(wb, wsDescGaps, "Desc Gaps Audit");
 
+      // Sheet 6: Category Breakdown & Dish Count Comparison
+      const catList = dualCompareData.comparison?.categoryComparison || [];
+      const catRows = catList.map((cat: any) => ({
+        "Category Name": cat.category,
+        "Zomato Item Count": cat.zomatoCount,
+        "Swiggy Item Count": cat.swiggyCount,
+        "Variance / Diff": cat.difference,
+        "Status": cat.status === "match" ? "Match" : cat.status === "missing_on_swiggy" ? "Category Missing on Swiggy" : cat.status === "missing_on_zomato" ? "Category Missing on Zomato" : "Item Count Mismatch"
+      }));
+      const wsCatBreakdown = XLSX.utils.json_to_sheet(catRows.length > 0 ? catRows : [{ "Status": "No category data found" }]);
+      XLSX.utils.book_append_sheet(wb, wsCatBreakdown, "Category Breakdown");
+
       const fileName = `${restName.replace(/\s+/g, "_")}_Zomato_vs_Swiggy_Audit.xlsx`;
       XLSX.writeFile(wb, fileName);
     } catch (err) {
@@ -2025,6 +2037,70 @@ export default function HygieneCheckPage() {
                 <span>Cross-Platform Telemetry & Side-by-Side Comparisons</span>
               </h3>
             </div>
+
+            {/* Category Structure & Dish Count Comparison Table */}
+            {dualCompareData.comparison?.categoryComparison?.length > 0 && (
+              <div className="bg-zinc-900/90 border border-emerald-500/20 rounded-2xl p-6 shadow-xl space-y-4">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-emerald-400" />
+                    <h4 className="text-sm font-bold text-white uppercase tracking-wider">
+                      Category Structure & Dish Count Comparison ({dualCompareData.comparison.categoryComparison.length} Categories)
+                    </h4>
+                  </div>
+                  <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">
+                    Cross-Platform Menu Structure
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left text-zinc-300">
+                    <thead className="bg-zinc-950 text-zinc-400 font-bold uppercase text-[10px] border-b border-zinc-800">
+                      <tr>
+                        <th className="p-3">Category Name</th>
+                        <th className="p-3 text-center">Zomato Count</th>
+                        <th className="p-3 text-center">Swiggy Count</th>
+                        <th className="p-3 text-center">Discrepancy / Variance</th>
+                        <th className="p-3 text-center">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800/60 font-medium">
+                      {dualCompareData.comparison.categoryComparison.map((cat: any, i: number) => (
+                        <tr key={i} className="hover:bg-zinc-800/40 transition-colors">
+                          <td className="p-3 font-bold text-white">{cat.category}</td>
+                          <td className="p-3 text-center text-zinc-300 font-semibold">{cat.zomatoCount} Dishes</td>
+                          <td className="p-3 text-center text-zinc-300 font-semibold">{cat.swiggyCount} Dishes</td>
+                          <td className="p-3 text-center">
+                            {cat.status === "match" ? (
+                              <span className="text-emerald-400 font-bold">0 (Perfect Match)</span>
+                            ) : cat.status === "missing_on_swiggy" ? (
+                              <span className="text-rose-400 font-bold">Category Missing on Swiggy</span>
+                            ) : cat.status === "missing_on_zomato" ? (
+                              <span className="text-amber-400 font-bold">Category Missing on Zomato</span>
+                            ) : (
+                              <span className="text-amber-400 font-bold">
+                                {cat.difference > 0 ? `+${cat.difference} on Swiggy` : `${cat.difference} on Swiggy`}
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-3 text-center">
+                            {cat.status === "match" ? (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                Match
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                Mismatch
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
             {/* Photo Gaps Table (Dishes on both platforms with photo gaps) */}
             {dualCompareData.comparison?.photoGaps?.length > 0 && (

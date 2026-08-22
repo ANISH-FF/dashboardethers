@@ -374,6 +374,109 @@ export async function POST(req: NextRequest) {
       }
     });
 
+    // Category-wise Breakdown & Item Count Comparison with Smart Category Normalization
+    const cleanCategoryName = (name: string) => {
+      if (!name) return "General";
+      return name
+        .replace(/&amp;/g, "&")
+        .replace(/\u00a0/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    };
+
+    const zCatCounts: Record<string, number> = {};
+    const zAuditCats = zomatoAudit.categories || zomatoAudit.categories_summary || [];
+    if (zAuditCats.length > 0) {
+      zAuditCats.forEach((cat: any) => {
+        const cName = cleanCategoryName(cat.category_name || cat.menu_group || cat.category);
+        const count = Number(cat.total_items || cat.total_dishes || 0);
+        if (cName && count > 0) {
+          zCatCounts[cName] = (zCatCounts[cName] || 0) + count;
+        }
+      });
+    } else {
+      zDishes.forEach(d => {
+        const cat = cleanCategoryName(d.category);
+        zCatCounts[cat] = (zCatCounts[cat] || 0) + 1;
+      });
+    }
+
+    const sCatCounts: Record<string, number> = {};
+    const sAuditCats = swiggyAudit.categories || swiggyAudit.categories_summary || [];
+    if (sAuditCats.length > 0) {
+      sAuditCats.forEach((cat: any) => {
+        const cName = cleanCategoryName(cat.category_name || cat.menu_group || cat.category);
+        const count = Number(cat.total_items || cat.total_dishes || 0);
+        if (cName && count > 0) {
+          sCatCounts[cName] = (sCatCounts[cName] || 0) + count;
+        }
+      });
+    } else {
+      sDishes.forEach(d => {
+        const cat = cleanCategoryName(d.category);
+        sCatCounts[cat] = (sCatCounts[cat] || 0) + 1;
+      });
+    }
+
+    const findSwiggyCategoryMatch = (zCat: string, sCatMap: Record<string, number>) => {
+      const normZ = zCat.toLowerCase();
+      for (const sCat of Object.keys(sCatMap)) {
+        if (sCat.toLowerCase() === normZ) return sCat;
+      }
+      const keyZ = normZ.replace(/&/g, "and").replace(/s$/, "");
+      for (const sCat of Object.keys(sCatMap)) {
+        const keyS = sCat.toLowerCase().replace(/&/g, "and").replace(/s$/, "");
+        if (keyZ === keyS || normZ.includes(sCat.toLowerCase()) || sCat.toLowerCase().includes(normZ)) {
+          return sCat;
+        }
+      }
+      return null;
+    };
+
+    const matchedSwiggyKeys = new Set<string>();
+
+    const categoryComparison: Array<{
+      category: string;
+      zomatoCount: number;
+      swiggyCount: number;
+      difference: number;
+      status: string;
+    }> = [];
+
+    Object.keys(zCatCounts).forEach(zCat => {
+      const zCount = zCatCounts[zCat];
+      const matchedSKey = findSwiggyCategoryMatch(zCat, sCatCounts);
+      const sCount = matchedSKey ? sCatCounts[matchedSKey] : 0;
+
+      if (matchedSKey) matchedSwiggyKeys.add(matchedSKey);
+
+      let status = "match";
+      if (zCount > 0 && sCount === 0) status = "missing_on_swiggy";
+      else if (zCount !== sCount) status = "mismatch";
+
+      categoryComparison.push({
+        category: zCat,
+        zomatoCount: zCount,
+        swiggyCount: sCount,
+        difference: sCount - zCount,
+        status,
+      });
+    });
+
+    Object.keys(sCatCounts).forEach(sCat => {
+      if (!matchedSwiggyKeys.has(sCat)) {
+        categoryComparison.push({
+          category: sCat,
+          zomatoCount: 0,
+          swiggyCount: sCatCounts[sCat],
+          difference: sCatCounts[sCat],
+          status: "missing_on_zomato",
+        });
+      }
+    });
+
+    categoryComparison.sort((a, b) => a.category.localeCompare(b.category));
+
     const responsePayload = {
       restaurant_name: restaurantName,
       zomatoUrl,
@@ -397,7 +500,8 @@ export async function POST(req: NextRequest) {
         missingOnSwiggy,
         missingOnZomato,
         photoGaps,
-        descGaps
+        descGaps,
+        categoryComparison
       }
     };
 
