@@ -112,6 +112,7 @@ export default function HygieneCheckPage() {
   const [swiggyUrlInput, setSwiggyUrlInput] = useState("https://www.swiggy.com/city/jamshedpur/novelty-restaurant-bistupur-rest12034");
   const [dualCompareLoading, setDualCompareLoading] = useState(false);
   const [dualCompareData, setDualCompareData] = useState<any | null>(null);
+  const [expandedDualCategoryIdx, setExpandedDualCategoryIdx] = useState<number | null>(null);
 
   // PDF Download States
   const [isDownloadingSinglePdf, setIsDownloadingSinglePdf] = useState(false);
@@ -2065,37 +2066,118 @@ export default function HygieneCheckPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-800/60 font-medium">
-                      {dualCompareData.comparison.categoryComparison.map((cat: any, i: number) => (
-                        <tr key={i} className="hover:bg-zinc-800/40 transition-colors">
-                          <td className="p-3 font-bold text-white">{cat.category}</td>
-                          <td className="p-3 text-center text-zinc-300 font-semibold">{cat.zomatoCount} Dishes</td>
-                          <td className="p-3 text-center text-zinc-300 font-semibold">{cat.swiggyCount} Dishes</td>
-                          <td className="p-3 text-center">
-                            {cat.status === "match" ? (
-                              <span className="text-emerald-400 font-bold">0 (Perfect Match)</span>
-                            ) : cat.status === "missing_on_swiggy" ? (
-                              <span className="text-rose-400 font-bold">Category Missing on Swiggy</span>
-                            ) : cat.status === "missing_on_zomato" ? (
-                              <span className="text-amber-400 font-bold">Category Missing on Zomato</span>
-                            ) : (
-                              <span className="text-amber-400 font-bold">
-                                {cat.difference > 0 ? `+${cat.difference} on Swiggy` : `${cat.difference} on Swiggy`}
-                              </span>
+                      {dualCompareData.comparison.categoryComparison.map((cat: any, i: number) => {
+                        const isExpanded = expandedDualCategoryIdx === i;
+                        const missingOnZomatoCount = cat.missingOnZomatoItems?.length || 0;
+                        const missingOnSwiggyCount = cat.missingOnSwiggyItems?.length || 0;
+
+                        return (
+                          <Fragment key={i}>
+                            <tr 
+                              onClick={() => setExpandedDualCategoryIdx(isExpanded ? null : i)}
+                              className="hover:bg-zinc-800/60 cursor-pointer transition-colors border-b border-zinc-800/40 select-none"
+                            >
+                              <td className="p-3 font-bold text-white flex items-center gap-2">
+                                <ChevronRight className={`w-3.5 h-3.5 text-zinc-400 transition-transform duration-200 ${isExpanded ? "rotate-90 text-emerald-400" : ""}`} />
+                                <span>{cat.category}</span>
+                              </td>
+                              <td className="p-3 text-center text-zinc-300 font-semibold">{cat.zomatoCount} Dishes</td>
+                              <td className="p-3 text-center text-zinc-300 font-semibold">{cat.swiggyCount} Dishes</td>
+                              <td className="p-3 text-center">
+                                {cat.status === "match" ? (
+                                  <span className="text-emerald-400 font-bold">0 (Perfect Match)</span>
+                                ) : cat.status === "missing_on_swiggy" ? (
+                                  <span className="text-rose-400 font-bold">Category Missing on Swiggy</span>
+                                ) : cat.status === "missing_on_zomato" ? (
+                                  <span className="text-amber-400 font-bold">Category Missing on Zomato</span>
+                                ) : (
+                                  <span className="text-amber-400 font-bold">
+                                    {cat.difference > 0 ? `+${cat.difference} on Swiggy` : `${cat.difference} on Swiggy`}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="p-3 text-center">
+                                {cat.status === "match" ? (
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                    Match
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20 inline-flex items-center gap-1.5">
+                                    <span>Mismatch</span>
+                                    <span className="text-[9px] font-normal text-amber-300/80">({isExpanded ? "Click to close" : "Click to view extra items"})</span>
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+
+                            {/* Expanded Inline Drawer */}
+                            {isExpanded && (
+                              <tr className="bg-zinc-950/90 border-b border-zinc-800">
+                                <td colSpan={5} className="p-4 space-y-3">
+                                  <div className="bg-zinc-900/90 border border-zinc-800 rounded-xl p-4 space-y-3">
+                                    <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+                                      <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                                        <Utensils className="w-4 h-4 text-emerald-400" />
+                                        <span>{cat.category} — Extra Dish Name Breakdown</span>
+                                      </span>
+                                      <span className="text-[10px] font-medium text-zinc-400">
+                                        {cat.status === "match" ? "All items matched" : "Exact missing dish names"}
+                                      </span>
+                                    </div>
+
+                                    {cat.status === "match" && (
+                                      <p className="text-xs text-emerald-400 font-medium flex items-center gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                        <span>All {cat.zomatoCount} dishes in <strong>{cat.category}</strong> match 100% across Zomato & Swiggy!</span>
+                                      </p>
+                                    )}
+
+                                    {missingOnZomatoCount > 0 && (
+                                      <div className="space-y-2">
+                                        <h5 className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                                          <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                                          <span>Dishes present on Swiggy but MISSING on Zomato ({missingOnZomatoCount} items):</span>
+                                        </h5>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
+                                          {cat.missingOnZomatoItems.map((dishName: string, idx: number) => (
+                                            <div key={idx} className="flex items-center gap-2.5 bg-zinc-950/80 border border-amber-500/20 px-3 py-2 rounded-lg text-xs text-zinc-200">
+                                              <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+                                              <span className="font-bold text-white">{dishName}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {missingOnSwiggyCount > 0 && (
+                                      <div className="space-y-2 pt-1">
+                                        <h5 className="text-xs font-bold text-rose-400 flex items-center gap-1.5">
+                                          <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+                                          <span>Dishes present on Zomato but MISSING on Swiggy ({missingOnSwiggyCount} items):</span>
+                                        </h5>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
+                                          {cat.missingOnSwiggyItems.map((dishName: string, idx: number) => (
+                                            <div key={idx} className="flex items-center gap-2.5 bg-zinc-950/80 border border-rose-500/20 px-3 py-2 rounded-lg text-xs text-zinc-200">
+                                              <span className="w-2 h-2 rounded-full bg-rose-400 shrink-0" />
+                                              <span className="font-bold text-white">{dishName}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {cat.status !== "match" && missingOnZomatoCount === 0 && missingOnSwiggyCount === 0 && (
+                                      <p className="text-xs text-zinc-400 italic">
+                                        Item counts differ slightly ({cat.zomatoCount} vs {cat.swiggyCount}). Check dish names for minor spelling variations.
+                                      </p>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
                             )}
-                          </td>
-                          <td className="p-3 text-center">
-                            {cat.status === "match" ? (
-                              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                Match
-                              </span>
-                            ) : (
-                              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                                Mismatch
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                          </Fragment>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

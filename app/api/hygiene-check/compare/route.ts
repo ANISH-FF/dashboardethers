@@ -441,6 +441,8 @@ export async function POST(req: NextRequest) {
       swiggyCount: number;
       difference: number;
       status: string;
+      missingOnZomatoItems: string[];
+      missingOnSwiggyItems: string[];
     }> = [];
 
     Object.keys(zCatCounts).forEach(zCat => {
@@ -454,23 +456,51 @@ export async function POST(req: NextRequest) {
       if (zCount > 0 && sCount === 0) status = "missing_on_swiggy";
       else if (zCount !== sCount) status = "mismatch";
 
+      // Find specific missing dish names for this category
+      const normCat = zCat.toLowerCase();
+      const missingOnZomatoItems = missingOnZomato
+        .filter(m => {
+          const mCat = cleanCategoryName(m.category).toLowerCase();
+          return mCat === normCat || (matchedSKey && mCat === matchedSKey.toLowerCase()) || mCat.includes(normCat) || normCat.includes(mCat);
+        })
+        .map(m => m.dish);
+
+      const missingOnSwiggyItems = missingOnSwiggy
+        .filter(m => {
+          const mCat = cleanCategoryName(m.category).toLowerCase();
+          return mCat === normCat || mCat.includes(normCat) || normCat.includes(mCat);
+        })
+        .map(m => m.dish);
+
       categoryComparison.push({
         category: zCat,
         zomatoCount: zCount,
         swiggyCount: sCount,
         difference: sCount - zCount,
         status,
+        missingOnZomatoItems,
+        missingOnSwiggyItems,
       });
     });
 
     Object.keys(sCatCounts).forEach(sCat => {
       if (!matchedSwiggyKeys.has(sCat)) {
+        const normCat = sCat.toLowerCase();
+        const missingOnZomatoItems = missingOnZomato
+          .filter(m => {
+            const mCat = cleanCategoryName(m.category).toLowerCase();
+            return mCat === normCat || mCat.includes(normCat) || normCat.includes(mCat);
+          })
+          .map(m => m.dish);
+
         categoryComparison.push({
           category: sCat,
           zomatoCount: 0,
           swiggyCount: sCatCounts[sCat],
           difference: sCatCounts[sCat],
           status: "missing_on_zomato",
+          missingOnZomatoItems,
+          missingOnSwiggyItems: [],
         });
       }
     });
