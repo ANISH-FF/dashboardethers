@@ -139,7 +139,7 @@ export default function Sidebar({ role = "staff" }: { role?: string }) {
       <div className="p-4 border-t border-line shrink-0">
         <div className="rounded-xl bg-paper-dark p-4 flex flex-col gap-1">
           <span className="text-xs font-semibold text-ink">Ethers OS</span>
-          <span className="text-[10px] text-ink/50">v2.0.0 (Charcoal Edition)</span>
+          <span className="text-[10px] text-ink/50">v2.0.0 (Automated Edition)</span>
         </div>
       </div>
     </>
