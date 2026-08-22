@@ -572,16 +572,36 @@ export default function HygieneCheckPage() {
       const wsDescGaps = XLSX.utils.json_to_sheet(descGapRows.length > 0 ? descGapRows : [{ "Status": "No description gaps found across platforms!" }]);
       XLSX.utils.book_append_sheet(wb, wsDescGaps, "Desc Gaps Audit");
 
-      // Sheet 6: Category Breakdown & Dish Count Comparison
+      // Sheet 6: Category Breakdown & Dish Count Comparison (With Exact Discrepancy Dish Names)
       const catList = dualCompareData.comparison?.categoryComparison || [];
-      const catRows = catList.map((cat: any) => ({
-        "Category Name": cat.category,
-        "Zomato Item Count": cat.zomatoCount,
-        "Swiggy Item Count": cat.swiggyCount,
-        "Variance / Diff": cat.difference,
-        "Status": cat.status === "match" ? "Match" : cat.status === "missing_on_swiggy" ? "Category Missing on Swiggy" : cat.status === "missing_on_zomato" ? "Category Missing on Zomato" : "Item Count Mismatch"
-      }));
+      const catRows = catList.map((cat: any) => {
+        const extraOnSwiggy = (cat.missingOnZomatoItems || []).join(", ");
+        const extraOnZomato = (cat.missingOnSwiggyItems || []).join(", ");
+
+        return {
+          "Category Name": cat.category,
+          "Zomato Item Count": cat.zomatoCount,
+          "Swiggy Item Count": cat.swiggyCount,
+          "Variance / Diff": cat.difference > 0 ? `+${cat.difference} on Swiggy` : cat.difference < 0 ? `${cat.difference} on Swiggy` : "0 (Match)",
+          "Status": cat.status === "match" ? "Perfect Match" : cat.status === "missing_on_swiggy" ? "Category Missing on Swiggy" : cat.status === "missing_on_zomato" ? "Category Missing on Zomato" : "Item Count Mismatch",
+          "Extra Dishes Available on Swiggy (Missing on Zomato)": extraOnSwiggy || (cat.status === "match" ? "None (All match)" : "N/A"),
+          "Extra Dishes Available on Zomato (Missing on Swiggy)": extraOnZomato || (cat.status === "match" ? "None (All match)" : "N/A"),
+        };
+      });
       const wsCatBreakdown = XLSX.utils.json_to_sheet(catRows.length > 0 ? catRows : [{ "Status": "No category data found" }]);
+
+      if (wsCatBreakdown["!ref"]) {
+        wsCatBreakdown["!cols"] = [
+          { wch: 28 }, // Category Name
+          { wch: 18 }, // Zomato Count
+          { wch: 18 }, // Swiggy Count
+          { wch: 22 }, // Variance
+          { wch: 25 }, // Status
+          { wch: 55 }, // Extra Dishes on Swiggy
+          { wch: 55 }, // Extra Dishes on Zomato
+        ];
+      }
+
       XLSX.utils.book_append_sheet(wb, wsCatBreakdown, "Category Breakdown");
 
       const fileName = `${restName.replace(/\s+/g, "_")}_Zomato_vs_Swiggy_Audit.xlsx`;
