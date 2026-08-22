@@ -253,20 +253,7 @@ export default function DashboardHome() {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-2">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-line pb-4">
-        <div>
-          <h1 className="text-2xl font-extrabold text-ink tracking-tight">Home</h1>
-          <p className="mt-1 text-xs text-ink/50">
-            Executive overview of Ethers Consultancy operations, active brands, and automated F&B intelligence.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5" /> Ethers OS v2.0
-          </span>
-        </div>
-      </div>
+      {/* Executive Greeting Header (Starts directly at page top) */}
 
       {/* Executive Greeting Header (Seamless Zero-Border Background Fit) */}
       <div className="py-2">
