@@ -18,7 +18,9 @@ import {
   Megaphone, 
   MessageSquare, 
   Settings,
-  ShieldCheck
+  ShieldCheck,
+  Sun,
+  Moon
 } from "lucide-react";
 
 type ColorTheme = "emerald" | "blue" | "purple" | "amber" | "cyan" | "rose" | "indigo";
@@ -167,6 +169,53 @@ export default function DashboardHome() {
     employees: 5,
     loading: true,
   });
+  const [userName, setUserName] = useState<string>("");
+  const [greeting, setGreeting] = useState<{ salutation: string; quote: string; mode: string; icon: any }>({
+    salutation: "Welcome",
+    quote: "Systems operational. Ethers intelligence engine ready.",
+    mode: "Day",
+    icon: Sparkles,
+  });
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.name) setUserName(data.name);
+      })
+      .catch(() => {});
+
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) {
+      setGreeting({
+        salutation: "Good morning",
+        quote: "Fresh day, fresh targets. Ethers AI engines are synced and ready for F&B operations.",
+        mode: "Morning",
+        icon: Sun,
+      });
+    } else if (hour >= 12 && hour < 17) {
+      setGreeting({
+        salutation: "Good afternoon",
+        quote: "Peak operational hours. All active brand telemetry pipelines are running nominal.",
+        mode: "Afternoon",
+        icon: Sparkles,
+      });
+    } else if (hour >= 17 && hour < 22) {
+      setGreeting({
+        salutation: "Good evening",
+        quote: "Wrapping up today's payouts and acquisitions? Here is your executive telemetry breakdown.",
+        mode: "Evening",
+        icon: Sparkles,
+      });
+    } else {
+      setGreeting({
+        salutation: "Night Owl Mode",
+        quote: "Late night session active. Ethers OS is monitoring your background automations while you build.",
+        mode: "Night",
+        icon: Moon,
+      });
+    }
+  }, []);
 
   useEffect(() => {
     async function fetchStats() {
@@ -200,6 +249,8 @@ export default function DashboardHome() {
     fetchStats();
   }, []);
 
+  const GreetingIcon = greeting.icon;
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-2">
       {/* Header */}
@@ -214,6 +265,39 @@ export default function DashboardHome() {
           <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5" /> Ethers OS v2.0
           </span>
+        </div>
+      </div>
+
+      {/* Executive Greeting Header (Seamless Zero-Border Background Fit) */}
+      <div className="py-2">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider font-bold bg-white/5 border border-white/10 text-zinc-400 flex items-center gap-1.5">
+                <GreetingIcon className="w-3 h-3 text-emerald-400" /> {greeting.mode} Executive Session
+              </span>
+            </div>
+            
+            <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+              {greeting.salutation}{userName ? `, ${userName}` : ""}
+            </h2>
+            
+            <p className="text-xs sm:text-sm text-zinc-400 max-w-2xl font-sans leading-relaxed">
+              &ldquo;{greeting.quote}&rdquo;
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-right">
+              <div className="flex items-center justify-end gap-1.5 text-[11px] font-mono text-zinc-300">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Systems Nominal</span>
+              </div>
+              <p className="text-[10px] text-zinc-500 font-mono mt-0.5">
+                Ethers Intelligence v2.0
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
