@@ -684,7 +684,7 @@ export default function ReportingPage() {
                     <RowLabel label="Discount" isCurrency items={currentItems} field="discount" />
                     <RowLabel label="Discount %" isPct items={currentItems} field="discountPct" badgeColor="blue" />
                     <RowLabel label="Comisionable Value" isCurrency items={currentItems} field="commissionableValue" />
-                    <RowLabel label="Com + PG + GST" isCurrency items={currentItems} field="comPgGst" />
+                    <RowLabel label="Com + PG" isCurrency items={currentItems} field="comPgGst" />
                     <RowLabel label="Complaints and cancellation charges" isCurrency items={currentItems} field="complaintsCancellation" />
                     <RowLabel label="Tax" isCurrency items={currentItems} field="tax" />
                     <RowLabel label="Ads" isCurrency items={currentItems} field="ads" />
