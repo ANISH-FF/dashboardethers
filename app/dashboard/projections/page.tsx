@@ -1235,6 +1235,17 @@ export default function ProjectionsPage() {
                   <td className="p-3 text-ink/40 font-mono text-[10px]">Net Payout / Sub Total * 100</td>
                 </tr>
 
+                {/* Burn % */}
+                <tr className="hover:bg-paper/30 font-bold text-red-400/90">
+                  <td className="p-3 sticky left-0 bg-paper-dark border-r border-line">Burn %</td>
+                  {allMonths.map((m, i) => (
+                    <td key={i} className="p-3 text-center font-mono border-r border-line/40">
+                      {m.burnPct}%
+                    </td>
+                  ))}
+                  <td className="p-3 text-ink/40 font-mono text-[10px]">100% - Net Payout %</td>
+                </tr>
+
                 {/* M2O */}
                 <tr className="hover:bg-paper/30 text-blue-400">
                   <td className="p-3 font-semibold sticky left-0 bg-paper-dark border-r border-line">M2O (Menu to Order %)</td>
@@ -1391,7 +1402,11 @@ export default function ProjectionsPage() {
                       </div>
                       <div className="flex justify-between pt-1 border-t border-line/50">
                         <span className="text-emerald-400 font-bold">Net Payout:</span>
-                        <span className="font-bold text-emerald-400">₹{month.netPayout.toLocaleString("en-IN")}</span>
+                        <span className="font-bold text-emerald-400">₹{month.netPayout.toLocaleString("en-IN")} ({month.payoutPct}%)</span>
+                      </div>
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-red-400 font-semibold">Burn %:</span>
+                        <span className="font-bold text-red-400">{month.burnPct}%</span>
                       </div>
                     </div>
                   </div>
@@ -1510,7 +1525,11 @@ export default function ProjectionsPage() {
                       </div>
                       <div className="flex justify-between pt-1 border-t border-line/50">
                         <span className="text-emerald-400 font-bold">Net Payout:</span>
-                        <span className="font-bold text-emerald-400">₹{month.netPayout.toLocaleString("en-IN")}</span>
+                        <span className="font-bold text-emerald-400">₹{month.netPayout.toLocaleString("en-IN")} ({month.payoutPct}%)</span>
+                      </div>
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-red-400 font-semibold">Burn %:</span>
+                        <span className="font-bold text-red-400">{month.burnPct}%</span>
                       </div>
                     </div>
                   </div>
