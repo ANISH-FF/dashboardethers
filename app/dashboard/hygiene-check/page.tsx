@@ -1124,7 +1124,7 @@ export default function HygieneCheckPage() {
       )}
 
       {/* Audit Dashboard Output View */}
-      {auditData && !loading && (
+      {auditMode === "single" && auditData && !loading && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
