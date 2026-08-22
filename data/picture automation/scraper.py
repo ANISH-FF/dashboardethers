@@ -109,56 +109,68 @@ def _fast_http_cdn_search(food_name, out_dir, count, platform="zomato", log_fn=N
         'bedroom', 'bathroom', 'kitchen-sink', 'lobby', 'hallway', 'decor'
     }
 
-    # Cap count strictly at 10 per item to respect Unsplash T&C & rate limits
+    # Cap count strictly at 10 per item to respect rate limits & quality
     target_count = min(count, 10)
 
-    # STRICTLY UNSPLASH HD ENGINE ONLY (Bing Scraper completely disabled)
-    unsplash_key = os.getenv("UNSPLASH_ACCESS_KEY", "fB58a9-ZuadGSjKauPWdOKbUdjxQ0VxQFTOqlAi8Cvc").strip()
+    # Bing Async HTTP Image Engine (with point-second humanized delay & strict background filters)
+    queries = [
+        f"{food_name_clean} food recipe dish",
+        f"{food_name_clean} food dish photo",
+    ]
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+        "Referer": "https://www.bing.com/",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-IN,en-US;q=0.9,en;q=0.8",
+        "Cookie": "SRCHHPGUSR=ADLT=DEMAND&NRSL=35; _EDGE_S=F=1;"
+    }
+
     if log_fn:
-        log_fn(f"  [Unsplash Engine] Fetching HD Food Photos for '{food_name_clean}'...")
+        log_fn(f"  [Photo Engine] Searching '{food_name_clean}' food photos...")
 
-    try:
-        u_url = f"https://api.unsplash.com/search/photos?query={requests.utils.quote(food_name_clean + ' food dish')}&per_page=15&client_id={unsplash_key}"
-        u_res = requests.get(u_url, timeout=10)
-        if u_res.status_code == 200:
-            u_data = u_res.json()
-            results = u_data.get("results", [])
-            
-            # If dish query returns zero results, retry with clean food name
-            if len(results) == 0:
-                u_url = f"https://api.unsplash.com/search/photos?query={requests.utils.quote(food_name_clean + ' food')}&per_page=15&client_id={unsplash_key}"
-                u_res = requests.get(u_url, timeout=10)
-                if u_res.status_code == 200:
-                    results = u_res.json().get("results", [])
+    import time
 
-            for photo in results:
-                if len(saved) >= target_count:
-                    break
-                raw_img_url = photo.get("urls", {}).get("regular") or photo.get("urls", {}).get("full")
-                if raw_img_url and raw_img_url not in seen:
-                    seen.add(raw_img_url)
-                    try:
-                        import time
-                        time.sleep(0.8)  # Humanized request delay
-                        img_bytes = _download_bytes(raw_img_url, timeout=8)
-                        if len(img_bytes) >= 30 * 1024:
-                            fname = f"img_{len(saved)+1:02d}.jpg"
-                            fpath = os.path.join(out_dir, fname)
-                            with open(fpath, "wb") as f:
-                                f.write(img_bytes)
-                            saved.append(fname)
-                            if log_fn:
-                                log_fn(f"    [Unsplash HD+] Saved: {fname} ({len(img_bytes)//1024} KB)")
-                    except Exception as err:
-                        if log_fn:
-                            log_fn(f"    [Download Err]: {err}")
+    for query in queries:
+        if len(saved) >= target_count:
+            break
+        try:
+            url = f"https://www.bing.com/images/async?q={requests.utils.quote(query)}&first=1&count=35&adlt=strict&cc=IN&setlang=en-US&mmasync=1"
+            r = requests.get(url, headers=headers, timeout=8)
+            if r.status_code == 200:
+                murls = re.findall(r'murl&quot;:&quot;(https?://[^&]+)&quot;', r.text)
+                for img_url in murls:
+                    if len(saved) >= target_count:
+                        break
+                    if not img_url or img_url in seen:
                         continue
-        else:
-            if log_fn:
-                log_fn(f"  [Unsplash API Status]: {u_res.status_code} {u_res.text[:100]}")
-    except Exception as e:
-        if log_fn:
-            log_fn(f"  [Unsplash Engine Error]: {e}")
+
+                    # Strict non-food domain & background filter
+                    u_lower = img_url.lower()
+                    if any(bad in u_lower for bad in exclude_domains):
+                        continue
+                    if any(bad in u_lower for bad in bad_keywords):
+                        continue
+
+                    seen.add(img_url)
+
+                    try:
+                        time.sleep(0.5)  # Point-second humanized delay to prevent IP rate-limiting
+                        img_bytes = _download_bytes(img_url, timeout=5)
+                        if len(img_bytes) < 70 * 1024:  # Quality check threshold
+                            continue
+                        ext = "webp" if "webp" in img_url.lower() else ("png" if "png" in img_url.lower() else "jpg")
+                        fname = f"img_{len(saved)+1:02d}.{ext}"
+                        fpath = os.path.join(out_dir, fname)
+                        with open(fpath, "wb") as f:
+                            f.write(img_bytes)
+                        saved.append(fname)
+                        if log_fn:
+                            log_fn(f"    [+] Downloaded: {fname} ({len(img_bytes)//1024} KB)")
+                    except Exception:
+                        continue
+        except Exception:
+            pass
 
     return saved
 
