@@ -372,7 +372,7 @@ function determineSmartVariantTitle(selectedItems: MenuItem[]): string {
 
     // Call AI Endpoint for 100% semantic accuracy
     try {
-      setLoadingMsg("✨ AI is analyzing selected items for 100% accurate variant naming...");
+      setLoadingMsg("AI is analyzing selected items for 100% accurate variant naming...");
       setLoading(true);
 
       const res = await fetch("/api/menu/group-selected-variant", {
@@ -455,7 +455,7 @@ function determineSmartVariantTitle(selectedItems: MenuItem[]): string {
   const runAiAutoVariants = async () => {
     if (items.length === 0) return;
     setLoading(true);
-    setLoadingMsg("✨ AI is analyzing menu items and auto-grouping variants...");
+    setLoadingMsg("AI is analyzing menu items and auto-grouping variants...");
     try {
       const res = await fetch("/api/auto-variants", {
         method: "POST",
@@ -574,7 +574,7 @@ function determineSmartVariantTitle(selectedItems: MenuItem[]): string {
   const executeAddonsGeneration = async (countVal: number) => {
     setShowAddonsModal(false);
     setLoading(true);
-    setLoadingMsg(`✨ Generating add-ons (${countVal} per item)...`);
+    setLoadingMsg(`Generating add-ons (${countVal} per item)...`);
     try {
       const res = await fetch("/api/generate-field", {
         method: "POST",
@@ -599,7 +599,7 @@ function determineSmartVariantTitle(selectedItems: MenuItem[]): string {
       return;
     }
     setLoading(true);
-    setLoadingMsg(`✨ Generating ${field}...`);
+    setLoadingMsg(`Generating ${field}...`);
     try {
       const res = await fetch("/api/generate-field", {
         method: "POST",
@@ -621,7 +621,7 @@ function determineSmartVariantTitle(selectedItems: MenuItem[]): string {
     e.preventDefault();
     if (!magicPrompt.trim() || items.length === 0) return;
     setLoading(true);
-    setLoadingMsg("✨ Running AI magic...");
+    setLoadingMsg("Running AI magic...");
     try {
       const res = await fetch("/api/magic", {
         method: "POST",
