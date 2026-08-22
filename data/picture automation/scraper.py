@@ -99,70 +99,66 @@ def _fast_http_cdn_search(food_name, out_dir, count, platform="zomato", log_fn=N
         'wallpaper', 'news', 'collage', 'befunky', 'vector', 'stock',
     }
 
-    # Block non-food keywords in image URLs
+    # Block non-food keywords in image URLs and titles (prevents wall/floor/interior/pet images)
     bad_keywords = {
         'cat', 'dog', 'pet', 'certificate', 'award', 'temple', 'travel',
         'map', 'tower', 'town', 'switzerland', 'vietnam', 'breed', 'kitten',
-        'tourism', 'hotel-stay', 'landmark', 'monument', 'scenery', 'landscape'
+        'tourism', 'hotel-stay', 'landmark', 'monument', 'scenery', 'landscape',
+        'floor', 'wall', 'room', 'interior', 'furniture', 'building', 'architecture',
+        'wallpaper', 'curtain', 'couch', 'chair', 'house', 'tile', 'bedroom', 'livingroom',
+        'bedroom', 'bathroom', 'kitchen-sink', 'lobby', 'hallway', 'decor'
     }
 
-    # Food recipe queries
-    queries = [
-        f"{food_name_clean} food recipe dish",
-        f"{food_name_clean} food recipe",
-    ]
+    # Cap count strictly at 10 per item to respect Unsplash T&C & rate limits
+    target_count = min(count, 10)
 
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-        "Referer": "https://www.bing.com/",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-IN,en-US;q=0.9,en;q=0.8",
-        "Cookie": "SRCHHPGUSR=ADLT=DEMAND&NRSL=35; _EDGE_S=F=1;"
-    }
-
+    # STRICTLY UNSPLASH HD ENGINE ONLY (Bing Scraper completely disabled)
+    unsplash_key = os.getenv("UNSPLASH_ACCESS_KEY", "fB58a9-ZuadGSjKauPWdOKbUdjxQ0VxQFTOqlAi8Cvc").strip()
     if log_fn:
-        log_fn(f"  [Photo Engine] Searching '{food_name_clean}' photos...")
+        log_fn(f"  [Unsplash Engine] Fetching HD Food Photos for '{food_name_clean}'...")
 
-    for query in queries:
-        if len(saved) >= count:
-            break
-        try:
-            # Bing async endpoint — Enforces Indian Food Dataset & Strict SafeSearch for VPS IPs
-            url = f"https://www.bing.com/images/async?q={requests.utils.quote(query)}&first=1&count=35&adlt=strict&cc=IN&setlang=en-US&mmasync=1"
-            r = requests.get(url, headers=headers, timeout=8)
-            if r.status_code == 200:
-                murls = re.findall(r'murl&quot;:&quot;(https?://[^&]+)&quot;', r.text)
-                for img_url in murls:
-                    if len(saved) >= count:
-                        break
-                    if not img_url or img_url in seen:
-                        continue
+    try:
+        u_url = f"https://api.unsplash.com/search/photos?query={requests.utils.quote(food_name_clean + ' food dish')}&per_page=15&client_id={unsplash_key}"
+        u_res = requests.get(u_url, timeout=10)
+        if u_res.status_code == 200:
+            u_data = u_res.json()
+            results = u_data.get("results", [])
+            
+            # If dish query returns zero results, retry with clean food name
+            if len(results) == 0:
+                u_url = f"https://api.unsplash.com/search/photos?query={requests.utils.quote(food_name_clean + ' food')}&per_page=15&client_id={unsplash_key}"
+                u_res = requests.get(u_url, timeout=10)
+                if u_res.status_code == 200:
+                    results = u_res.json().get("results", [])
 
-                    # Block paid stock sites and non-food domains
-                    u_lower = img_url.lower()
-                    if any(bad in u_lower for bad in exclude_domains):
-                        continue
-                    if any(bad in u_lower for bad in bad_keywords):
-                        continue
-
-                    seen.add(img_url)
-
+            for photo in results:
+                if len(saved) >= target_count:
+                    break
+                raw_img_url = photo.get("urls", {}).get("regular") or photo.get("urls", {}).get("full")
+                if raw_img_url and raw_img_url not in seen:
+                    seen.add(raw_img_url)
                     try:
-                        img_bytes = _download_bytes(img_url, timeout=5)
-                        if len(img_bytes) < 90 * 1024:  # Minimum 90 KB quality threshold
-                            continue
-                        ext = "webp" if "webp" in img_url.lower() else ("png" if "png" in img_url.lower() else "jpg")
-                        fname = f"img_{len(saved)+1:02d}.{ext}"
-                        fpath = os.path.join(out_dir, fname)
-                        with open(fpath, "wb") as f:
-                            f.write(img_bytes)
-                        saved.append(fname)
+                        import time
+                        time.sleep(0.8)  # Humanized request delay
+                        img_bytes = _download_bytes(raw_img_url, timeout=8)
+                        if len(img_bytes) >= 30 * 1024:
+                            fname = f"img_{len(saved)+1:02d}.jpg"
+                            fpath = os.path.join(out_dir, fname)
+                            with open(fpath, "wb") as f:
+                                f.write(img_bytes)
+                            saved.append(fname)
+                            if log_fn:
+                                log_fn(f"    [Unsplash HD+] Saved: {fname} ({len(img_bytes)//1024} KB)")
+                    except Exception as err:
                         if log_fn:
-                            log_fn(f"    [+] Downloaded: {fname} ({len(img_bytes)//1024} KB)")
-                    except Exception:
+                            log_fn(f"    [Download Err]: {err}")
                         continue
-        except Exception:
-            pass
+        else:
+            if log_fn:
+                log_fn(f"  [Unsplash API Status]: {u_res.status_code} {u_res.text[:100]}")
+    except Exception as e:
+        if log_fn:
+            log_fn(f"  [Unsplash Engine Error]: {e}")
 
     return saved
 
