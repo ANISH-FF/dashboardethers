@@ -26,8 +26,8 @@ function getGeminiApiKey() {
 }
 
 const GEMINI_FALLBACK_MODELS = [
-  "gemini-2.5-flash",
   "gemini-2.5-flash-lite",
+  "gemini-2.5-flash",
 ];
 
 async function extractJsonWithGemini(prompt: string, imageBase64List: string[]) {

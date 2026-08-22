@@ -23,7 +23,7 @@ EXAMPLES:
 Return ONLY a valid JSON object with key "title": {"title": "Generated Master Name"}. No markdown, no code fences, no extra text.`;
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -85,7 +85,7 @@ Do NOT modify any other field (id, name, base_price, is_veg, etc.).`;
     const userContent = `Menu Items:\n${JSON.stringify(items, null, 2)}`;
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

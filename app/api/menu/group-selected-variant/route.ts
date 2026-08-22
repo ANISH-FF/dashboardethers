@@ -48,7 +48,7 @@ Return ONLY a valid JSON object in this exact format:
 
     // Try Gemini 1.5 / 2.0 / 2.5 Flash models
     let text = "";
-    const models = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
+    const models = ["gemini-2.5-flash-lite", "gemini-2.5-flash"];
 
     for (const model of models) {
       try {

@@ -46,8 +46,7 @@ export async function callGemini(prompt: string, options: CallOptions = {}): Pro
     });
   }
 
-  // Strictly gemini-2.5-flash as specified
-  const candidateModels = ["gemini-2.5-flash"];
+  const candidateModels = ["gemini-2.5-flash-lite", "gemini-2.5-flash"];
 
   for (let i = 0; i < candidateModels.length; i++) {
     const modelName = candidateModels[i];
