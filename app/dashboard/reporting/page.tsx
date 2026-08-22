@@ -165,8 +165,10 @@ export default function ReportingPage() {
   }
 
   async function handleExportExcel() {
-    const brandParam = activeBrand?.id ? `?brandId=${encodeURIComponent(activeBrand.id)}` : "";
-    window.open(`/api/reporting/export${brandParam}`, "_blank");
+    const brandParam = activeBrand?.id ? `brandId=${encodeURIComponent(activeBrand.id)}` : "";
+    const rollupParam = monthlyRollup ? `monthlyRollup=true` : "";
+    const query = [brandParam, rollupParam].filter(Boolean).join("&");
+    window.open(`/api/reporting/export${query ? `?${query}` : ""}`, "_blank");
   }
 
   function formatCurrency(val: number) {

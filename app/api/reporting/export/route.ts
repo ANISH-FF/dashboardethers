@@ -2,19 +2,129 @@ import { NextRequest, NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import { getReportingStore, computeCombinedDeliveryRecords, computeCombinedDineoutRecords } from "@/lib/reporting";
 
+function computeRollupList<T extends Record<string, any>>(items: T[], isRollupOnly: boolean): T[] {
+  if (!items || items.length === 0) return [];
+
+  const monthGroups: Record<string, T[]> = {};
+  items.forEach((item) => {
+    let monthName = "";
+    const label = item.periodLabel || "";
+    const match = label.match(/Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec/i);
+    if (match) {
+      const mStr = match[0].toLowerCase();
+      const mNames: Record<string, string> = {
+        jan: "January", feb: "February", mar: "March", apr: "April",
+        may: "May", jun: "June", jul: "July", aug: "August",
+        sep: "September", oct: "October", nov: "November", dec: "December"
+      };
+      monthName = mNames[mStr] || match[0];
+    } else {
+      monthName = label;
+    }
+    if (!monthGroups[monthName]) monthGroups[monthName] = [];
+    monthGroups[monthName].push(item);
+  });
+
+  const result: T[] = [];
+
+  Object.entries(monthGroups).forEach(([mName, groupItems]) => {
+    if (!isRollupOnly) {
+      groupItems.forEach((gi) => result.push(gi));
+    }
+
+    const orders = groupItems.reduce((a, b) => a + (b.orders || 0), 0);
+    const transactions = groupItems.reduce((a, b) => a + (b.transactions || 0), 0);
+    const subTotal = groupItems.reduce((a, b) => a + (b.subTotal || 0), 0);
+    const packagingCharges = groupItems.reduce((a, b) => a + (b.packagingCharges || 0), 0);
+    const subTotalWithPkg = groupItems.reduce((a, b) => a + (b.subTotalWithPkg || 0), 0);
+    const cancelledOrderRefund = groupItems.reduce((a, b) => a + (b.cancelledOrderRefund || 0), 0);
+    const discount = groupItems.reduce((a, b) => a + (b.discount || 0), 0);
+    const commissionableValue = groupItems.reduce((a, b) => a + (b.commissionableValue || 0), 0);
+    const orderLevelDeduction = groupItems.reduce((a, b) => a + (b.orderLevelDeduction || 0), 0);
+    const taxDeduction = groupItems.reduce((a, b) => a + (b.taxDeduction || 0), 0);
+    const comPgGst = groupItems.reduce((a, b) => a + (b.comPgGst || 0), 0);
+    const complaintsCancellation = groupItems.reduce((a, b) => a + (b.complaintsCancellation || 0), 0);
+    const tax = groupItems.reduce((a, b) => a + (b.tax || 0), 0);
+    const preGmv = groupItems.reduce((a, b) => a + (b.preGmv || 0), 0);
+    const postGmv = groupItems.reduce((a, b) => a + (b.postGmv || 0), 0);
+    const commission = groupItems.reduce((a, b) => a + (b.commission || 0), 0);
+    const ads = groupItems.reduce((a, b) => a + (b.ads || 0), 0);
+    const hyperpure = groupItems.reduce((a, b) => a + (b.hyperpure || 0), 0);
+    const netPayout = groupItems.reduce((a, b) => a + (b.netPayout || 0), 0);
+    const platformFeesDeductions = groupItems.reduce(
+      (a, b) =>
+        a +
+        (b.platformFeesDeductions !== undefined
+          ? Number(b.platformFeesDeductions || 0)
+          : Number(b.orderLevelDeduction || 0) +
+            Number(b.taxDeduction || 0) +
+            Number(b.comPgGst || 0) +
+            Number(b.tax || 0)),
+      0
+    );
+
+    const grossBase = subTotalWithPkg || preGmv || subTotal || 1;
+    const discountPct = Number(((discount / grossBase) * 100).toFixed(2));
+    const adsPct = Number(((ads / grossBase) * 100).toFixed(2));
+    const commissionPct = postGmv > 0 ? Number(((commission / postGmv) * 100).toFixed(2)) : 0;
+    const netPayoutPct = Number(((netPayout / grossBase) * 100).toFixed(2));
+    const overallBurnPct = Number((100 - netPayoutPct).toFixed(2));
+
+    const rollupObj: any = {
+      periodLabel: isRollupOnly ? `${mName} (Rollup)` : `${mName} (Total)`,
+      orders,
+      transactions,
+      subTotal,
+      packagingCharges,
+      subTotalWithPkg,
+      cancelledOrderRefund,
+      discount,
+      discountPct,
+      commissionableValue,
+      platformFeesDeductions,
+      orderLevelDeduction,
+      taxDeduction,
+      comPgGst,
+      complaintsCancellation,
+      tax,
+      preGmv,
+      postGmv,
+      commission,
+      commissionPct,
+      ads,
+      adsPct,
+      hyperpure,
+      netPayout,
+      netPayoutWithHyperpure: netPayout + hyperpure,
+      netPayoutPct,
+      overallBurnPct,
+    };
+
+    result.push(rollupObj as T);
+  });
+
+  return result;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const store = getReportingStore();
     const { searchParams } = new URL(req.url);
     const brandId = searchParams.get("brandId");
+    const isRollupOnly = searchParams.get("monthlyRollup") === "true";
 
     const filterByBrand = <T extends { brandId?: string }>(list: T[]) =>
       brandId ? list.filter((p) => !p.brandId || p.brandId === brandId) : list;
 
-    const zomato_delivery = filterByBrand(store.zomato_delivery || []);
-    const zomato_dinein = filterByBrand(store.zomato_dinein || []);
-    const swiggy_delivery = filterByBrand(store.swiggy_delivery || []);
-    const swiggy_dineout = filterByBrand(store.swiggy_dineout || []);
+    const raw_zomato_delivery = filterByBrand(store.zomato_delivery || []);
+    const raw_zomato_dinein = filterByBrand(store.zomato_dinein || []);
+    const raw_swiggy_delivery = filterByBrand(store.swiggy_delivery || []);
+    const raw_swiggy_dineout = filterByBrand(store.swiggy_dineout || []);
+
+    const zomato_delivery = computeRollupList(raw_zomato_delivery, isRollupOnly);
+    const zomato_dinein = computeRollupList(raw_zomato_dinein, isRollupOnly);
+    const swiggy_delivery = computeRollupList(raw_swiggy_delivery, isRollupOnly);
+    const swiggy_dineout = computeRollupList(raw_swiggy_dineout, isRollupOnly);
 
     const wb = XLSX.utils.book_new();
 
@@ -101,7 +211,8 @@ export async function GET(req: NextRequest) {
     XLSX.utils.book_append_sheet(wb, sdoSheet, "Swiggy Dineout");
 
     // 5. Overall Delivery (Combined Zomato + Swiggy)
-    const combinedDelivery = computeCombinedDeliveryRecords(zomato_delivery, swiggy_delivery);
+    const raw_combined_delivery = computeCombinedDeliveryRecords(raw_zomato_delivery, raw_swiggy_delivery);
+    const combinedDelivery = computeRollupList(raw_combined_delivery, isRollupOnly);
     const cdHeaders = ["Metrics", ...combinedDelivery.map((p) => p.periodLabel)];
     const cdRows = [
       ["Combined Orders", ...combinedDelivery.map((p) => p.orders)],
@@ -123,7 +234,8 @@ export async function GET(req: NextRequest) {
     XLSX.utils.book_append_sheet(wb, cdSheet, "Overall Delivery");
 
     // 6. Overall Dineout (Combined Zomato + Swiggy)
-    const combinedDineout = computeCombinedDineoutRecords(zomato_dinein, swiggy_dineout);
+    const raw_combined_dineout = computeCombinedDineoutRecords(raw_zomato_dinein, raw_swiggy_dineout);
+    const combinedDineout = computeRollupList(raw_combined_dineout, isRollupOnly);
     const cdoHeaders = ["Metrics", ...combinedDineout.map((p) => p.periodLabel)];
     const cdoRows = [
       ["Combined Transactions", ...combinedDineout.map((p) => p.transactions)],
