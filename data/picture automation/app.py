@@ -220,18 +220,24 @@ def download_zip(filename):
 def clear_session():
     data = request.json or {}
     brand_slug = data.get('brand_slug')
-    if not brand_slug:
-        return jsonify({"error": "brand_slug required"}), 400
-        
-    session_dir = os.path.join(app.config['DOWNLOADS_FOLDER'], brand_slug)
-    zip_file = os.path.join(app.config['DOWNLOADS_FOLDER'], f"{brand_slug}.zip")
+    client_id = data.get('client_id')
+    
+    if client_id and client_id in client_status:
+        client_status[client_id] = {'status': 'none', 'brand_slug': None}
+
+    for cid, info in list(client_status.items()):
+        if info.get('brand_slug') == brand_slug:
+            client_status[cid] = {'status': 'none', 'brand_slug': None}
+
+    session_dir = os.path.join(app.config['DOWNLOADS_FOLDER'], brand_slug) if brand_slug else None
+    zip_file = os.path.join(app.config['DOWNLOADS_FOLDER'], f"{brand_slug}.zip") if brand_slug else None
     
     try:
-        if os.path.exists(session_dir):
+        if session_dir and os.path.exists(session_dir):
             shutil.rmtree(session_dir, ignore_errors=True)
-        if os.path.exists(zip_file):
+        if zip_file and os.path.exists(zip_file):
             os.remove(zip_file)
-        return jsonify({"status": "success", "message": f"Cleared {brand_slug}"})
+        return jsonify({"status": "success", "message": "Cleared session successfully"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

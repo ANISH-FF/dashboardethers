@@ -387,13 +387,12 @@ export default function PictureAutomationClient({ userId }: { userId: string }) 
   // ─── Package to ZIP & Clear ──────────────────────────────────────────────
   const handleClearBatch = async () => {
     try {
-      if (currentBrandSlug) {
-        await fetch("/api/picture-automation/clear_session", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ brand_slug: currentBrandSlug }),
-        });
-      }
+      const activeClientId = userId || picClientId || "user";
+      await fetch("/api/picture-automation/clear_session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ brand_slug: currentBrandSlug, client_id: activeClientId }),
+      });
     } catch (err) {
       console.error("Failed to clear backend session files", err);
     }
@@ -501,7 +500,7 @@ export default function PictureAutomationClient({ userId }: { userId: string }) 
       {/* 1. INPUT / SETUP VIEW                                            */}
       {/* ════════════════════════════════════════════════════════════════ */}
       {viewState === "input" && (
-        <div style={{ minHeight: "calc(100vh - 4rem)", padding: "1.5rem 1rem 3rem 1rem", background: "var(--bg-primary)", display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <div style={{ padding: "2rem 1rem 2rem 1rem", background: "var(--bg-primary)", display: "flex", flexDirection: "column", alignItems: "center" }}>
           
           <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
             <div style={{ width: 56, height: 56, borderRadius: 16, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 0.85rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--border)" }}>
@@ -683,6 +682,15 @@ export default function PictureAutomationClient({ userId }: { userId: string }) 
             </button>
 
           </div>
+
+          {/* Inline Watermark Footer */}
+          <div style={{ marginTop: "1.5rem", paddingBottom: "0.5rem", textAlign: "center", fontFamily: "monospace", fontSize: "11px", letterSpacing: "0.05em", color: "rgba(255,255,255,0.2)", userSelect: "none" }}>
+            Designed &amp; Developed by{" "}
+            <span style={{ fontWeight: 800, background: "linear-gradient(to right, #e4e4e7, #fff, #34d399)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+              Anish Srivastava
+            </span>
+          </div>
+
         </div>
       )}
 
