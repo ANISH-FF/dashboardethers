@@ -4,10 +4,25 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 // Never import this from a client component. It reads GEMINI_API_KEY
 // from the server environment only.
 
-let client: GoogleGenerativeAI | null = null;
+import fs from "fs";
+import path from "path";
+
+function getApiKey(): string {
+  try {
+    const envPath = path.join(process.cwd(), ".env");
+    if (fs.existsSync(envPath)) {
+      const content = fs.readFileSync(envPath, "utf-8");
+      const match = content.match(/GEMINI_API_KEY\s*=\s*["']?([^"'\r\n]+)["']?/);
+      if (match && match[1] && match[1].trim()) {
+        return match[1].trim();
+      }
+    }
+  } catch (e) {}
+  return process.env.GEMINI_API_KEY || "";
+}
 
 function getClient() {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = getApiKey();
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY is not set. Add it to your .env file.");
   }

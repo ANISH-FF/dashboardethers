@@ -1,10 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
+import fs from "fs";
+import path from "path";
+
+function getGeminiApiKey(): string {
+  try {
+    const envPath = path.join(process.cwd(), ".env");
+    if (fs.existsSync(envPath)) {
+      const content = fs.readFileSync(envPath, "utf-8");
+      const match = content.match(/GEMINI_API_KEY\s*=\s*["']?([^"'\r\n]+)["']?/);
+      if (match && match[1] && match[1].trim()) {
+        return match[1].trim();
+      }
+    }
+  } catch (e) {}
+  return process.env.GEMINI_API_KEY || "";
+}
 
 export async function POST(req: NextRequest) {
   try {
     const { imageBase64, mediaType, rawText, customPrompt } = await req.json();
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = getGeminiApiKey();
     if (!apiKey) throw new Error("Missing GEMINI_API_KEY");
 
     let prompt = `You are a world-class AI menu extraction engine. Extract ALL menu items from this document / image / spreadsheet with 100% precision. Return ONLY valid JSON (no markdown, no explanation):
