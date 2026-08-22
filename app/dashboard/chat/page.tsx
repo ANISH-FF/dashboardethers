@@ -66,10 +66,13 @@ export default function TeamChatPage() {
   const [newChanDesc, setNewChanDesc] = useState("");
   const [chanError, setChanError] = useState<string | null>(null);
 
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   };
 
   const fetchChatState = async () => {
@@ -354,7 +357,7 @@ export default function TeamChatPage() {
         </div>
 
         {/* Messages Feed */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4 no-scrollbar">
+        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4 no-scrollbar">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-8">
               <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white/30 mb-3">

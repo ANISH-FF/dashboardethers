@@ -501,7 +501,7 @@ export default function PictureAutomationClient({ userId }: { userId: string }) 
       {/* 1. INPUT / SETUP VIEW                                            */}
       {/* ════════════════════════════════════════════════════════════════ */}
       {viewState === "input" && (
-        <div style={{ minHeight: "calc(100vh - 4rem)", padding: "1.5rem 1rem", background: "var(--bg-primary)", display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <div style={{ minHeight: "calc(100vh - 4rem)", padding: "1.5rem 1rem 3rem 1rem", background: "var(--bg-primary)", display: "flex", flexDirection: "column", alignItems: "center" }}>
           
           <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
             <div style={{ width: 56, height: 56, borderRadius: 16, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 0.85rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--border)" }}>
