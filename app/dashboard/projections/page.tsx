@@ -426,32 +426,10 @@ export default function ProjectionsPage() {
       const next = [...prev];
       const current = next[index];
 
-      const newM2o = patch.m2o !== undefined ? patch.m2o : current.m2o;
-      const newMenuOpens = patch.menuOpens !== undefined ? patch.menuOpens : current.menuOpens;
-      const newAov = patch.aov !== undefined ? patch.aov : current.aov;
-
-      let newOrders = current.orders;
-      if (patch.m2o !== undefined || patch.menuOpens !== undefined) {
-        newOrders = Math.round(newMenuOpens * newM2o);
-      } else if (patch.orders !== undefined) {
-        newOrders = patch.orders;
-      }
-
-      let newSubTotal = current.subTotal;
-      if (patch.m2o !== undefined || patch.menuOpens !== undefined || patch.aov !== undefined) {
-        newSubTotal = Math.round(newOrders * newAov);
-      } else if (patch.subTotal !== undefined) {
-        newSubTotal = patch.subTotal;
-      }
-
       const updatedPartial: Partial<MonthData> = {
         ...current,
         ...patch,
-        m2o: newM2o,
-        menuOpens: newMenuOpens,
-        aov: newAov,
-        orders: newOrders,
-        subTotal: newSubTotal,
+        isProjection: false,
       };
 
       next[index] = calculateMonthMetrics(updatedPartial);
@@ -681,50 +659,24 @@ export default function ProjectionsPage() {
 
     const updatedHistorical = historicalMonths.map((m, idx) => {
       const card = monthCardStatus[idx];
-      const m2oDecimal = card.m2oPct / 100;
       const monthName = historical[idx]?.name || m?.name || `Month - ${3 - idx}`;
 
-      let orders = Math.round(card.menuOpens * m2oDecimal);
-      let subTotal = Math.round(orders * card.aov);
-      let packagingCharges = Math.round(orders * 15);
-      let merchantDiscountBurn = 0;
-      let commissionableValue = subTotal + packagingCharges - merchantDiscountBurn;
-      let advertisement = Math.round(commissionableValue * 0.15);
-      let commissionPgGst = Math.round(commissionableValue * 0.28);
-      let netPayout = commissionableValue - advertisement - commissionPgGst;
-
       if (card.data) {
-        orders = card.data.orders || orders;
-        subTotal = card.data.subTotal || subTotal;
-        packagingCharges = card.data.packagingCharges !== undefined ? card.data.packagingCharges : packagingCharges;
-        merchantDiscountBurn = card.data.merchantDiscountBurn !== undefined ? card.data.merchantDiscountBurn : merchantDiscountBurn;
-        commissionPgGst = card.data.commissionPgGst !== undefined ? card.data.commissionPgGst : commissionPgGst;
-        advertisement = card.data.advertisement !== undefined ? card.data.advertisement : advertisement;
-        netPayout = card.data.netPayout !== undefined ? card.data.netPayout : netPayout;
+        return calculateMonthMetrics({
+          ...card.data,
+          name: monthName,
+          isProjection: false,
+          m2o: card.m2oPct / 100,
+          menuOpens: card.menuOpens,
+          aov: card.aov,
+        });
       }
 
-      let computedMenuOpens = card.menuOpens;
-      if (orders > 0 && m2oDecimal > 0) {
-        computedMenuOpens = Math.round(orders / m2oDecimal);
-      }
-
-      const mergedPartial: Partial<MonthData> = {
+      return calculateMonthMetrics({
+        ...m,
         name: monthName,
         isProjection: false,
-        m2o: m2oDecimal,
-        menuOpens: computedMenuOpens,
-        orders,
-        subTotal,
-        aov: card.aov,
-        packagingCharges,
-        merchantDiscountBurn,
-        commissionableValue,
-        advertisement,
-        commissionPgGst,
-        netPayout,
-      };
-
-      return calculateMonthMetrics(mergedPartial);
+      });
     });
 
     setHistoricalMonths(updatedHistorical);

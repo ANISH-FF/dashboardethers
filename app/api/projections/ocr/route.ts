@@ -94,14 +94,16 @@ Respond ONLY with a JSON object containing these exact keys (use 0 if a field is
   "discount": number,
   "commissionable_value": number,
   "ads": number,
-  "commission_and_fees": number,
+  "order_level_deduction": number,
+  "gst_on_service_fees": number,
   "net_payout": number
 }
 Rules:
 - Read numbers strictly as shown on the screen.
 - "commissionable_value": read strictly from "Net order value (A)" on Zomato screenshot (e.g. 63905.53), else item subtotal + packaging charges - discount.
 - "discount": sum of promo discounts, flat offs, Gold discounts.
-- "commission_and_fees": read strictly from "Order level deductions (C)" header on Zomato screenshot (e.g. 16580.86), else sum of base service fee, payment mechanism fee, long distance enablement fee.
+- "order_level_deduction": read strictly from "Order level deductions (C)" header on Zomato screenshot (e.g. 61777.20).
+- "gst_on_service_fees": read strictly from "GST on service & platform fees" / "GST on Order level deductions (18%)" (e.g. 11119.83). If not explicitly listed, calculate as 18% of order_level_deduction.
 - "ads": advertisement / ad spend amount if shown, else 0.`;
 
       const raw = await extractJsonWithGemini(prompt, b64List);
@@ -117,7 +119,11 @@ Rules:
         0
       );
       const ads = Number(raw.ads || 0);
-      const commissionPgGst = Number(raw.commission_and_fees || 0);
+      const orderLevelDeduction = Number(raw.order_level_deduction || raw.commission_and_fees || 0);
+      const gstOnServiceFees = Number(
+        raw.gst_on_service_fees || (orderLevelDeduction > 0 ? orderLevelDeduction * 0.18 : 0)
+      );
+      const commissionPgGst = Math.round(orderLevelDeduction + gstOnServiceFees);
       const netPayout = Number(raw.net_payout || (commissionableValue - ads - commissionPgGst));
 
       const effectiveDiscountPct = subTotal > 0 ? Number((discount / subTotal).toFixed(4)) : 0.05;
