@@ -4,16 +4,21 @@ import { useEffect, useState, useCallback } from "react";
 import type { MenuItem } from "@/lib/db";
 
 type Toast = { type: "success" | "error"; message: string };
+type BatchProgress = { done: number; total: number; label: string } | null;
+
+const BATCH_SIZE = 25;
 
 export default function MenuAutomationPage() {
   const [items, setItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
+  const [batchProgress, setBatchProgress] = useState<BatchProgress>(null);
   const [onlineHike, setOnlineHike] = useState(15);
   const [halfPortionPct, setHalfPortionPct] = useState(60);
   const [history, setHistory] = useState<MenuItem[][]>([]);
   const [future, setFuture] = useState<MenuItem[][]>([]);
+
 
   const showToast = (t: Toast) => {
     setToast(t);
@@ -130,19 +135,62 @@ export default function MenuAutomationPage() {
     showToast({ type: "success", message: "Online & half-portion prices updated." });
   }
 
-  async function runAI(action: "ai-subcategories" | "ai-descriptions" | "ai-addons", label: string) {
+  async function runAIBatched(action: "ai-subcategories" | "ai-descriptions" | "ai-addons", label: string) {
     setBusy(action);
+    setBatchProgress(null);
+    pushHistory();
+
     try {
-      const res = await fetch(`/api/menu/${action}`, { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      pushHistory();
-      setItems(data.items);
-      showToast({ type: "success", message: `${label} complete.` });
+      let startIndex = 0;
+      let latestItems: MenuItem[] = items;
+      let done = false;
+
+      // First call to find out how many items need processing
+      const firstRes = await fetch(`/api/menu/${action}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ startIndex: 0, batchSize: BATCH_SIZE }),
+      });
+      const firstData = await firstRes.json();
+      if (!firstRes.ok) throw new Error(firstData.error);
+
+      latestItems = firstData.items || latestItems;
+      setItems(latestItems);
+
+      const totalMissing: number = firstData.totalMissing ?? latestItems.length;
+      done = firstData.done ?? true;
+      startIndex += BATCH_SIZE;
+
+      setBatchProgress({ done: Math.min(BATCH_SIZE, totalMissing), total: totalMissing, label });
+
+      // Continue remaining batches
+      while (!done) {
+        const res = await fetch(`/api/menu/${action}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ startIndex, batchSize: BATCH_SIZE }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        latestItems = data.items || latestItems;
+        setItems(latestItems);
+        done = data.done ?? true;
+        startIndex += BATCH_SIZE;
+
+        setBatchProgress({
+          done: Math.min(startIndex, totalMissing),
+          total: totalMissing,
+          label,
+        });
+      }
+
+      showToast({ type: "success", message: `${label} complete — ${totalMissing} item(s) processed!` });
     } catch (e: any) {
       showToast({ type: "error", message: e.message || `${label} failed.` });
     } finally {
       setBusy(null);
+      setBatchProgress(null);
     }
   }
 
@@ -203,21 +251,21 @@ export default function MenuAutomationPage() {
       <div className="card flex flex-wrap items-end gap-4">
         <button
           className="btn-primary"
-          onClick={() => runAI("ai-subcategories", "AI sub-categories")}
+          onClick={() => runAIBatched("ai-subcategories", "AI sub-categories")}
           disabled={busy !== null}
         >
           {busy === "ai-subcategories" ? "Working…" : "✨ AI Sub-Categories"}
         </button>
         <button
           className="btn-primary"
-          onClick={() => runAI("ai-descriptions", "AI descriptions")}
+          onClick={() => runAIBatched("ai-descriptions", "AI descriptions")}
           disabled={busy !== null}
         >
           {busy === "ai-descriptions" ? "Working…" : "✨ AI Descriptions"}
         </button>
         <button
           className="btn-primary"
-          onClick={() => runAI("ai-addons", "AI add-ons")}
+          onClick={() => runAIBatched("ai-addons", "AI add-ons")}
           disabled={busy !== null}
         >
           {busy === "ai-addons" ? "Working…" : "✨ AI Add-ons"}
@@ -247,6 +295,29 @@ export default function MenuAutomationPage() {
           </button>
         </div>
       </div>
+
+      {/* Live Batch Progress Bar */}
+      {batchProgress && (
+        <div className="card space-y-2 py-3">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium text-ink/70">
+              ✨ {batchProgress.label} — processing in batches…
+            </span>
+            <span className="text-xs text-ink/40">
+              {batchProgress.done} / {batchProgress.total} items done
+            </span>
+          </div>
+          <div className="h-2 w-full rounded-full bg-ink/10 overflow-hidden">
+            <div
+              className="h-2 rounded-full bg-accent transition-all duration-500"
+              style={{ width: `${Math.round((batchProgress.done / batchProgress.total) * 100)}%` }}
+            />
+          </div>
+          <p className="text-xs text-ink/40">
+            Saving progress after every {BATCH_SIZE} items — you can safely wait.
+          </p>
+        </div>
+      )}
 
       <div className="card overflow-x-auto p-0">
         {loading ? (

@@ -1,13 +1,25 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getMenuItems, saveMenuItems } from "@/lib/db";
 import { callGeminiJSON } from "@/lib/ai/gemini";
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   try {
+    const body = await req.json().catch(() => ({}));
+    const startIndex: number = body.startIndex ?? 0;
+    const batchSize: number = body.batchSize ?? 25;
+
     const items = getMenuItems();
     const missing = items.filter((i) => !i.description || i.description.trim() === "");
+
     if (missing.length === 0) {
-      return NextResponse.json({ items, message: "Every item already has a description." });
+      return NextResponse.json({ items, done: true, message: "Every item already has a description." });
+    }
+
+    const batch = missing.slice(startIndex, startIndex + batchSize);
+    const done = startIndex + batchSize >= missing.length;
+
+    if (batch.length === 0) {
+      return NextResponse.json({ items, done: true, processedCount: 0, totalMissing: missing.length });
     }
 
     const prompt = `Write short, appetizing menu descriptions (max 18 words each) for
@@ -15,7 +27,7 @@ these restaurant dishes. Respond ONLY with a JSON array like:
 [{"id": "...", "description": "..."}]
 
 Items:
-${JSON.stringify(missing.map((i) => ({ id: i.id, name: i.name, category: i.category, diet: i.diet })))}`;
+${JSON.stringify(batch.map((i) => ({ id: i.id, name: i.name, category: i.category, diet: i.diet })))}`;
 
     const result = await callGeminiJSON<{ id: string; description: string }[]>(prompt);
 
@@ -26,13 +38,18 @@ ${JSON.stringify(missing.map((i) => ({ id: i.id, name: i.name, category: i.categ
             ...item,
             description: map.get(item.id),
             aiFields: Array.from(new Set([...(item.aiFields ?? []), "description"])),
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
           }
         : item
     );
     saveMenuItems(updated);
 
-    return NextResponse.json({ items: updated });
+    return NextResponse.json({
+      items: updated,
+      done,
+      processedCount: batch.length,
+      totalMissing: missing.length,
+    });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "AI description generation failed." }, { status: 500 });
   }

@@ -165,6 +165,54 @@ export const DEFAULT_PROJECTION_DATA: ProjectionBrandState = {
 
 // Calculate projection metrics from inputs
 export function calculateMonthMetrics(month: Partial<MonthData>): MonthData {
+  const isProjection = !!month.isProjection;
+
+  // 1) HISTORICAL BASELINE MONTHS (isProjection === false):
+  //    Keep RAW FACTUAL DATA as-is without applying projection override formulas!
+  if (!isProjection) {
+    const orders = Number(month.orders || 0);
+    const subTotal = Number(month.subTotal || 0);
+    const aov = month.aov !== undefined && month.aov !== 0 ? month.aov : (orders > 0 ? Math.round(subTotal / orders) : 0);
+    const packagingCharges = Number(month.packagingCharges || 0);
+    const subTotalWithPkg = month.subTotalWithPkg !== undefined ? month.subTotalWithPkg : (subTotal + packagingCharges);
+    const merchantDiscountBurn = Number(month.merchantDiscountBurn || 0);
+    const effectiveDiscountPct = subTotalWithPkg > 0 ? Number((merchantDiscountBurn / subTotalWithPkg).toFixed(4)) : (month.effectiveDiscountPct || 0);
+    const commissionableValue = month.commissionableValue !== undefined ? month.commissionableValue : (subTotalWithPkg - merchantDiscountBurn);
+    const advertisement = Number(month.advertisement || 0);
+    const advertisementPct = commissionableValue > 0 ? Number((advertisement / commissionableValue).toFixed(4)) : (month.advertisementPct || 0);
+    const commissionPgGst = Number(month.commissionPgGst || 0);
+    const commissionPct = commissionableValue > 0 ? Number((commissionPgGst / commissionableValue).toFixed(4)) : (month.commissionPct || 0);
+    const netPayout = Number(month.netPayout !== undefined ? month.netPayout : (commissionableValue - advertisement - commissionPgGst));
+    const payoutPct = subTotal > 0 ? Number(((netPayout / subTotal) * 100).toFixed(2)) : 0;
+    const burnPct = Number((100 - payoutPct).toFixed(2));
+    const m2o = month.m2o !== undefined ? month.m2o : 0.07;
+    const menuOpens = month.menuOpens !== undefined && month.menuOpens !== 0 ? month.menuOpens : (orders > 0 && m2o > 0 ? Math.round(orders / m2o) : 0);
+
+    return {
+      name: month.name || "Month",
+      isProjection: false,
+      orders,
+      subTotal,
+      aov,
+      packagingCharges,
+      subTotalWithPkg,
+      merchantDiscountBurn,
+      effectiveDiscountPct,
+      commissionableValue,
+      advertisement,
+      advertisementPct,
+      commissionPgGst,
+      commissionPct,
+      netPayout,
+      payoutPct,
+      burnPct,
+      m2o,
+      menuOpens,
+    };
+  }
+
+  // 2) FORWARD 3 PROJECTED MONTHS (isProjection === true):
+  //    Apply Dynamic Projection Modeler Formulas
   const m2o = month.m2o !== undefined && month.m2o !== null ? month.m2o : 0.08;
   const menuOpens = month.menuOpens !== undefined && month.menuOpens !== null
     ? month.menuOpens
@@ -223,7 +271,7 @@ export function calculateMonthMetrics(month: Partial<MonthData>): MonthData {
 
   return {
     name: month.name || "Month",
-    isProjection: !!month.isProjection,
+    isProjection: true,
     orders,
     subTotal,
     aov,

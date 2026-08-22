@@ -165,7 +165,8 @@ export default function ReportingPage() {
   }
 
   async function handleExportExcel() {
-    window.open("/api/reporting/export", "_blank");
+    const brandParam = activeBrand?.id ? `?brandId=${encodeURIComponent(activeBrand.id)}` : "";
+    window.open(`/api/reporting/export${brandParam}`, "_blank");
   }
 
   function formatCurrency(val: number) {
