@@ -81,11 +81,13 @@ export type DiscrepancyRecord = {
 // --- Menu ---------------------------------------------------------------
 
 export function getMenuItems(): MenuItem[] {
-  return readJSON<MenuItem[]>("menu.json", []);
+  const items = readJSON<MenuItem[]>("menu.json", []);
+  return items.filter((i) => i && i.name && typeof i.name === "string" && i.name.trim().length > 0);
 }
 
 export function saveMenuItems(items: MenuItem[]) {
-  writeJSON("menu.json", items);
+  const cleanItems = items.filter((i) => i && i.name && typeof i.name === "string" && i.name.trim().length > 0);
+  writeJSON("menu.json", cleanItems);
 }
 
 export function createMenuItem(partial: Partial<MenuItem>): MenuItem {
