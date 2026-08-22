@@ -24,7 +24,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
               <div className="flex flex-1 flex-col overflow-hidden bg-paper-dark">
                 <TopBar restaurantName={settings.restaurantName} userName={session?.name} role={role} />
                 <main className="flex-1 overflow-y-auto p-4 md:p-6 no-scrollbar relative">
-                  <div className="w-full">
+                  <div className="w-full max-w-full overflow-x-hidden">
                     {children}
                     <WatermarkFooter />
                   </div>
