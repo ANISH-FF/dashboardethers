@@ -92,8 +92,10 @@ Respond ONLY with a JSON object containing these exact keys (use 0 if a field is
   "sub_total": number,
   "packaging_charges": number,
   "discount": number,
+  "delivery_charge_discount": number,
   "commissionable_value": number,
   "ads": number,
+  "hyperpure": number,
   "order_level_deduction": number,
   "gst_on_service_fees": number,
   "net_payout": number
@@ -101,7 +103,9 @@ Respond ONLY with a JSON object containing these exact keys (use 0 if a field is
 Rules:
 - Read numbers strictly as shown on the screen.
 - "commissionable_value": read strictly from "Net order value (A)" on Zomato screenshot (e.g. 63905.53), else item subtotal + packaging charges - discount.
-- "discount": sum of promo discounts, flat offs, Gold discounts.
+- "discount": sum of promo discounts, flat offs, Gold discounts, freebies, relisted order discounts, and merchant discounts.
+- "delivery_charge_discount": read strictly from "Delivery charge discount" line if present (e.g. 200.25), else 0.
+- "hyperpure": read B2B raw material procurement deduction / Hyperpure deduction if present, else 0.
 - "order_level_deduction": read strictly from "Order level deductions (C)" header on Zomato screenshot (e.g. 61777.20).
 - "gst_on_service_fees": read strictly from "GST on service & platform fees" / "GST on Order level deductions (18%)" (e.g. 11119.83). If not explicitly listed, calculate as 18% of order_level_deduction.
 - "ads": advertisement / ad spend amount if shown, else 0.`;
@@ -111,7 +115,11 @@ Rules:
       const orders = Number(raw.total_orders || 0);
       const subTotal = Number(raw.sub_total || 0);
       const packagingCharges = Number(raw.packaging_charges || 0);
-      const discount = Number(raw.discount || 0);
+      const baseDiscount = Number(raw.discount || 0);
+      const deliveryChargeDiscount = Number(raw.delivery_charge_discount || 0);
+      const discount = baseDiscount + deliveryChargeDiscount;
+      const hyperpure = Math.abs(Number(raw.hyperpure || 0));
+
       const commissionableValue = Number(
         raw.commissionable_value ||
         raw.net_order_value ||
@@ -124,7 +132,8 @@ Rules:
         raw.gst_on_service_fees || (orderLevelDeduction > 0 ? orderLevelDeduction * 0.18 : 0)
       );
       const commissionPgGst = Math.round(orderLevelDeduction + gstOnServiceFees);
-      const netPayout = Number(raw.net_payout || (commissionableValue - ads - commissionPgGst));
+      const rawNetPayout = Number(raw.net_payout || (commissionableValue - ads - commissionPgGst));
+      const netPayout = rawNetPayout + hyperpure;
 
       const effectiveDiscountPct = subTotal > 0 ? Number((discount / subTotal).toFixed(4)) : 0.05;
       const advertisementPct = commissionableValue > 0 ? Number((ads / commissionableValue).toFixed(4)) : 0.15;
