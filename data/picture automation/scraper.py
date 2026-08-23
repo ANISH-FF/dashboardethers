@@ -114,14 +114,26 @@ def _fast_http_cdn_search(food_name, out_dir, count, platform="zomato", log_fn=N
     saved = []
     seen = set()
 
-    # Block non-food keywords in image URLs and titles (prevents wall/floor/interior/pet images)
+    # Block non-food keywords in image URLs and titles (prevents wall/floor/interior/pet/highway/actor images)
     bad_keywords = {
         'cat', 'dog', 'pet', 'certificate', 'award', 'temple', 'travel',
         'map', 'tower', 'town', 'switzerland', 'vietnam', 'breed', 'kitten',
         'tourism', 'hotel-stay', 'landmark', 'monument', 'scenery', 'landscape',
         'floor', 'wall', 'room', 'interior', 'furniture', 'building', 'architecture',
         'wallpaper', 'curtain', 'couch', 'chair', 'house', 'tile', 'bedroom', 'livingroom',
-        'bathroom', 'kitchen-sink', 'lobby', 'hallway', 'decor'
+        'bathroom', 'kitchen-sink', 'lobby', 'hallway', 'decor',
+        'highway', 'japan', 'traffic', 'signboard', 'speed limit', 'expressway',
+        'actor', 'portrait', 'politician', 'news-interview', 'model-agency'
+    }
+
+    # Extract food tokens for strict title relevance check
+    raw_tokens = [w.lower() for w in re.findall(r'\w+', food_name) if len(w) > 2]
+    food_meta_tokens = {
+        "food", "dish", "recipe", "cuisine", "restaurant", "menu", "plate", "curry", "masala",
+        "biryani", "chicken", "paneer", "tikka", "kebab", "naan", "rice", "gravy", "roti",
+        "roll", "burger", "pizza", "momos", "pasta", "chowmein", "noodle", "dosa", "idli",
+        "samosa", "paratha", "dal", "shake", "lassi", "icecream", "cake", "pastry", "waffle",
+        "dessert"
     }
 
     # Cap count strictly at 10 per item to respect rate limits & quality
@@ -134,9 +146,10 @@ def _fast_http_cdn_search(food_name, out_dir, count, platform="zomato", log_fn=N
     ]
 
     if log_fn:
-        log_fn(f"  [Photo Engine] Searching '{food_name_clean}' photos...")
+        log_fn(f"  [Photo Engine] Searching '{food_name_clean}' photos with Strict Title Filter...")
 
     import time
+    import json
 
     for query in queries:
         if len(saved) >= target_count:
@@ -146,16 +159,41 @@ def _fast_http_cdn_search(food_name, out_dir, count, platform="zomato", log_fn=N
             headers = get_stealth_headers()
             r = requests.get(url, headers=headers, timeout=8)
             if r.status_code == 200:
-                murls = re.findall(r'murl&quot;:&quot;(https?://[^&]+)&quot;', r.text)
-                for img_url in murls:
+                # Parse structured JSON items to inspect Title (t) and Page URL (purl)
+                matches = re.findall(r'(?:m=)?(?:&quot;|")?\{[^}]*?murl[^}]*?\}(?:&quot;|")?', r.text)
+
+                murls_with_title = []
+                if matches:
+                    for raw in matches:
+                        try:
+                            clean_json = raw.replace('m=', '').strip('"').strip("'").replace('&quot;', '"')
+                            obj = json.loads(clean_json)
+                            img_url = obj.get("murl", "")
+                            title = str(obj.get("t", "")).lower()
+                            purl = str(obj.get("purl", "")).lower()
+                            u_lower = img_url.lower()
+
+                            combined_context = f"{u_lower} {title} {purl}"
+
+                            # 1. Reject if any bad non-food keyword exists in context
+                            if any(bad in combined_context for bad in bad_keywords):
+                                continue
+
+                            # 2. STRICT TITLE RELEVANCE: Title/URL MUST contain dish token or food meta token
+                            is_relevant = any(tok in combined_context for tok in raw_tokens) or any(tok in combined_context for tok in food_meta_tokens)
+                            if not is_relevant:
+                                continue
+
+                            murls_with_title.append(img_url)
+                        except Exception:
+                            pass
+                else:
+                    murls_with_title = re.findall(r'murl&quot;:&quot;(https?://[^&]+)&quot;', r.text)
+
+                for img_url in murls_with_title:
                     if len(saved) >= target_count:
                         break
                     if not img_url or img_url in seen:
-                        continue
-
-                    # Filter out non-food keywords
-                    u_lower = img_url.lower()
-                    if any(bad in u_lower for bad in bad_keywords):
                         continue
 
                     seen.add(img_url)
@@ -172,7 +210,7 @@ def _fast_http_cdn_search(food_name, out_dir, count, platform="zomato", log_fn=N
                             f.write(img_bytes)
                         saved.append(fname)
                         if log_fn:
-                            log_fn(f"    [+] Downloaded: {fname} ({len(img_bytes)//1024} KB)")
+                            log_fn(f"    [+] Verified & Downloaded: {fname} ({len(img_bytes)//1024} KB)")
                     except Exception:
                         continue
         except Exception:
