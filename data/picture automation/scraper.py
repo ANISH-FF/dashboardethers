@@ -103,21 +103,20 @@ def _fast_http_cdn_search(food_name, out_dir, count, platform="zomato", log_fn=N
     # Cap count strictly at 10 per item to respect rate limits & quality
     target_count = min(count, 10)
 
-    # Bing Async HTTP Image Engine
+    # Simple human-like queries — Bing handles auto-correction & food relevance
     queries = [
         f"{food_name_clean} food",
+        f"{food_name_clean} recipe",
     ]
 
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
         "Referer": "https://www.bing.com/",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-IN,en-US;q=0.9,en;q=0.8",
-        "Cookie": "SRCHHPGUSR=ADLT=DEMAND&NRSL=35; _EDGE_S=F=1;"
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
     }
 
     if log_fn:
-        log_fn(f"  [Photo Engine] Searching '{food_name_clean}' food photos...")
+        log_fn(f"  [Photo Engine] Searching '{food_name_clean}' photos...")
 
     import time
 
@@ -125,7 +124,7 @@ def _fast_http_cdn_search(food_name, out_dir, count, platform="zomato", log_fn=N
         if len(saved) >= target_count:
             break
         try:
-            url = f"https://www.bing.com/images/async?q={requests.utils.quote(query)}&first=1&count=35&adlt=strict&cc=IN&setlang=en-US&mmasync=1"
+            url = f"https://www.bing.com/images/async?q={requests.utils.quote(query)}&first=1&count=35&adlt=moderate&mmasync=1"
             r = requests.get(url, headers=headers, timeout=8)
             if r.status_code == 200:
                 murls = re.findall(r'murl&quot;:&quot;(https?://[^&]+)&quot;', r.text)
