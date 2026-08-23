@@ -68,18 +68,25 @@ function extractJsonArray(text: string): any[] {
   return JSON.parse(cleaned.substring(start, end + 1));
 }
 
+const INSTRUCTION_WORDS = new Set([
+  "veg", "nonveg", "non-veg", "non", "vegetarian", "non-vegetarian",
+  "price", "prices", "online", "base", "half", "category", "subcategory",
+  "description", "variant", "variants", "addon", "addons", "delete",
+  "remove", "change", "make", "set", "update", "convert", "rename", "to", "in", "from", "for", "ko", "krdo", "is"
+]);
+
 function filterSmartItems(rawItems: any[], prompt: string): any[] {
   if (!rawItems || rawItems.length === 0) return [];
   const pLower = prompt.toLowerCase().trim();
 
-  // If prompt explicitly mentions global scope, send all items
+  // If prompt explicitly mentions global scope or broad instruction, send all items
   const isGlobal = /\b(all|entire|every|whole|menu|overall|everything|menu-wide)\b/i.test(pLower);
   if (isGlobal) return rawItems;
 
   // 1. Check if user prompt targets a specific Category
   const categories = Array.from(
     new Set(rawItems.map((i) => String(i.category || i.categoryName || "").toLowerCase()))
-  ).filter((c) => c && c.length > 2);
+  ).filter((c) => c && c.length >= 2 && !INSTRUCTION_WORDS.has(c));
 
   const matchedCat = categories.find((cat) => pLower.includes(cat));
   if (matchedCat) {
@@ -89,14 +96,15 @@ function filterSmartItems(rawItems: any[], prompt: string): any[] {
     if (categoryMatches.length > 0) return categoryMatches;
   }
 
-  // 2. Check if user prompt targets specific Dish Name(s) or Keywords
+  // 2. Check if user prompt targets specific Dish Name(s) by matching non-instruction words
   const matchedDishes = rawItems.filter((i) => {
     const dishName = String(i.name || i.itemName || "").toLowerCase();
     if (!dishName) return false;
 
     if (pLower.includes(dishName)) return true;
-    const words = dishName.split(/[\s,/-]+/).filter((w) => w.length >= 3);
-    return words.some((word) => pLower.includes(word));
+
+    const dishWords = dishName.split(/[\s,/-]+/).filter((w) => w.length >= 3 && !INSTRUCTION_WORDS.has(w));
+    return dishWords.some((word) => pLower.includes(word));
   });
 
   if (matchedDishes.length > 0 && matchedDishes.length < rawItems.length) {
@@ -122,15 +130,17 @@ export async function POST(req: NextRequest) {
     // Smartly filter items based on prompt intent (Category, Item name, or Global)
     const targetItems = filterSmartItems(rawItems, prompt);
 
-    // Lean payload compression: Strip nulls, empty strings, internal metadata
+    // Lean payload compression with explicit is_veg boolean and diet string
     const compactItems = targetItems.map((i: any) => {
+      const isVeg = i.is_veg !== undefined ? Boolean(i.is_veg) : i.diet !== "non-veg";
       const obj: any = {
         id: i.id || i._id,
         name: i.name || i.itemName || "",
         category: i.category || i.categoryName || "General",
+        is_veg: isVeg,
+        diet: isVeg ? "veg" : "non-veg",
       };
       if (i.subCategory || i.subcategory) obj.subCategory = i.subCategory || i.subcategory;
-      if (i.diet || i.is_veg !== undefined) obj.diet = i.diet || (i.is_veg ? "veg" : "non-veg");
       if (i.basePrice !== undefined || i.base_price !== undefined) obj.basePrice = Number(i.basePrice ?? i.base_price ?? 0);
       if (i.onlinePrice !== undefined || i.online_price !== undefined) obj.onlinePrice = Number(i.onlinePrice ?? i.online_price ?? 0);
       if (i.halfPortionPrice !== undefined || i.half_price !== undefined) obj.halfPortionPrice = Number(i.halfPortionPrice ?? i.half_price ?? 0);
@@ -141,8 +151,11 @@ export async function POST(req: NextRequest) {
     });
 
     const systemInstruction = `You are an expert Menu Manipulation AI. Apply the user instruction to the menu items array.
-Return ONLY a valid JSON array of items. No markdown codeblocks, no explanations, no wrappers.
-Preserve exact item 'id' values. Do not alter unrequested fields.`;
+RULES:
+1. Return ONLY a valid JSON array of items. No markdown codeblocks, no explanations, no wrappers.
+2. Preserve exact item 'id' values.
+3. For Diet / Veg status changes: Set 'is_veg': true and 'diet': "veg" for Vegetarian. Set 'is_veg': false and 'diet': "non-veg" for Non-Vegetarian.
+4. Do NOT alter unrequested fields.`;
 
     const userContent = `Instruction: ${prompt}\nItems JSON:${JSON.stringify(compactItems)}`;
 
@@ -189,16 +202,35 @@ Preserve exact item 'id' values. Do not alter unrequested fields.`;
     const updatedCompactItems: any[] = extractJsonArray(text);
     const updatedMap = new Map(updatedCompactItems.map((u) => [u.id, u]));
 
-    // Re-merge AI modifications into full original items while preserving non-modified dishes
+    // Re-merge AI modifications into full original items with explicit is_veg normalization
     const finalItems = rawItems.map((orig) => {
       const mod = updatedMap.get(orig.id);
-      return mod ? { ...orig, ...mod } : orig;
+      if (!mod) return orig;
+
+      let updatedIsVeg = orig.is_veg;
+      if (mod.is_veg !== undefined) {
+        updatedIsVeg = Boolean(mod.is_veg);
+      } else if (mod.diet !== undefined) {
+        updatedIsVeg = String(mod.diet).toLowerCase() === "veg" || mod.diet === true;
+      }
+
+      return {
+        ...orig,
+        ...mod,
+        is_veg: updatedIsVeg,
+        diet: updatedIsVeg ? "veg" : "non-veg",
+      };
     });
 
     // Also include any newly created items by AI
     updatedCompactItems.forEach((mod) => {
       if (!rawItems.some((orig) => orig.id === mod.id)) {
-        finalItems.push(mod);
+        const isVeg = mod.is_veg !== undefined ? Boolean(mod.is_veg) : mod.diet !== "non-veg";
+        finalItems.push({
+          ...mod,
+          is_veg: isVeg,
+          diet: isVeg ? "veg" : "non-veg",
+        });
       }
     });
 
