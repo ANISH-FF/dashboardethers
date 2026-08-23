@@ -405,9 +405,11 @@ class SwiggyHygieneAuditor:
 
             # Check Description
             desc = item.get('description') or item.get('desc')
+            has_d = False
             if desc and len(str(desc).strip()) > 0:
                 dishes_with_desc += 1
                 cat_entry['descs_present'] += 1
+                has_d = True
             else:
                 dishes_without_desc += 1
                 cat_entry['descs_missing'] += 1
@@ -416,9 +418,11 @@ class SwiggyHygieneAuditor:
 
             # Check Image / Photo
             img = item.get('imageId') or item.get('imageUrl') or item.get('thumb')
+            has_p = False
             if img and len(str(img).strip()) > 0:
                 dishes_with_photo += 1
                 cat_entry['photos_present'] += 1
+                has_p = True
                 img_str = str(img).lower()
                 
                 real_img_url = img
@@ -433,6 +437,13 @@ class SwiggyHygieneAuditor:
                 cat_entry['photos_missing'] += 1
                 cat_entry['photos_missing_items'].append(name)
                 missing_photos_all.append({'category': category, 'dish': name})
+
+            cat_entry.setdefault('all_dishes', []).append({
+                'dish': name,
+                'has_photo': has_p,
+                'has_desc': has_d,
+                'price': item.get('price') or item.get('defaultPrice') or 0
+            })
 
         categories_summary = list(categories_map.values())
         photo_coverage_pct = round((dishes_with_photo / total_dishes * 100), 1) if total_dishes else 0
@@ -594,6 +605,7 @@ class ZomatoHygieneAuditor:
                 c_missing_descs = []
                 c_with_photos = 0
                 c_with_descs = 0
+                c_all_dishes = []
 
                 for item_wrapper in items:
                     item = item_wrapper.get('item', {})
@@ -604,9 +616,11 @@ class ZomatoHygieneAuditor:
                     total_dishes += 1
 
                     desc = item.get('desc') or item.get('description')
+                    has_d = False
                     if desc and len(str(desc).strip()) > 0:
                         dishes_with_desc += 1
                         c_with_descs += 1
+                        has_d = True
                     else:
                         dishes_without_desc += 1
                         c_missing_descs.append(dish_name)
@@ -640,6 +654,13 @@ class ZomatoHygieneAuditor:
                         c_missing_photos.append(dish_name)
                         missing_photos_all.append({'category': c_name, 'dish': dish_name})
 
+                    c_all_dishes.append({
+                        'dish': dish_name,
+                        'has_photo': has_photo,
+                        'has_desc': has_d,
+                        'price': item.get('price') or item.get('default_price') or 0
+                    })
+
                 categories_summary.append({
                     'menu_group': m_name,
                     'category_name': c_name,
@@ -649,7 +670,8 @@ class ZomatoHygieneAuditor:
                     'photos_missing_items': c_missing_photos,
                     'descs_present': c_with_descs,
                     'descs_missing': len(c_missing_descs),
-                    'descs_missing_items': c_missing_descs
+                    'descs_missing_items': c_missing_descs,
+                    'all_dishes': c_all_dishes
                 })
 
         photo_coverage_pct = round((dishes_with_photo / total_dishes * 100), 1) if total_dishes else 0

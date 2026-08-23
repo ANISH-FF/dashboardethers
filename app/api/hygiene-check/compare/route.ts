@@ -68,7 +68,7 @@ async function ensureHygieneServerRunning() {
   }
 }
 
-// Smart dish title sanitization & phonetic normalization (laccha <-> lachha, chilly <-> chilli, biryani <-> biriyani, etc.)
+// Smart dish title sanitization & phonetic normalization
 function sanitizeDishName(name: string): string {
   if (!name) return "";
   let clean = name.toLowerCase();
@@ -88,7 +88,7 @@ function sanitizeDishName(name: string): string {
   return clean.replace(/[^a-z0-9]+/g, "");
 }
 
-// Levenshtein edit distance for close fuzzy matches (e.g. 1 character difference)
+// Levenshtein edit distance for close fuzzy matches
 function editDistance(s1: string, s2: string): number {
   const m = s1.length;
   const n = s2.length;
@@ -120,9 +120,16 @@ function isSimilarDishKey(k1: string, k2: string): boolean {
   return false;
 }
 
-function extractDishesFromAudit(auditData: any): Array<{ dish: string; category: string; hasPhoto: boolean; hasDesc: boolean }> {
-  const map = new Map<string, { dish: string; category: string; hasPhoto: boolean; hasDesc: boolean }>();
-  
+export interface DishItem {
+  dish: string;
+  category: string;
+  hasPhoto: boolean;
+  hasDesc: boolean;
+  price?: number;
+}
+
+function extractDishesFromAudit(auditData: any): DishItem[] {
+  const map = new Map<string, DishItem>();
   if (!auditData) return [];
 
   const missingPhotosSet = new Set<string>();
@@ -130,75 +137,116 @@ function extractDishesFromAudit(auditData: any): Array<{ dish: string; category:
 
   (auditData.missing_photos_all || []).forEach((item: any) => {
     const dName = typeof item === "string" ? item : item?.dish;
-    if (dName) missingPhotosSet.add(dName.trim());
+    if (dName) missingPhotosSet.add(dName.trim().toLowerCase());
   });
 
   (auditData.missing_descs_all || []).forEach((item: any) => {
     const dName = typeof item === "string" ? item : item?.dish;
-    if (dName) missingDescsSet.add(dName.trim());
+    if (dName) missingDescsSet.add(dName.trim().toLowerCase());
   });
 
+  // 1. Process structured categories with all_dishes
+  (auditData.categories || auditData.categories_summary || []).forEach((cat: any) => {
+    const catName = (cat.category_name || cat.menu_group || cat.category || "General").trim();
+    
+    (cat.all_dishes || []).forEach((d: any) => {
+      const dName = typeof d === "string" ? d : (d?.dish || d?.name);
+      if (dName && dName.trim()) {
+        const trimmed = dName.trim();
+        const key = trimmed.toLowerCase();
+        if (!map.has(key)) {
+          map.set(key, {
+            dish: trimmed,
+            category: catName,
+            hasPhoto: typeof d === "object" && d.has_photo !== undefined ? !!d.has_photo : !missingPhotosSet.has(key),
+            hasDesc: typeof d === "object" && d.has_desc !== undefined ? !!d.has_desc : !missingDescsSet.has(key),
+            price: typeof d === "object" ? d.price : 0
+          });
+        }
+      }
+    });
+
+    (cat.photos_missing_items || []).forEach((dName: string) => {
+      if (dName && dName.trim()) {
+        const trimmed = dName.trim();
+        const key = trimmed.toLowerCase();
+        if (!map.has(key)) {
+          map.set(key, {
+            dish: trimmed,
+            category: catName,
+            hasPhoto: false,
+            hasDesc: !missingDescsSet.has(key),
+          });
+        }
+      }
+    });
+
+    (cat.descs_missing_items || []).forEach((dName: string) => {
+      if (dName && dName.trim()) {
+        const trimmed = dName.trim();
+        const key = trimmed.toLowerCase();
+        if (!map.has(key)) {
+          map.set(key, {
+            dish: trimmed,
+            category: catName,
+            hasPhoto: !missingPhotosSet.has(key),
+            hasDesc: false,
+          });
+        }
+      }
+    });
+  });
+
+  // 2. Process missing_photos_all / missing_descs_all
   (auditData.missing_photos_all || []).forEach((item: any) => {
     const dName = typeof item === "string" ? item : item?.dish;
-    const catName = typeof item === "string" ? "General" : (item?.category || "General");
-    if (dName && !map.has(dName)) {
-      map.set(dName, {
-        dish: dName,
-        category: catName,
-        hasPhoto: false,
-        hasDesc: !missingDescsSet.has(dName)
-      });
+    const catName = typeof item === "string" ? "General" : (item?.category || "General").trim();
+    if (dName && dName.trim()) {
+      const trimmed = dName.trim();
+      const key = trimmed.toLowerCase();
+      if (!map.has(key)) {
+        map.set(key, {
+          dish: trimmed,
+          category: catName,
+          hasPhoto: false,
+          hasDesc: !missingDescsSet.has(key),
+        });
+      }
     }
   });
 
   (auditData.missing_descs_all || []).forEach((item: any) => {
     const dName = typeof item === "string" ? item : item?.dish;
-    const catName = typeof item === "string" ? "General" : (item?.category || "General");
-    if (dName && !map.has(dName)) {
-      map.set(dName, {
-        dish: dName,
-        category: catName,
-        hasPhoto: !missingPhotosSet.has(dName),
-        hasDesc: false
-      });
+    const catName = typeof item === "string" ? "General" : (item?.category || "General").trim();
+    if (dName && dName.trim()) {
+      const trimmed = dName.trim();
+      const key = trimmed.toLowerCase();
+      if (!map.has(key)) {
+        map.set(key, {
+          dish: trimmed,
+          category: catName,
+          hasPhoto: !missingPhotosSet.has(key),
+          hasDesc: false,
+        });
+      }
     }
   });
 
-  (auditData.categories || []).forEach((cat: any) => {
-    const catName = cat.menu_group || cat.category_name || "General";
-    
-    (cat.photos_missing_items || []).forEach((dish: string) => {
-      if (dish && !map.has(dish)) {
-        map.set(dish, {
-          dish,
-          category: catName,
-          hasPhoto: false,
-          hasDesc: !missingDescsSet.has(dish)
-        });
-      }
-    });
-
-    (cat.descs_missing_items || []).forEach((dish: string) => {
-      if (dish && !map.has(dish)) {
-        map.set(dish, {
-          dish,
-          category: catName,
-          hasPhoto: !missingPhotosSet.has(dish),
-          hasDesc: false
-        });
-      }
-    });
-  });
-
+  // 3. Fallback: all_items_with_photos
   (auditData.all_items_with_photos || []).forEach((item: any) => {
     const dName = typeof item === "string" ? item : item?.dish;
-    if (dName && !map.has(dName)) {
-      map.set(dName, {
-        dish: dName,
-        category: "Main Menu",
-        hasPhoto: true,
-        hasDesc: !missingDescsSet.has(dName)
-      });
+    const catName = typeof item === "string" ? "General" : (item?.category || "General").trim();
+    if (dName && dName.trim()) {
+      const trimmed = dName.trim();
+      const key = trimmed.toLowerCase();
+      if (!map.has(key)) {
+        map.set(key, {
+          dish: trimmed,
+          category: catName,
+          hasPhoto: true,
+          hasDesc: !missingDescsSet.has(key),
+        });
+      }
     }
   });
 
@@ -218,41 +266,18 @@ async function fetchSingleAudit(targetUrl: string): Promise<any> {
       body: JSON.stringify({ url: targetUrl }),
       signal: controller.signal,
     });
+
     clearTimeout(timeoutId);
 
-    if (pyRes.ok) {
-      const pyData = await pyRes.json();
-      if (pyData && pyData.scorecard) {
-        return pyData;
-      }
+    if (!pyRes.ok) {
+      throw new Error(`Python audit server failed with status ${pyRes.status}`);
     }
+
+    return await pyRes.json();
   } catch (err: any) {
-    console.warn(`[Dual Hygiene Proxy] Python server 8000 audit failed for ${targetUrl}: ${err.message}`);
+    console.warn(`[HygieneCompare] Python audit engine failed for ${targetUrl}:`, err?.message || err);
+    throw err;
   }
-
-  // Basic fallback structure if audit server unreachable
-  const isSwiggy = targetUrl.toLowerCase().includes("swiggy");
-  const platform = isSwiggy ? "Swiggy" : "Zomato";
-  const restaurantName = extractRestaurantNameFromUrl(targetUrl);
-
-  return {
-    platform,
-    restaurant_name: restaurantName,
-    url: targetUrl,
-    scorecard: {
-      overall_score: isSwiggy ? 73 : 72,
-      total_dishes: isSwiggy ? 138 : 127,
-      dishes_with_photos: 87,
-      dishes_missing_photos: isSwiggy ? 51 : 40,
-      photo_coverage_pct: isSwiggy ? 63.0 : 68.5,
-      dishes_with_descs: isSwiggy ? 115 : 94,
-      dishes_missing_descs: isSwiggy ? 23 : 33,
-      desc_coverage_pct: isSwiggy ? 83.3 : 74.0,
-    },
-    categories: [],
-    missing_photos_all: [],
-    missing_descs_all: []
-  };
 }
 
 export async function POST(req: NextRequest) {
@@ -261,120 +286,132 @@ export async function POST(req: NextRequest) {
     const { zomatoUrl, swiggyUrl } = body;
 
     if (!zomatoUrl || !swiggyUrl) {
-      return NextResponse.json({ error: "Both Zomato and Swiggy URLs are required for comparison" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Both zomatoUrl and swiggyUrl are required." },
+        { status: 400 }
+      );
     }
 
-    // Execute real single hygiene audit for Zomato and Swiggy URLs concurrently
-    const [zomatoAudit, swiggyAudit] = await Promise.all([
+    console.log(`[HygieneCompare] Starting Dual Audit: Zomato=${zomatoUrl}, Swiggy=${swiggyUrl}`);
+
+    // Fetch both audits concurrently
+    const [zomatoAuditRes, swiggyAuditRes] = await Promise.allSettled([
       fetchSingleAudit(zomatoUrl),
-      fetchSingleAudit(swiggyUrl)
+      fetchSingleAudit(swiggyUrl),
     ]);
 
-    const restaurantName = zomatoAudit.restaurant_name && zomatoAudit.restaurant_name !== "Novelty Multicuisine Restaurant"
-      ? zomatoAudit.restaurant_name
-      : swiggyAudit.restaurant_name && swiggyAudit.restaurant_name !== "Novelty Multicuisine Restaurant"
-      ? swiggyAudit.restaurant_name
-      : extractRestaurantNameFromUrl(swiggyUrl, zomatoUrl);
+    const zomatoAudit = zomatoAuditRes.status === "fulfilled" ? zomatoAuditRes.value : null;
+    const swiggyAudit = swiggyAuditRes.status === "fulfilled" ? swiggyAuditRes.value : null;
 
-    // Extract live scorecards
-    const zomatoScorecard = {
-      overall_score: Number(zomatoAudit.scorecard?.overall_score ?? zomatoAudit.scorecard?.overall_hygiene_score ?? 72),
-      total_dishes: Number(zomatoAudit.scorecard?.total_dishes ?? zomatoAudit.scorecard?.total_dishes_audited ?? 127),
-      dishes_with_photos: Number(zomatoAudit.scorecard?.dishes_with_photos ?? 87),
-      dishes_missing_photos: Number(zomatoAudit.scorecard?.dishes_missing_photos ?? 40),
-      photo_coverage_pct: Number(zomatoAudit.scorecard?.photo_coverage_pct ?? 68.5),
-      dishes_with_descs: Number(zomatoAudit.scorecard?.dishes_with_descs ?? 94),
-      dishes_missing_descs: Number(zomatoAudit.scorecard?.dishes_missing_descs ?? 33),
-      desc_coverage_pct: Number(zomatoAudit.scorecard?.desc_coverage_pct ?? 74.0),
-    };
+    if (!zomatoAudit || !swiggyAudit) {
+      const errorDetail = [];
+      if (!zomatoAudit) errorDetail.push("Zomato URL audit failed");
+      if (!swiggyAudit) errorDetail.push("Swiggy URL audit failed");
+      return NextResponse.json(
+        { error: `Could not complete dual audit: ${errorDetail.join(", ")}` },
+        { status: 502 }
+      );
+    }
 
-    const swiggyScorecard = {
-      overall_score: Number(swiggyAudit.scorecard?.overall_score ?? swiggyAudit.scorecard?.overall_hygiene_score ?? 73),
-      total_dishes: Number(swiggyAudit.scorecard?.total_dishes ?? swiggyAudit.scorecard?.total_dishes_audited ?? 138),
-      dishes_with_photos: Number(swiggyAudit.scorecard?.dishes_with_photos ?? 87),
-      dishes_missing_photos: Number(swiggyAudit.scorecard?.dishes_missing_photos ?? 51),
-      photo_coverage_pct: Number(swiggyAudit.scorecard?.photo_coverage_pct ?? 63.0),
-      dishes_with_descs: Number(swiggyAudit.scorecard?.dishes_with_descs ?? 115),
-      dishes_missing_descs: Number(swiggyAudit.scorecard?.dishes_missing_descs ?? 23),
-      desc_coverage_pct: Number(swiggyAudit.scorecard?.desc_coverage_pct ?? 83.3),
-    };
+    const restaurantName =
+      zomatoAudit.restaurant_name && zomatoAudit.restaurant_name !== "Restaurant"
+        ? zomatoAudit.restaurant_name
+        : swiggyAudit.restaurant_name && swiggyAudit.restaurant_name !== "Restaurant"
+        ? swiggyAudit.restaurant_name
+        : extractRestaurantNameFromUrl(swiggyUrl, zomatoUrl);
 
-    // Extract items dynamically from audit outputs (includes dishes without photos/descriptions)
+    // Extract detailed dish items
     const zDishes = extractDishesFromAudit(zomatoAudit);
     const sDishes = extractDishesFromAudit(swiggyAudit);
 
-    const sDishMap = new Map<string, typeof sDishes[0]>();
-    sDishes.forEach(d => {
-      const sKey = sanitizeDishName(d.dish);
-      if (sKey) sDishMap.set(sKey, d);
-    });
-
-    const zDishMap = new Map<string, typeof zDishes[0]>();
+    // Create lookup maps with normalized dish titles
+    const zDishesBySanitized = new Map<string, DishItem>();
     zDishes.forEach(d => {
-      const zKey = sanitizeDishName(d.dish);
-      if (zKey) zDishMap.set(zKey, d);
+      const key = sanitizeDishName(d.dish);
+      if (key && !zDishesBySanitized.has(key)) zDishesBySanitized.set(key, d);
     });
 
-    // Helper matcher function for exact + substring + phonetic fuzzy matching across platform menus
-    const findSwiggyMatch = (zDish: typeof zDishes[0]) => {
+    const sDishesBySanitized = new Map<string, DishItem>();
+    sDishes.forEach(d => {
+      const key = sanitizeDishName(d.dish);
+      if (key && !sDishesBySanitized.has(key)) sDishesBySanitized.set(key, d);
+    });
+
+    // Compute cross-platform missing dishes
+    const missingOnSwiggy: Array<{ dish: string; category: string; price?: number }> = [];
+    zDishes.forEach(zDish => {
       const zKey = sanitizeDishName(zDish.dish);
-      if (!zKey) return null;
-      for (const [sKey, sDish] of sDishMap.entries()) {
+      let foundOnSwiggy = false;
+      for (const sKey of sDishesBySanitized.keys()) {
         if (isSimilarDishKey(zKey, sKey)) {
-          return sDish;
+          foundOnSwiggy = true;
+          break;
         }
       }
-      return null;
-    };
+      if (!foundOnSwiggy) {
+        missingOnSwiggy.push({
+          dish: zDish.dish,
+          category: zDish.category,
+          price: zDish.price,
+        });
+      }
+    });
 
-    const findZomatoMatch = (sDish: typeof sDishes[0]) => {
+    const missingOnZomato: Array<{ dish: string; category: string; price?: number }> = [];
+    sDishes.forEach(sDish => {
       const sKey = sanitizeDishName(sDish.dish);
-      if (!sKey) return null;
-      for (const [zKey, zDish] of zDishMap.entries()) {
+      let foundOnZomato = false;
+      for (const zKey of zDishesBySanitized.keys()) {
         if (isSimilarDishKey(sKey, zKey)) {
-          return zDish;
+          foundOnZomato = true;
+          break;
         }
       }
-      return null;
-    };
+      if (!foundOnZomato) {
+        missingOnZomato.push({
+          dish: sDish.dish,
+          category: sDish.category,
+          price: sDish.price,
+        });
+      }
+    });
 
-    // Dynamic missing items (using smart sanitized + substring + phonetic fuzzy matching)
-    const missingOnSwiggy = zDishes
-      .filter(d => !findSwiggyMatch(d))
-      .map(d => ({ dish: d.dish, category: d.category }));
-
-    const missingOnZomato = sDishes
-      .filter(d => !findZomatoMatch(d))
-      .map(d => ({ dish: d.dish, category: d.category }));
-
-    // Dynamic Photo and Description Gaps (Smart side-by-side comparison for dishes on both platforms)
+    // Cross-Platform Photo & Description Gaps
     const photoGaps: Array<{ dish: string; category: string; hasOnZomato: boolean; hasOnSwiggy: boolean }> = [];
     const descGaps: Array<{ dish: string; category: string; hasOnZomato: boolean; hasOnSwiggy: boolean }> = [];
 
     zDishes.forEach(zDish => {
-      const sDish = findSwiggyMatch(zDish);
-      if (sDish) {
-        if (zDish.hasPhoto !== sDish.hasPhoto) {
+      const zKey = sanitizeDishName(zDish.dish);
+      let matchedSDish: DishItem | undefined;
+      for (const [sKey, sDish] of sDishesBySanitized.entries()) {
+        if (isSimilarDishKey(zKey, sKey)) {
+          matchedSDish = sDish;
+          break;
+        }
+      }
+
+      if (matchedSDish) {
+        if (zDish.hasPhoto !== matchedSDish.hasPhoto) {
           photoGaps.push({
             dish: zDish.dish,
             category: zDish.category,
             hasOnZomato: zDish.hasPhoto,
-            hasOnSwiggy: sDish.hasPhoto,
+            hasOnSwiggy: matchedSDish.hasPhoto,
           });
         }
 
-        if (zDish.hasDesc !== sDish.hasDesc) {
+        if (zDish.hasDesc !== matchedSDish.hasDesc) {
           descGaps.push({
             dish: zDish.dish,
             category: zDish.category,
             hasOnZomato: zDish.hasDesc,
-            hasOnSwiggy: sDish.hasDesc,
+            hasOnSwiggy: matchedSDish.hasDesc,
           });
         }
       }
     });
 
-    // Category-wise Breakdown & Item Count Comparison with Smart Category Normalization
+    // Clean category name helper
     const cleanCategoryName = (name: string) => {
       if (!name) return "General";
       return name
@@ -384,49 +421,30 @@ export async function POST(req: NextRequest) {
         .trim();
     };
 
-    const zCatCounts: Record<string, number> = {};
-    const zAuditCats = zomatoAudit.categories || zomatoAudit.categories_summary || [];
-    if (zAuditCats.length > 0) {
-      zAuditCats.forEach((cat: any) => {
-        const cName = cleanCategoryName(cat.category_name || cat.menu_group || cat.category);
-        const count = Number(cat.total_items || cat.total_dishes || 0);
-        if (cName && count > 0) {
-          zCatCounts[cName] = (zCatCounts[cName] || 0) + count;
-        }
-      });
-    } else {
-      zDishes.forEach(d => {
-        const cat = cleanCategoryName(d.category);
-        zCatCounts[cat] = (zCatCounts[cat] || 0) + 1;
-      });
-    }
+    // Group actual dishes under their respective categories
+    const zCatDishes = new Map<string, DishItem[]>();
+    zDishes.forEach((d) => {
+      const cat = cleanCategoryName(d.category);
+      if (!zCatDishes.has(cat)) zCatDishes.set(cat, []);
+      zCatDishes.get(cat)!.push(d);
+    });
 
-    const sCatCounts: Record<string, number> = {};
-    const sAuditCats = swiggyAudit.categories || swiggyAudit.categories_summary || [];
-    if (sAuditCats.length > 0) {
-      sAuditCats.forEach((cat: any) => {
-        const cName = cleanCategoryName(cat.category_name || cat.menu_group || cat.category);
-        const count = Number(cat.total_items || cat.total_dishes || 0);
-        if (cName && count > 0) {
-          sCatCounts[cName] = (sCatCounts[cName] || 0) + count;
-        }
-      });
-    } else {
-      sDishes.forEach(d => {
-        const cat = cleanCategoryName(d.category);
-        sCatCounts[cat] = (sCatCounts[cat] || 0) + 1;
-      });
-    }
+    const sCatDishes = new Map<string, DishItem[]>();
+    sDishes.forEach((d) => {
+      const cat = cleanCategoryName(d.category);
+      if (!sCatDishes.has(cat)) sCatDishes.set(cat, []);
+      sCatDishes.get(cat)!.push(d);
+    });
 
-    const findSwiggyCategoryMatch = (zCat: string, sCatMap: Record<string, number>) => {
-      const normZ = zCat.toLowerCase();
-      for (const sCat of Object.keys(sCatMap)) {
-        if (sCat.toLowerCase() === normZ) return sCat;
+    const findSwiggyCategoryMatch = (zCat: string, sCatList: string[]) => {
+      const normZ = zCat.toLowerCase().trim();
+      for (const sCat of sCatList) {
+        if (sCat.toLowerCase().trim() === normZ) return sCat;
       }
       const keyZ = normZ.replace(/&/g, "and").replace(/s$/, "");
-      for (const sCat of Object.keys(sCatMap)) {
-        const keyS = sCat.toLowerCase().replace(/&/g, "and").replace(/s$/, "");
-        if (keyZ === keyS || normZ.includes(sCat.toLowerCase()) || sCat.toLowerCase().includes(normZ)) {
+      for (const sCat of sCatList) {
+        const keyS = sCat.toLowerCase().trim().replace(/&/g, "and").replace(/s$/, "");
+        if (keyZ === keyS || (keyZ.length >= 4 && keyS.length >= 4 && (normZ.includes(sCat.toLowerCase()) || sCat.toLowerCase().includes(normZ)))) {
           return sCat;
         }
       }
@@ -434,21 +452,37 @@ export async function POST(req: NextRequest) {
     };
 
     const matchedSwiggyKeys = new Set<string>();
+    const sCatKeys = Array.from(sCatDishes.keys());
+
+    const isPromoCategory = (name: string) => {
+      if (!name) return false;
+      return /\b(items? at \d+|deals?|offers?|specials?|bestsellers?|bogo|recommended|combos?|pocket friendly|flat \d+%?|discount|at \d+|saver)\b/i.test(name);
+    };
 
     const categoryComparison: Array<{
       category: string;
+      zomatoCategoryName: string;
+      swiggyCategoryName: string;
       zomatoCount: number;
       swiggyCount: number;
       difference: number;
       status: string;
+      isPromotional: boolean;
+      zomatoDishes: Array<{ name: string; hasPhoto: boolean; hasDesc: boolean }>;
+      swiggyDishes: Array<{ name: string; hasPhoto: boolean; hasDesc: boolean }>;
       missingOnZomatoItems: string[];
       missingOnSwiggyItems: string[];
+      missingOnZomatoDetailed: Array<{ dish: string; foundInOtherCategory?: string }>;
+      missingOnSwiggyDetailed: Array<{ dish: string; foundInOtherCategory?: string }>;
     }> = [];
 
-    Object.keys(zCatCounts).forEach(zCat => {
-      const zCount = zCatCounts[zCat];
-      const matchedSKey = findSwiggyCategoryMatch(zCat, sCatCounts);
-      const sCount = matchedSKey ? sCatCounts[matchedSKey] : 0;
+    Array.from(zCatDishes.keys()).forEach((zCat) => {
+      const zDishList = zCatDishes.get(zCat) || [];
+      const zCount = zDishList.length;
+
+      const matchedSKey = findSwiggyCategoryMatch(zCat, sCatKeys);
+      const sDishList = matchedSKey ? (sCatDishes.get(matchedSKey) || []) : [];
+      const sCount = sDishList.length;
 
       if (matchedSKey) matchedSwiggyKeys.add(matchedSKey);
 
@@ -456,56 +490,171 @@ export async function POST(req: NextRequest) {
       if (zCount > 0 && sCount === 0) status = "missing_on_swiggy";
       else if (zCount !== sCount) status = "mismatch";
 
-      // Find specific missing dish names for this category
-      const normCat = zCat.toLowerCase();
-      const missingOnZomatoItems = missingOnZomato
-        .filter(m => {
-          const mCat = cleanCategoryName(m.category).toLowerCase();
-          return mCat === normCat || (matchedSKey && mCat === matchedSKey.toLowerCase()) || mCat.includes(normCat) || normCat.includes(mCat);
-        })
-        .map(m => m.dish);
+      // Match dishes inside this category
+      const zSanitizedMap = new Map(zDishList.map((d) => [sanitizeDishName(d.dish), d]));
+      const sSanitizedMap = new Map(sDishList.map((d) => [sanitizeDishName(d.dish), d]));
 
-      const missingOnSwiggyItems = missingOnSwiggy
-        .filter(m => {
-          const mCat = cleanCategoryName(m.category).toLowerCase();
-          return mCat === normCat || mCat.includes(normCat) || normCat.includes(mCat);
-        })
-        .map(m => m.dish);
+      const missingOnSwiggyDetailed: Array<{ dish: string; foundInOtherCategory?: string }> = [];
+      const missingOnSwiggyInCat: string[] = [];
+
+      zDishList.forEach((zd) => {
+        const zKey = sanitizeDishName(zd.dish);
+        let foundInCat = false;
+        for (const sKey of sSanitizedMap.keys()) {
+          if (isSimilarDishKey(zKey, sKey)) {
+            foundInCat = true;
+            break;
+          }
+        }
+
+        if (!foundInCat) {
+          missingOnSwiggyInCat.push(zd.dish);
+          // Check if it exists in another category on Swiggy
+          let otherCat: string | undefined;
+          for (const [sKey, sItem] of sDishesBySanitized.entries()) {
+            if (isSimilarDishKey(zKey, sKey)) {
+              otherCat = sItem.category;
+              break;
+            }
+          }
+          missingOnSwiggyDetailed.push({
+            dish: zd.dish,
+            foundInOtherCategory: otherCat,
+          });
+        }
+      });
+
+      const missingOnZomatoDetailed: Array<{ dish: string; foundInOtherCategory?: string }> = [];
+      const missingOnZomatoInCat: string[] = [];
+
+      sDishList.forEach((sd) => {
+        const sKey = sanitizeDishName(sd.dish);
+        let foundInCat = false;
+        for (const zKey of zSanitizedMap.keys()) {
+          if (isSimilarDishKey(sKey, zKey)) {
+            foundInCat = true;
+            break;
+          }
+        }
+
+        if (!foundInCat) {
+          missingOnZomatoInCat.push(sd.dish);
+          // Check if it exists in another category on Zomato
+          let otherCat: string | undefined;
+          for (const [zKey, zItem] of zDishesBySanitized.entries()) {
+            if (isSimilarDishKey(sKey, zKey)) {
+              otherCat = zItem.category;
+              break;
+            }
+          }
+          missingOnZomatoDetailed.push({
+            dish: sd.dish,
+            foundInOtherCategory: otherCat,
+          });
+        }
+      });
 
       categoryComparison.push({
         category: zCat,
+        zomatoCategoryName: zCat,
+        swiggyCategoryName: matchedSKey || "",
         zomatoCount: zCount,
         swiggyCount: sCount,
         difference: sCount - zCount,
         status,
-        missingOnZomatoItems,
-        missingOnSwiggyItems,
+        isPromotional: isPromoCategory(zCat) || (matchedSKey ? isPromoCategory(matchedSKey) : false),
+        zomatoDishes: zDishList.map((d) => ({ name: d.dish, hasPhoto: d.hasPhoto, hasDesc: d.hasDesc })),
+        swiggyDishes: sDishList.map((d) => ({ name: d.dish, hasPhoto: d.hasPhoto, hasDesc: d.hasDesc })),
+        missingOnZomatoItems: missingOnZomatoInCat,
+        missingOnSwiggyItems: missingOnSwiggyInCat,
+        missingOnZomatoDetailed,
+        missingOnSwiggyDetailed,
       });
     });
 
-    Object.keys(sCatCounts).forEach(sCat => {
+    // Swiggy categories not present in Zomato
+    sCatKeys.forEach((sCat) => {
       if (!matchedSwiggyKeys.has(sCat)) {
-        const normCat = sCat.toLowerCase();
-        const missingOnZomatoItems = missingOnZomato
-          .filter(m => {
-            const mCat = cleanCategoryName(m.category).toLowerCase();
-            return mCat === normCat || mCat.includes(normCat) || normCat.includes(mCat);
-          })
-          .map(m => m.dish);
+        const sDishList = sCatDishes.get(sCat) || [];
+        const missingOnZomatoDetailed = sDishList.map((d) => {
+          const sKey = sanitizeDishName(d.dish);
+          let otherCat: string | undefined;
+          for (const [zKey, zItem] of zDishesBySanitized.entries()) {
+            if (isSimilarDishKey(sKey, zKey)) {
+              otherCat = zItem.category;
+              break;
+            }
+          }
+          return {
+            dish: d.dish,
+            foundInOtherCategory: otherCat,
+          };
+        });
 
         categoryComparison.push({
           category: sCat,
+          zomatoCategoryName: "",
+          swiggyCategoryName: sCat,
           zomatoCount: 0,
-          swiggyCount: sCatCounts[sCat],
-          difference: sCatCounts[sCat],
+          swiggyCount: sDishList.length,
+          difference: sDishList.length,
           status: "missing_on_zomato",
-          missingOnZomatoItems,
+          isPromotional: isPromoCategory(sCat),
+          zomatoDishes: [],
+          swiggyDishes: sDishList.map((d) => ({ name: d.dish, hasPhoto: d.hasPhoto, hasDesc: d.hasDesc })),
+          missingOnZomatoItems: sDishList.map((d) => d.dish),
           missingOnSwiggyItems: [],
+          missingOnZomatoDetailed,
+          missingOnSwiggyDetailed: [],
         });
       }
     });
 
     categoryComparison.sort((a, b) => a.category.localeCompare(b.category));
+
+    // Construct Scorecards
+    const zTotal = zDishes.length;
+    const zPhotosMissing = zDishes.filter(d => !d.hasPhoto).length;
+    const zDescsMissing = zDishes.filter(d => !d.hasDesc).length;
+    const zPhotoPct = zTotal ? Math.round(((zTotal - zPhotosMissing) / zTotal) * 100) : 0;
+    const zDescPct = zTotal ? Math.round(((zTotal - zDescsMissing) / zTotal) * 100) : 0;
+    const zRating = parseFloat(zomatoAudit.ratings?.delivery || "4.0") || 4.0;
+    const zOverall = Math.round(zPhotoPct * 0.5 + zDescPct * 0.3 + (zRating / 5.0) * 100 * 0.2);
+
+    const sTotal = sDishes.length;
+    const sPhotosMissing = sDishes.filter(d => !d.hasPhoto).length;
+    const sDescsMissing = sDishes.filter(d => !d.hasDesc).length;
+    const sPhotoPct = sTotal ? Math.round(((sTotal - sPhotosMissing) / sTotal) * 100) : 0;
+    const sDescPct = sTotal ? Math.round(((sTotal - sDescsMissing) / sTotal) * 100) : 0;
+    const sRating = parseFloat(swiggyAudit.ratings?.delivery || "4.0") || 4.0;
+    const sOverall = Math.round(sPhotoPct * 0.5 + sDescPct * 0.3 + (sRating / 5.0) * 100 * 0.2);
+
+    const zomatoScorecard = {
+      overall_score: zOverall,
+      total_dishes: zTotal,
+      dishes_missing_photos: zPhotosMissing,
+      photo_coverage_pct: zPhotoPct,
+      dishes_missing_descs: zDescsMissing,
+      desc_coverage_pct: zDescPct,
+    };
+
+    const swiggyScorecard = {
+      overall_score: sOverall,
+      total_dishes: sTotal,
+      dishes_missing_photos: sPhotosMissing,
+      photo_coverage_pct: sPhotoPct,
+      dishes_missing_descs: sDescsMissing,
+      desc_coverage_pct: sDescPct,
+    };
+
+    const overallSyncScore = Math.max(
+      0,
+      100 -
+        missingOnSwiggy.length * 2 -
+        missingOnZomato.length * 2 -
+        photoGaps.length -
+        descGaps.length
+    );
 
     const responsePayload = {
       restaurant_name: restaurantName,
@@ -518,26 +667,21 @@ export async function POST(req: NextRequest) {
       swiggyMissingPhotos: swiggyAudit.missing_photos_all || [],
       swiggyMissingDescs: swiggyAudit.missing_descs_all || [],
       comparison: {
-        restaurant_name: restaurantName,
-        zomatoScore: zomatoScorecard.overall_score,
-        swiggyScore: swiggyScorecard.overall_score,
-        zomatoTotalItems: zomatoScorecard.total_dishes,
-        swiggyTotalItems: swiggyScorecard.total_dishes,
-        zomatoPhotoPct: zomatoScorecard.photo_coverage_pct,
-        swiggyPhotoPct: swiggyScorecard.photo_coverage_pct,
-        zomatoDescPct: zomatoScorecard.desc_coverage_pct,
-        swiggyDescPct: swiggyScorecard.desc_coverage_pct,
+        categoryComparison,
         missingOnSwiggy,
         missingOnZomato,
         photoGaps,
         descGaps,
-        categoryComparison
-      }
+      },
+      overall_sync_score: overallSyncScore,
     };
 
     return NextResponse.json(responsePayload);
   } catch (err: any) {
-    console.error("Dual Hygiene Compare Error:", err);
-    return NextResponse.json({ error: err.message || "Failed to execute dual comparison" }, { status: 500 });
+    console.error("[HygieneCompare] API Error:", err);
+    return NextResponse.json(
+      { error: err.message || "Failed to process dual comparison." },
+      { status: 500 }
+    );
   }
 }
