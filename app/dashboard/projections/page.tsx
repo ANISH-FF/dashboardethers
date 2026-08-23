@@ -1154,14 +1154,28 @@ export default function ProjectionsPage() {
                 {/* Commission % */}
                 <tr className="hover:bg-paper/30 font-semibold text-rose-400">
                   <td className="p-3 sticky left-0 bg-paper-dark border-r border-line">Commission %</td>
-                  {allMonths.map((m, i) => {
-                    const commPctVal = m.commissionableValue > 0 ? (m.commissionPgGst / m.commissionableValue) * 100 : 0;
+                  {historicalMonths.map((m, i) => {
+                    const commPctVal = m.commissionableValue > 0 ? (m.commissionPgGst / m.commissionableValue) * 100 : (m.commissionPct * 100);
                     return (
-                      <td key={i} className="p-3 text-center font-mono border-r border-line/40">
+                      <td key={`h-${i}`} className="p-3 text-center font-mono font-bold text-rose-400 border-r border-line/40">
                         {commPctVal.toFixed(1)}%
                       </td>
                     );
                   })}
+                  {projectedMonths.map((m, i) => (
+                    <td key={`p-${i}`} className="p-2 text-center font-mono border-r border-line/40">
+                      <div className="flex items-center justify-center gap-0.5">
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={Number((m.commissionPct * 100).toFixed(1))}
+                          onChange={(e) => handleUpdateProjectedMonth(i, { commissionPct: Number(e.target.value) / 100 })}
+                          className="w-14 text-center bg-transparent border-b border-rose-500/40 focus:border-rose-400 outline-none font-bold text-rose-400"
+                        />
+                        <span className="text-rose-400">%</span>
+                      </div>
+                    </td>
+                  ))}
                   <td className="p-3 text-ink/40 font-mono text-[10px]">(Comm.+PG+GST / Commissionable Value) * 100</td>
                 </tr>
 
