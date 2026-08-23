@@ -606,8 +606,14 @@ function determineSmartVariantTitle(selectedItems: MenuItem[]): string {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items, field }),
       });
-      const json = await res.json();
-      if (json.error) throw new Error(json.error);
+      const text = await res.text();
+      let json: any = {};
+      try {
+        json = JSON.parse(text);
+      } catch {
+        throw new Error(`Server error (${res.status}): unexpected response.`);
+      }
+      if (!res.ok || json.error) throw new Error(json.error || `Server error (${res.status})`);
       if (json.items) commitItems(json.items);
     } catch (err) {
       setMenuNotice("Error: " + String(err));
@@ -628,8 +634,14 @@ function determineSmartVariantTitle(selectedItems: MenuItem[]): string {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items, prompt: magicPrompt }),
       });
-      const json = await res.json();
-      if (json.error) throw new Error(json.error);
+      const text = await res.text();
+      let json: any = {};
+      try {
+        json = JSON.parse(text);
+      } catch {
+        throw new Error(`Server error (${res.status}): unexpected response.`);
+      }
+      if (!res.ok || json.error) throw new Error(json.error || `Server error (${res.status})`);
       if (json.items) { commitItems(json.items); setMagicPrompt(""); }
     } catch (err) {
       setMenuNotice("Error: " + String(err));

@@ -1,11 +1,63 @@
 import { NextRequest, NextResponse } from "next/server";
+import fs from "fs";
+import path from "path";
+
+function getGeminiApiKey(): string {
+  try {
+    const envPath = path.join(process.cwd(), ".env");
+    if (fs.existsSync(envPath)) {
+      const content = fs.readFileSync(envPath, "utf-8");
+      const match = content.match(/GEMINI_API_KEY\s*=\s*["']?([^"'\r\n]+)["']?/);
+      if (match && match[1] && match[1].trim()) {
+        return match[1].trim();
+      }
+    }
+  } catch (e) {}
+  return process.env.GEMINI_API_KEY || "";
+}
+
+async function callGeminiForBatch(systemInstruction: string, userContent: string, apiKey: string) {
+  const models = ["gemini-2.5-flash-lite", "gemini-2.5-flash"];
+  let lastErr = "";
+  for (const modelName of models) {
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: systemInstruction }] },
+            contents: [{ parts: [{ text: userContent }] }],
+            generationConfig: { temperature: 0.2, responseMimeType: "application/json" },
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) return text;
+      } else {
+        lastErr = await response.text();
+      }
+    } catch (err: any) {
+      lastErr = err?.message || String(err);
+    }
+  }
+  throw new Error(`Gemini API error: ${lastErr}`);
+}
 
 export async function POST(req: NextRequest) {
   try {
     const { items, field, count } = await req.json();
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) throw new Error("Missing GEMINI_API_KEY");
+    const apiKey = getGeminiApiKey();
+    if (!apiKey) throw new Error("Missing GEMINI_API_KEY in .env file");
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({ items: [] });
+    }
 
     // Handle AI Master Variant Title Derivation for selected items
     if (field === "master_title") {
@@ -22,27 +74,9 @@ EXAMPLES:
 
 Return ONLY a valid JSON object with key "title": {"title": "Generated Master Name"}. No markdown, no code fences, no extra text.`;
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            systemInstruction: { parts: [{ text: systemInstruction }] },
-            contents: [{ parts: [{ text: `Item names: ${names}` }] }],
-            generationConfig: { temperature: 0.1, responseMimeType: "application/json" },
-          }),
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text) {
-          const parsed = JSON.parse(text);
-          return NextResponse.json({ title: parsed.title });
-        }
-      }
+      const text = await callGeminiForBatch(systemInstruction, `Item names: ${names}`, apiKey);
+      const parsed = JSON.parse(text);
+      return NextResponse.json({ title: parsed.title || parsed.name || "Variant Group" });
     }
 
     let instruction = "";
@@ -79,40 +113,42 @@ Make it enticing and accurate to the dish name. Update only the 'description' fi
 
     const systemInstruction = `You are an expert restaurant menu consultant AI.
 Task: ${instruction}
-IMPORTANT: Return ONLY the complete modified JSON array. No markdown, no extra text, no code fences.
+IMPORTANT: Return ONLY the complete modified JSON array of items. No markdown, no extra text, no code fences.
 Do NOT modify any other field (id, name, base_price, is_veg, etc.).`;
 
-    const userContent = `Menu Items:\n${JSON.stringify(items, null, 2)}`;
+    // Process in batches of 25 items for maximum stability and speed
+    const BATCH_SIZE = 25;
+    const updatedItemsMap = new Map<string, any>();
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemInstruction }] },
-          contents: [{ parts: [{ text: userContent }] }],
-          generationConfig: { temperature: 0.3, responseMimeType: "application/json" },
-        }),
+    for (let i = 0; i < items.length; i += BATCH_SIZE) {
+      const batch = items.slice(i, i + BATCH_SIZE);
+      const userContent = `Menu Items Batch:\n${JSON.stringify(batch, null, 2)}`;
+      
+      try {
+        const text = await callGeminiForBatch(systemInstruction, userContent, apiKey);
+        const jsonMatch = text.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+          const parsedBatch: any[] = JSON.parse(jsonMatch[0]);
+          for (const item of parsedBatch) {
+            if (item && item.id) {
+              updatedItemsMap.set(item.id, item);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn(`Batch ${Math.floor(i / BATCH_SIZE) + 1} failed:`, err);
       }
-    );
-
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Gemini API error: ${response.status} ${errText}`);
     }
 
-    const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) throw new Error("No output from Gemini");
+    // Merge updated items back while preserving order
+    const resultItems = items.map((orig: any) => {
+      const updated = updatedItemsMap.get(orig.id);
+      return updated ? { ...orig, ...updated } : orig;
+    });
 
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) throw new Error("No JSON array found in response");
-
-    const updatedItems = JSON.parse(jsonMatch[0]);
-    return NextResponse.json({ items: updatedItems });
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ items: resultItems });
+  } catch (err: any) {
+    console.error("Generate Field API Error:", err);
+    return NextResponse.json({ error: err?.message || String(err) }, { status: 500 });
   }
 }
