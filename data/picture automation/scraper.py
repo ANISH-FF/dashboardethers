@@ -66,15 +66,39 @@ def parse_item_list(filepath):
     return unique
 
 
+import random
+
+USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Edg/128.0.0.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15",
+]
+
+def get_stealth_headers():
+    return {
+        "User-Agent": random.choice(USER_AGENTS),
+        "Referer": "https://www.bing.com/",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Sec-Ch-Ua-Mobile": "?0",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "same-origin",
+        "Upgrade-Insecure-Requests": "1"
+    }
+
 def _download_bytes(url, referer="https://www.bing.com/", timeout=10):
     headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/125.0.0.0 Safari/537.36"
-        ),
+        "User-Agent": random.choice(USER_AGENTS),
         "Referer": referer,
-        "Accept": "image/webp,image/apng,image/*,*/*;q=0.8",
+        "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+        "Sec-Fetch-Dest": "image",
+        "Sec-Fetch-Mode": "no-cors",
     }
     r = requests.get(url, headers=headers, timeout=timeout)
     r.raise_for_status()
@@ -109,12 +133,6 @@ def _fast_http_cdn_search(food_name, out_dir, count, platform="zomato", log_fn=N
         f"{food_name_clean} recipe",
     ]
 
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-        "Referer": "https://www.bing.com/",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-    }
-
     if log_fn:
         log_fn(f"  [Photo Engine] Searching '{food_name_clean}' photos...")
 
@@ -125,6 +143,7 @@ def _fast_http_cdn_search(food_name, out_dir, count, platform="zomato", log_fn=N
             break
         try:
             url = f"https://www.bing.com/images/async?q={requests.utils.quote(query)}&first=1&count=35&adlt=moderate&mmasync=1"
+            headers = get_stealth_headers()
             r = requests.get(url, headers=headers, timeout=8)
             if r.status_code == 200:
                 murls = re.findall(r'murl&quot;:&quot;(https?://[^&]+)&quot;', r.text)
