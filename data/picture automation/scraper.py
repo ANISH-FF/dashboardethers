@@ -90,15 +90,6 @@ def _fast_http_cdn_search(food_name, out_dir, count, platform="zomato", log_fn=N
     saved = []
     seen = set()
 
-    # Block paid stock photo sites, social pins, news collages, and wallpaper sites
-    exclude_domains = {
-        'shutterstock', 'istockphoto', 'gettyimages', 'dreamstime',
-        'alamy', 'depositphotos', 'adobe.com', '123rf.com',
-        'pinterest', 'pinimg', 'ytimg', 'youtube', 'facebook', 'fbcdn',
-        'instagram', 'twitter', 'twimg', 'tiktok', 'tumblr', 'reddit',
-        'wallpaper', 'news', 'collage', 'befunky', 'vector', 'stock',
-    }
-
     # Block non-food keywords in image URLs and titles (prevents wall/floor/interior/pet images)
     bad_keywords = {
         'cat', 'dog', 'pet', 'certificate', 'award', 'temple', 'travel',
@@ -106,16 +97,15 @@ def _fast_http_cdn_search(food_name, out_dir, count, platform="zomato", log_fn=N
         'tourism', 'hotel-stay', 'landmark', 'monument', 'scenery', 'landscape',
         'floor', 'wall', 'room', 'interior', 'furniture', 'building', 'architecture',
         'wallpaper', 'curtain', 'couch', 'chair', 'house', 'tile', 'bedroom', 'livingroom',
-        'bedroom', 'bathroom', 'kitchen-sink', 'lobby', 'hallway', 'decor'
+        'bathroom', 'kitchen-sink', 'lobby', 'hallway', 'decor'
     }
 
     # Cap count strictly at 10 per item to respect rate limits & quality
     target_count = min(count, 10)
 
-    # Bing Async HTTP Image Engine (with point-second humanized delay & strict background filters)
+    # Bing Async HTTP Image Engine
     queries = [
-        f"{food_name_clean} food recipe dish",
-        f"{food_name_clean} food dish photo",
+        f"{food_name_clean} food",
     ]
 
     headers = {
@@ -145,19 +135,17 @@ def _fast_http_cdn_search(food_name, out_dir, count, platform="zomato", log_fn=N
                     if not img_url or img_url in seen:
                         continue
 
-                    # Strict non-food domain & background filter
+                    # Filter out non-food keywords
                     u_lower = img_url.lower()
-                    if any(bad in u_lower for bad in exclude_domains):
-                        continue
                     if any(bad in u_lower for bad in bad_keywords):
                         continue
 
                     seen.add(img_url)
 
                     try:
-                        time.sleep(0.5)  # Point-second humanized delay to prevent IP rate-limiting
+                        time.sleep(0.3)  # Point-second delay
                         img_bytes = _download_bytes(img_url, timeout=5)
-                        if len(img_bytes) < 70 * 1024:  # Quality check threshold
+                        if len(img_bytes) < 40 * 1024:  # Basic threshold
                             continue
                         ext = "webp" if "webp" in img_url.lower() else ("png" if "png" in img_url.lower() else "jpg")
                         fname = f"img_{len(saved)+1:02d}.{ext}"

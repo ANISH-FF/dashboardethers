@@ -1,21 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const EXCLUDE_DOMAINS = [
-  "shutterstock", "istockphoto", "gettyimages", "dreamstime",
-  "alamy", "depositphotos", "adobe.com", "123rf.com",
-  "pinterest", "pinimg", "ytimg", "youtube", "facebook", "fbcdn",
-  "instagram", "twitter", "twimg", "tiktok", "tumblr", "reddit",
-  "wallpaper", "news", "collage", "befunky", "vector", "stock",
-];
-
 const BAD_KEYWORDS = [
   "cat", "dog", "pet", "certificate", "award", "temple", "travel",
   "map", "tower", "town", "switzerland", "vietnam", "breed", "kitten",
-  "tourism", "landmark", "monument", "scenery", "landscape"
+  "tourism", "hotel-stay", "landmark", "monument", "scenery", "landscape",
+  "floor", "wall", "room", "interior", "furniture", "building", "architecture",
+  "wallpaper", "curtain", "couch", "chair", "house", "tile", "bedroom", "livingroom",
+  "bathroom", "kitchen-sink", "lobby", "hallway", "decor"
 ];
 
 async function fetchBingDishImages(itemName: string, count = 6): Promise<string[]> {
-  const query = `${itemName.trim()} food recipe dish`;
+  const query = `${itemName.trim()} food`;
   const url = `https://www.bing.com/images/async?q=${encodeURIComponent(query)}&first=1&count=35&adlt=strict&cc=IN&setlang=en-US&mmasync=1`;
 
   const headers = {
@@ -39,7 +34,6 @@ async function fetchBingDishImages(itemName: string, count = 6): Promise<string[
       if (validImages.length >= count) break;
       if (!imgUrl || seen.has(imgUrl)) continue;
       const lower = imgUrl.toLowerCase();
-      if (EXCLUDE_DOMAINS.some(bad => lower.includes(bad))) continue;
       if (BAD_KEYWORDS.some(bad => lower.includes(bad))) continue;
       seen.add(imgUrl);
       validImages.push(imgUrl);
