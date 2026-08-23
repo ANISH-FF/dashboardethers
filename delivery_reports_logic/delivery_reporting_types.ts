@@ -9,6 +9,7 @@ export interface ZomatoDeliveryRawOCR {
   sub_total_with_pkg?: number;
   cancelled_order_refund: number;
   discount: number;
+  delivery_charge_discount?: number;
   commissionable_value: number;
   order_level_deduction: number;
   tax_deduction: number;

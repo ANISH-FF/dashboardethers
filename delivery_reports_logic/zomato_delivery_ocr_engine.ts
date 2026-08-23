@@ -19,6 +19,7 @@ Respond ONLY with a JSON object containing these exact keys (use 0 if a field is
   "sub_total_with_pkg": number,
   "cancelled_order_refund": number,
   "discount": number,
+  "delivery_charge_discount": number,
   "commissionable_value": number,
   "order_level_deduction": number,
   "tax_deduction": number,
@@ -35,7 +36,8 @@ Extraction Rules:
 - "packaging_charges": Total container/packaging fee collected.
 - "sub_total_with_pkg": Subtotal + Packaging charges.
 - "cancelled_order_refund": Amount credited/refunded for cancelled orders.
-- "discount": Sum of promo discounts, flat offs, Zomato Gold discounts, relisted discounts borne by merchant.
+- "discount": Sum of promo discounts, flat offs, Zomato Gold discounts, freebies, relisted discounts borne by merchant.
+- "delivery_charge_discount": Read strictly from "Delivery charge discount" line if present (e.g. 200.25), else 0.
 - "commissionable_value": Read strictly from "Net order value (A)" on Zomato screenshot (e.g. 63905.53), else sub_total + packaging_charges - discount.
 - "order_level_deduction": Read strictly from "Order level deductions (C)" header on Zomato screenshot (e.g. 16580.86), else sum of base service fee, payment mechanism fee, long distance enablement fee.
 - "tax_deduction": Read strictly from "Tax deductions (D)" header on Zomato screenshot (e.g. 10280.45), else sum of GST on service fees, TCS (Sec 52), TDS (Sec 194O), and GST u/s 9(5).
@@ -67,7 +69,9 @@ export function computeZomatoDeliveryMetrics(
       : subTotal + packagingCharges;
 
   const cancelledOrderRefund = Math.abs(Number(rawInput.cancelled_order_refund || 0));
-  const discount = Math.abs(Number(rawInput.discount || 0));
+  const baseDiscount = Math.abs(Number(rawInput.discount || 0));
+  const deliveryChargeDiscount = Math.abs(Number(rawInput.delivery_charge_discount || 0));
+  const discount = baseDiscount + deliveryChargeDiscount;
   
   const discountPct =
     subTotalWithPkg > 0 ? Number(((discount / subTotalWithPkg) * 100).toFixed(2)) : 0;
