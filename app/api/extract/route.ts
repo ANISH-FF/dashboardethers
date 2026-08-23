@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 
+export const maxDuration = 300; // 5 Minutes Max Duration for AI Operations
+
 function getGeminiApiKey(): string {
   try {
     const envPath = path.join(process.cwd(), ".env");
