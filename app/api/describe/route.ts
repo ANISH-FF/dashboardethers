@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
 
     const names = items.map((i: { name: string }) => i.name).join("\n");
 
-    const prompt = `Write appetizing Swiggy-style menu descriptions (25-30 words each) focusing on dish texture, rich spices, and flavor. No side-dish pairings.
+    const prompt = `Write appetizing Swiggy-style menu descriptions (25-30 words each) focusing on dish texture, rich spices, and flavor.
 Return ONLY valid JSON array (no markdown):
 [{"name": "ITEM NAME", "description": "short description"}]
 

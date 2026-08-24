@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ items, done: true, processedCount: 0, totalMissing: missing.length });
     }
 
-    const prompt = `Write appetizing Swiggy-style menu descriptions (25-30 words each) focusing on dish texture, rich spices, and flavor. No side-dish pairings. Respond ONLY with a JSON array like:
+    const prompt = `Write appetizing Swiggy-style menu descriptions (25-30 words each) focusing on dish texture, rich spices, and flavor. Respond ONLY with a JSON array like:
 [{"id": "...", "description": "..."}]
 
 Items:

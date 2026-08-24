@@ -107,7 +107,7 @@ Format the 'addons' field as a comma-separated string listing each selected cata
 Example format: "Coke (₹80), French Fries (₹100)"
 If no relevant pairing exists in the catalog for a dish, leave 'addons' blank. Update ONLY the 'addons' field.`;
     } else if (field === "description") {
-      instruction = `Write appetizing Swiggy-style menu descriptions (25-30 words each) focusing on dish texture, rich spices, and flavor. No side-dish pairings. Update only the 'description' field.`;
+      instruction = `Write appetizing Swiggy-style menu descriptions (25-30 words each) focusing on dish texture, rich spices, and flavor. Update only the 'description' field.`;
     } else {
       instruction = `Generate appropriate values for the '${field}' field for each menu item.`;
     }
