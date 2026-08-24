@@ -227,6 +227,7 @@ export async function GET(req: NextRequest) {
       ["Ads %", ...combinedDelivery.map((p) => `${p.adsPct}%`)],
       ["Hyperpure (Zomato)", ...combinedDelivery.map((p) => p.hyperpure)],
       ["Net Payout", ...combinedDelivery.map((p) => p.netPayout)],
+      ["Net Payout + Hyperpure", ...combinedDelivery.map((p) => p.netPayoutWithHyperpure)],
       ["Net Payout %", ...combinedDelivery.map((p) => `${p.netPayoutPct}%`)],
       ["Overall Burn %", ...combinedDelivery.map((p) => `${p.overallBurnPct}%`)],
     ];

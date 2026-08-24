@@ -727,6 +727,7 @@ export default function ReportingPage() {
                     <RowLabel label="Ads %" isPct items={currentItems} field="adsPct" badgeColor="purple" />
                     <RowLabel label="Hyperpure (Zomato)" isCurrency items={currentItems} field="hyperpure" />
                     <RowLabel label="Net Payout" isCurrency items={currentItems} field="netPayout" highlightGreen />
+                    <RowLabel label="Net Payout + Hyperpure" isCurrency items={currentItems} field="netPayoutWithHyperpure" />
                     <RowLabel label="Net Payout %" isPct items={currentItems} field="netPayoutPct" badgeColor="emerald" />
                     <RowLabel label="Overall Burn %" isPct items={currentItems} field="overallBurnPct" badgeColor="amber" />
                   </>

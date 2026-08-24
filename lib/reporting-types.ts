@@ -133,7 +133,7 @@ export function computeZomatoDelivery(
   const netPayoutWithHyperpure = netPayout + hyperpure;
   const netPayoutPct =
     subTotalWithPkg > 0
-      ? Number(((netPayout / subTotalWithPkg) * 100).toFixed(2))
+      ? Number(((netPayoutWithHyperpure / subTotalWithPkg) * 100).toFixed(2))
       : 0;
   const overallBurnPct = Number((100 - netPayoutPct).toFixed(2));
 
@@ -348,6 +348,7 @@ export interface CombinedDeliveryMetrics {
   adsPct: number;
   hyperpure: number;
   netPayout: number;
+  netPayoutWithHyperpure: number;
   netPayoutPct: number;
   overallBurnPct: number;
   hasZomato: boolean;
@@ -421,7 +422,8 @@ export function computeCombinedDeliveryRecords(
     const adsPct = subTotalWithPkg > 0 ? Number(((ads / subTotalWithPkg) * 100).toFixed(2)) : 0;
     const hyperpure = z?.hyperpure || 0;
     const netPayout = (z?.netPayout || 0) + (s?.netPayout || 0);
-    const netPayoutPct = subTotalWithPkg > 0 ? Number(((netPayout / subTotalWithPkg) * 100).toFixed(2)) : 0;
+    const netPayoutWithHyperpure = netPayout + hyperpure;
+    const netPayoutPct = subTotalWithPkg > 0 ? Number(((netPayoutWithHyperpure / subTotalWithPkg) * 100).toFixed(2)) : 0;
     const overallBurnPct = Number((100 - netPayoutPct).toFixed(2));
 
     result.push({
@@ -444,6 +446,7 @@ export function computeCombinedDeliveryRecords(
       adsPct,
       hyperpure,
       netPayout,
+      netPayoutWithHyperpure,
       netPayoutPct,
       overallBurnPct,
       hasZomato: Boolean(z),
