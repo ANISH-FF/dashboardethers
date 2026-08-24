@@ -612,7 +612,8 @@ export default function ProjectionsPage() {
     try {
       const formData = new FormData();
       formData.append("platform", card.platform);
-      const targetMonthName = historicalMonths[cardIdx]?.name || `Month - ${3 - cardIdx}`;
+      const { historical: currentBaselineMonths } = computeDynamicMonthNames(targetYear, targetMonthIdx);
+      const targetMonthName = currentBaselineMonths[cardIdx]?.name || historicalMonths[cardIdx]?.name || `Month - ${3 - cardIdx}`;
       formData.append("monthName", targetMonthName);
 
       filesToScan.forEach((file) => formData.append("files", file));
