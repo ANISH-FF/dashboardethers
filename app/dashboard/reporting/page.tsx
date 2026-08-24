@@ -567,9 +567,11 @@ export default function ReportingPage() {
         return (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-[#111111] border border-[#272727] p-4 rounded-xl space-y-1">
-              <p className="text-xs text-[#a3a3a3]">Total Net Payout</p>
+              <p className="text-xs text-[#a3a3a3]">
+                {isHyperpureTab ? "Total Net Payout (+ Hyperpure)" : "Total Net Payout"}
+              </p>
               <p className="text-xl font-bold text-emerald-400">
-                {formatCurrency(totalNetPayout)}
+                {formatCurrency(isHyperpureTab ? totalNetPayoutForPct : totalNetPayout)}
               </p>
               <p className="text-[11px] text-[#555555]">Summed across {currentItems.length} periods</p>
             </div>
