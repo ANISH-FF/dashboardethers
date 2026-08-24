@@ -30,7 +30,7 @@ Respond ONLY with a JSON object containing these exact keys (use 0 if a field is
 
 Extraction Rules:
 - Read numbers strictly as shown on the screen. Do NOT apply any percentage calculations yourself.
-- Extract all monetary amounts as positive numbers (without minus signs).
+- Extract monetary amounts as positive numbers, EXCEPT "net_payout" which must include a minus sign if negative (e.g. -15548.59).
 - "total_orders": total orders count delivered in the period.
 - "sub_total": Sum of base item prices.
 - "packaging_charges": Total container/packaging fee collected.
@@ -43,7 +43,7 @@ Extraction Rules:
 - "tax_deduction": Read strictly from "Tax deductions (D)" header on Zomato screenshot (e.g. 10280.45), else sum of GST on service fees, TCS (Sec 52), TDS (Sec 194O), and GST u/s 9(5).
 - "ads": Read from Growth / Ad spend section (e.g. 5900).
 - "hyperpure": Read B2B raw material procurement deduction if present (e.g. 12000).
-- "net_payout": Read strictly from "FINAL PAYOUT" or "Net Receivable" credited to bank account.
+- "net_payout": Read strictly from "FINAL PAYOUT" or "Est. payout (A + B + C + D + E + F)". Include negative sign if red/minus (e.g. -15548.59).
 `.trim();
 
 /**

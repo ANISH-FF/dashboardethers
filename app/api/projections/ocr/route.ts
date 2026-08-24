@@ -108,7 +108,8 @@ Rules:
 - "hyperpure": read B2B raw material procurement deduction / Hyperpure deduction if present, else 0.
 - "order_level_deduction": read strictly from "Order level deductions (C)" header on Zomato screenshot (e.g. 61777.20).
 - "gst_on_service_fees": read strictly from "GST on service & platform fees" / "GST on Order level deductions (18%)" (e.g. 11119.83). If not explicitly listed, calculate as 18% of order_level_deduction.
-- "ads": advertisement / ad spend amount if shown, else 0.`;
+- "ads": advertisement / ad spend amount if shown, else 0.
+- "net_payout": read strictly from "Est. payout (A + B + C + D + E + F)". Include negative sign if payout is negative/red (e.g. -15548.59).`;
 
       const raw = await extractJsonWithGemini(prompt, b64List);
 
