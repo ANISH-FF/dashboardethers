@@ -271,7 +271,7 @@ export default function ReportingPage() {
     : [];
 
   // Aggregation for Monthly Rollup & Section Selection — Strictly for activeBrand
-  const rawItems = store
+  const unmappedRawItems = store
     ? activeTab === "overall_delivery"
       ? combinedDeliveryList
       : activeTab === "overall_dineout"
@@ -286,6 +286,28 @@ export default function ReportingPage() {
       ? brandSwiggyDineout
       : []
     : [];
+
+  const rawItems = unmappedRawItems.map((item: any) => {
+    if (activeTab === "zomato_delivery" || activeTab === "overall_delivery") {
+      const st = Number(item.subTotal || 0);
+      const pc = Number(item.packagingCharges || 0);
+      const realGrossBase = (st > 0 || pc > 0) ? (st + pc) : Number(item.subTotalWithPkg || 1);
+      const hyperpure = Number(item.hyperpure || 0);
+      const netPayout = Number(item.netPayout || 0);
+      const netPayoutWithHyperpure = item.netPayoutWithHyperpure !== undefined ? Number(item.netPayoutWithHyperpure) : (netPayout + hyperpure);
+      const netPayoutPct = realGrossBase > 0 ? Number(((netPayoutWithHyperpure / realGrossBase) * 100).toFixed(2)) : 0;
+      const overallBurnPct = Number((100 - netPayoutPct).toFixed(2));
+      return {
+        ...item,
+        subTotalWithPkg: realGrossBase,
+        netPayoutWithHyperpure,
+        netPayoutPct,
+        overallBurnPct,
+      };
+    }
+    return item;
+  });
+
   let currentItems: any[] = rawItems;
 
   if (monthlyRollup && rawItems.length > 0) {
@@ -340,7 +362,8 @@ export default function ReportingPage() {
         0
       );
 
-      const grossBase = subTotalWithPkg || preGmv || subTotal || 1;
+      const realStPkg = (subTotal > 0 || packagingCharges > 0) ? (subTotal + packagingCharges) : (subTotalWithPkg || 0);
+      const grossBase = realStPkg || preGmv || subTotal || 1;
       const discountPct = (discount / grossBase) * 100;
       const adsPct = (ads / grossBase) * 100;
       const commissionPct = postGmv > 0 ? (commission / postGmv) * 100 : 0;
@@ -530,9 +553,12 @@ export default function ReportingPage() {
         }, 0);
         const totalAds = currentItems.reduce((acc, curr: any) => acc + (curr.ads || 0), 0);
         
-        // Base for weighted average (SubTotalWithPkg for delivery, PreGmv for dine-in)
+        // Base for weighted average (SubTotal + Packaging Charges for delivery, PreGmv for dine-in)
         const totalBaseGross = currentItems.reduce((acc, curr: any) => {
-          return acc + (curr.subTotalWithPkg || curr.preGmv || curr.subTotal || 0);
+          const itemStPkg = (curr.subTotal > 0 || curr.packagingCharges > 0)
+            ? (curr.subTotal + (curr.packagingCharges || 0))
+            : (curr.subTotalWithPkg || curr.preGmv || curr.subTotal || 0);
+          return acc + itemStPkg;
         }, 0);
 
         const weightedNetPayoutPct = totalBaseGross > 0 ? (totalNetPayoutForPct / totalBaseGross) * 100 : 0;
