@@ -30,6 +30,62 @@ const GEMINI_FALLBACK_MODELS = [
   "gemini-2.5-flash",
 ];
 
+async function singlePass(prompt: string, parts: any[], geminiKey: string): Promise<Record<string, any> | null> {
+  for (const model of GEMINI_FALLBACK_MODELS) {
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts }],
+            generationConfig: {
+              temperature: 0,
+              responseMimeType: "application/json",
+            },
+          }),
+        }
+      );
+      if (!response.ok) continue;
+      const data = await response.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) continue;
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) continue;
+      return JSON.parse(jsonMatch[0]);
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
+function jsonValuesMatch(a: Record<string, any>, b: Record<string, any>): boolean {
+  for (const key of Object.keys(a)) {
+    const va = Number(a[key] ?? 0);
+    const vb = Number(b[key] ?? 0);
+    // Allow < 1 rupee difference (decimal formatting tolerance)
+    if (Math.abs(va - vb) > 1) return false;
+  }
+  return true;
+}
+
+function pickTiebreaker(a: Record<string, any>, b: Record<string, any>, c: Record<string, any>): Record<string, any> {
+  // For each key, pick the value that appears in at least 2 of 3 passes
+  const result: Record<string, any> = {};
+  for (const key of Object.keys(a)) {
+    const va = Number(a[key] ?? 0);
+    const vb = Number(b[key] ?? 0);
+    const vc = Number(c[key] ?? 0);
+    if (Math.abs(va - vb) <= 1) result[key] = a[key]; // Pass 1 & 2 agree
+    else if (Math.abs(va - vc) <= 1) result[key] = a[key]; // Pass 1 & 3 agree
+    else if (Math.abs(vb - vc) <= 1) result[key] = b[key]; // Pass 2 & 3 agree
+    else result[key] = a[key]; // All 3 differ — fallback to Pass 1
+  }
+  return result;
+}
+
 async function extractJsonWithGemini(prompt: string, imageBase64List: string[]) {
   const geminiKey = getGeminiApiKey();
   if (!geminiKey) {
@@ -55,61 +111,27 @@ async function extractJsonWithGemini(prompt: string, imageBase64List: string[]) 
     });
   }
 
-  let lastError = "";
+  // Pass 1
+  const pass1 = await singlePass(prompt, parts, geminiKey);
+  if (!pass1) throw new Error("All Gemini models failed on Pass 1.");
 
-  for (const model of GEMINI_FALLBACK_MODELS) {
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      try {
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [{ parts }],
-              generationConfig: {
-                temperature: 0.1,
-                responseMimeType: "application/json",
-              },
-            }),
-          }
-        );
+  // Pass 2
+  const pass2 = await singlePass(prompt, parts, geminiKey);
+  if (!pass2) throw new Error("All Gemini models failed on Pass 2.");
 
-        if (response.status === 503 || response.status === 429) {
-          lastError = `${model} returned ${response.status} (attempt ${attempt})`;
-          if (attempt < 2) await new Promise((r) => setTimeout(r, 1500));
-          continue;
-        }
-
-        if (!response.ok) {
-          const errText = await response.text();
-          lastError = `${model} error: ${response.status} ${errText}`;
-          break; // Try next fallback model
-        }
-
-        const data = await response.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!text) {
-          lastError = `${model}: Empty candidate response`;
-          break; // Try next fallback model
-        }
-
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-          lastError = `${model}: No valid JSON in output`;
-          break; // Try next fallback model
-        }
-
-        return JSON.parse(jsonMatch[0]);
-      } catch (err: any) {
-        lastError = `${model} request failed: ${err.message}`;
-        break; // Try next fallback model
-      }
-    }
+  // Compare Pass 1 & 2
+  if (jsonValuesMatch(pass1, pass2)) {
+    return pass1; // ✅ Both match — done
   }
 
-  throw new Error(`All Gemini models failed (2.5-flash, 3.1-flash-lite, 3.5-flash-lite). Last error: ${lastError}`);
+  // Mismatch → Pass 3 (Tiebreaker)
+  const pass3 = await singlePass(prompt, parts, geminiKey);
+  if (!pass3) return pass1; // Fallback to Pass 1 if Pass 3 fails
+
+  return pickTiebreaker(pass1, pass2, pass3); // ✅ Majority wins
 }
+
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -145,7 +167,7 @@ export async function POST(req: NextRequest) {
 
       const rawJson = await extractJsonWithGemini(ZOMATO_DELIVERY_GEMINI_PROMPT, b64List);
 
-      const computed = computeZomatoDeliveryMetrics(rawJson, {
+      const computed = computeZomatoDeliveryMetrics(rawJson as any, {
         periodLabel,
         brandId,
         startDate,
@@ -328,7 +350,7 @@ export async function POST(req: NextRequest) {
 
       const rawJson = await extractJsonWithGemini(SWIGGY_DELIVERY_GEMINI_PROMPT, b64List);
 
-      const computed = computeSwiggyDeliveryMetrics(rawJson, {
+      const computed = computeSwiggyDeliveryMetrics(rawJson as any, {
         periodLabel,
         brandId,
         startDate,

@@ -4,6 +4,61 @@ function getGeminiApiKey() {
   return process.env.GEMINI_API_KEY;
 }
 
+async function singleOcrPass(prompt: string, parts: any[], apiKey: string): Promise<Record<string, any> | null> {
+  const models = ["gemini-2.5-flash-lite", "gemini-2.5-flash"];
+  for (const model of models) {
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts }],
+            generationConfig: {
+              temperature: 0,
+              responseMimeType: "application/json",
+            },
+          }),
+        }
+      );
+      if (!response.ok) continue;
+      const data = await response.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      if (!text) continue;
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) continue;
+      return JSON.parse(jsonMatch[0]);
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
+function ocrValuesMatch(a: Record<string, any>, b: Record<string, any>): boolean {
+  for (const key of Object.keys(a)) {
+    const va = Number(a[key] ?? 0);
+    const vb = Number(b[key] ?? 0);
+    if (Math.abs(va - vb) > 1) return false;
+  }
+  return true;
+}
+
+function ocrTiebreaker(a: Record<string, any>, b: Record<string, any>, c: Record<string, any>): Record<string, any> {
+  const result: Record<string, any> = {};
+  for (const key of Object.keys(a)) {
+    const va = Number(a[key] ?? 0);
+    const vb = Number(b[key] ?? 0);
+    const vc = Number(c[key] ?? 0);
+    if (Math.abs(va - vb) <= 1) result[key] = a[key];
+    else if (Math.abs(va - vc) <= 1) result[key] = a[key];
+    else if (Math.abs(vb - vc) <= 1) result[key] = b[key];
+    else result[key] = a[key];
+  }
+  return result;
+}
+
 async function extractJsonWithGemini(prompt: string, imageBase64List: string[]) {
   const apiKey = getGeminiApiKey();
   if (!apiKey) {
@@ -21,50 +76,25 @@ async function extractJsonWithGemini(prompt: string, imageBase64List: string[]) 
       if (match) mimeType = match[1];
       cleanB64 = partsArr[1];
     }
-    parts.push({
-      inlineData: {
-        mimeType,
-        data: cleanB64,
-      },
-    });
+    parts.push({ inlineData: { mimeType, data: cleanB64 } });
   }
 
-  const models = ["gemini-2.5-flash-lite", "gemini-2.5-flash"];
-  let text = "";
+  // Pass 1
+  const pass1 = await singleOcrPass(prompt, parts, apiKey);
+  if (!pass1) throw new Error("No output from Gemini OCR on Pass 1.");
 
-  for (const model of models) {
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts }],
-            generationConfig: {
-              temperature: 0.1,
-              responseMimeType: "application/json",
-            },
-          }),
-        }
-      );
+  // Pass 2
+  const pass2 = await singleOcrPass(prompt, parts, apiKey);
+  if (!pass2) return pass1;
 
-      if (response.ok) {
-        const data = await response.json();
-        text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-        if (text) break;
-      }
-    } catch (e) {
-      console.warn(`[OCR Model ${model} failed]:`, e);
-    }
-  }
+  // Both match → done
+  if (ocrValuesMatch(pass1, pass2)) return pass1;
 
-  if (!text) throw new Error("No output from Gemini OCR");
+  // Mismatch → Pass 3 tiebreaker
+  const pass3 = await singleOcrPass(prompt, parts, apiKey);
+  if (!pass3) return pass1;
 
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error("No valid JSON found in Gemini OCR response");
-
-  return JSON.parse(jsonMatch[0]);
+  return ocrTiebreaker(pass1, pass2, pass3);
 }
 
 export async function POST(req: NextRequest) {
