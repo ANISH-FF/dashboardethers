@@ -619,9 +619,9 @@ export default function PictureAutomationClient({ userId }: { userId: string }) 
                 <input 
                   type="range" 
                   min={1} 
-                  max={20} 
+                  max={10} 
                   value={count} 
-                  onChange={(e) => setCount(Number(e.target.value))}
+                  onChange={(e) => setCount(Math.min(10, Number(e.target.value)))}
                   style={{ width: "100%", accentColor: "#fff", cursor: "pointer" }}
                 />
               </div>
