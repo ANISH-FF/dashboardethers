@@ -104,7 +104,7 @@ export default function PictureAutomationClient({ userId }: { userId: string }) 
       if (event.data === "__DONE__") {
         eventSource.close();
         stopTimer();
-        setLogs((prev) => [...prev, "\n✅ Extraction Complete! Loading Image Gallery..."]);
+        setLogs((prev) => [...prev, "\nExtraction Complete! Loading Image Gallery..."]);
         setTimeout(() => { fetchGallery(brandSlug); }, 1200);
       } else {
         setLogs((prev) => [...prev, event.data]);
@@ -236,7 +236,7 @@ export default function PictureAutomationClient({ userId }: { userId: string }) 
         if (event.data === "__DONE__") {
           eventSource.close();
           stopTimer();
-          setLogs((prev) => [...prev, "\n✅ Extraction Complete! Loading Image Gallery..."]);
+          setLogs((prev) => [...prev, "\nExtraction Complete! Loading Image Gallery..."]);
           setTimeout(() => {
             fetchGallery(data.brand_slug);
           }, 1200);
@@ -248,7 +248,7 @@ export default function PictureAutomationClient({ userId }: { userId: string }) 
         } else if (event.data === "__CAPTCHA_SOLVED__") {
           setLogs((prev) => [
             ...prev,
-            "\n✅ CAPTCHA SOLVED! Resuming scraping...\n"
+            "\nVerification Cleared! Resuming scraping...\n"
           ]);
         } else {
           setLogs((prev) => [...prev, event.data]);

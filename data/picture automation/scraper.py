@@ -1,14 +1,10 @@
 """
-Food Image Batch Scraper — Bing Async HTTP Engine
-==================================================
+Food Image Batch Scraper — Swiggy Direct Food CDN Engine
+=========================================================
 Flow per item:
-  1. Hit Bing's async image endpoint (no browser, no CAPTCHA)
-  2. Parse actual image result URLs using murl pattern
-  3. Filter out paid stock photo sites and non-food homonyms
-  4. Download and rename images (e.g. paneer_butter_masala_01.jpg ...)
-
-Requirements:
-    pip install requests openpyxl
+  1. Hit Swiggy's official Mobile DAPI search endpoint
+  2. Extract direct dish imageId hashes
+  3. Download high-res dish photos directly from Swiggy's Cloudinary CDN (media-assets.swiggy.com)
 """
 
 import os
@@ -82,17 +78,11 @@ USER_AGENTS = [
 def get_stealth_headers():
     return {
         "User-Agent": random.choice(USER_AGENTS),
-        "Referer": "https://www.bing.com/",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Sec-Ch-Ua-Mobile": "?0",
-        "Sec-Fetch-Dest": "document",
-        "Sec-Fetch-Mode": "navigate",
-        "Sec-Fetch-Site": "same-origin",
-        "Upgrade-Insecure-Requests": "1"
+        "Referer": "https://www.swiggy.com/",
+        "Accept": "application/json, text/plain, */*",
     }
 
-def _download_bytes(url, referer="https://www.bing.com/", timeout=10):
+def _download_bytes(url, referer="https://www.swiggy.com/", timeout=10):
     headers = {
         "User-Agent": random.choice(USER_AGENTS),
         "Referer": referer,
@@ -106,115 +96,70 @@ def _download_bytes(url, referer="https://www.bing.com/", timeout=10):
 
 
 # ─────────────────────────────────────────────
-# Core: Bing Async HTTP Image Engine
+# Core: Swiggy Direct Food CDN Image Engine
 # ─────────────────────────────────────────────
 
-def _fast_http_cdn_search(food_name, out_dir, count, platform="zomato", log_fn=None):
+def _fast_http_cdn_search(food_name, out_dir, count, platform="swiggy", log_fn=None):
     food_name_clean = food_name.strip().title()
     saved = []
     seen = set()
 
-    # Block non-food keywords in image URLs and titles (prevents wall/floor/interior/pet/highway/actor images)
-    bad_keywords = {
-        'cat', 'dog', 'pet', 'certificate', 'award', 'temple', 'travel',
-        'map', 'tower', 'town', 'switzerland', 'vietnam', 'breed', 'kitten',
-        'tourism', 'hotel-stay', 'landmark', 'monument', 'scenery', 'landscape',
-        'floor', 'wall', 'room', 'interior', 'furniture', 'building', 'architecture',
-        'wallpaper', 'curtain', 'couch', 'chair', 'house', 'tile', 'bedroom', 'livingroom',
-        'bathroom', 'kitchen-sink', 'lobby', 'hallway', 'decor',
-        'highway', 'japan', 'traffic', 'signboard', 'speed limit', 'expressway',
-        'actor', 'portrait', 'politician', 'news-interview', 'model-agency'
-    }
-
-    # Extract food tokens for strict title relevance check
-    raw_tokens = [w.lower() for w in re.findall(r'\w+', food_name) if len(w) > 2]
-    food_meta_tokens = {
-        "food", "dish", "recipe", "cuisine", "restaurant", "menu", "plate", "curry", "masala",
-        "biryani", "chicken", "paneer", "tikka", "kebab", "naan", "rice", "gravy", "roti",
-        "roll", "burger", "pizza", "momos", "pasta", "chowmein", "noodle", "dosa", "idli",
-        "samosa", "paratha", "dal", "shake", "lassi", "icecream", "cake", "pastry", "waffle",
-        "dessert"
-    }
-
     # Cap count strictly at 10 per item to respect rate limits & quality
     target_count = min(count, 10)
 
-    # Simple human-like queries — Bing handles auto-correction & food relevance
-    queries = [
-        f"{food_name_clean} food",
-        f"{food_name_clean} recipe",
-    ]
-
     if log_fn:
-        log_fn(f"  [Photo Engine] Searching '{food_name_clean}' photos with Strict Title Filter...")
+        log_fn(f"  [Photo Engine] Searching '{food_name_clean}' HD dish photos...")
 
     import time
     import json
+    import urllib.parse
 
-    for query in queries:
-        if len(saved) >= target_count:
-            break
-        try:
-            url = f"https://www.bing.com/images/async?q={requests.utils.quote(query)}&first=1&count=35&adlt=moderate&mmasync=1"
-            headers = get_stealth_headers()
-            r = requests.get(url, headers=headers, timeout=8)
-            if r.status_code == 200:
-                # Parse structured JSON items to inspect Title (t) and Page URL (purl)
-                matches = re.findall(r'(?:m=)?(?:&quot;|")?\{[^}]*?murl[^}]*?\}(?:&quot;|")?', r.text)
+    headers = {
+        "User-Agent": random.choice(USER_AGENTS),
+        "Referer": "https://www.swiggy.com/",
+        "Accept": "application/json, text/plain, */*",
+    }
 
-                murls_with_title = []
-                if matches:
-                    for raw in matches:
-                        try:
-                            clean_json = raw.replace('m=', '').strip('"').strip("'").replace('&quot;', '"')
-                            obj = json.loads(clean_json)
-                            img_url = obj.get("murl", "")
-                            title = str(obj.get("t", "")).lower()
-                            purl = str(obj.get("purl", "")).lower()
-                            u_lower = img_url.lower()
+    # Swiggy Mobile DAPI Search Endpoint
+    lat, lng = "22.804566", "86.202875"
+    dapi_url = f"https://www.swiggy.com/dapi/restaurants/search/v3?lat={lat}&lng={lng}&str={urllib.parse.quote(food_name_clean)}&trackingId=undefined&submitAction=ENTER"
 
-                            combined_context = f"{u_lower} {title} {purl}"
+    try:
+        r = requests.get(dapi_url, headers=headers, timeout=8)
+        if r.status_code == 200:
+            text_data = r.text
+            image_ids = re.findall(r'"(?:imageId|cloudinaryImageId)":"([^"]+)"', text_data)
 
-                            # 1. Reject if any bad non-food keyword exists in context
-                            if any(bad in combined_context for bad in bad_keywords):
-                                continue
+            for img_id in image_ids:
+                if len(saved) >= target_count:
+                    break
 
-                            # 2. STRICT TITLE RELEVANCE: Title/URL MUST contain dish token or food meta token
-                            is_relevant = any(tok in combined_context for tok in raw_tokens) or any(tok in combined_context for tok in food_meta_tokens)
-                            if not is_relevant:
-                                continue
+                img_lower = img_id.lower()
+                if img_id in seen or any(bad in img_lower for bad in ['logo', 'rating', 'icon', 'v15744', 'v1574', 'badge', 'banner']):
+                    continue
+                seen.add(img_id)
 
-                            murls_with_title.append(img_url)
-                        except Exception:
-                            pass
-                else:
-                    murls_with_title = re.findall(r'murl&quot;:&quot;(https?://[^&]+)&quot;', r.text)
+                cdn_url = f"https://media-assets.swiggy.com/swiggy/image/upload/fl_lossy,f_auto,q_auto,w_660/{img_id}"
 
-                for img_url in murls_with_title:
-                    if len(saved) >= target_count:
-                        break
-                    if not img_url or img_url in seen:
+                try:
+                    time.sleep(0.3)
+                    img_bytes = _download_bytes(cdn_url, referer="https://www.swiggy.com/", timeout=5)
+                    if len(img_bytes) < 15 * 1024:  # Minimum 15 KB threshold
                         continue
 
-                    seen.add(img_url)
-
-                    try:
-                        time.sleep(0.3)  # Point-second delay
-                        img_bytes = _download_bytes(img_url, timeout=5)
-                        if len(img_bytes) < 40 * 1024:  # Basic threshold
-                            continue
-                        ext = "webp" if "webp" in img_url.lower() else ("png" if "png" in img_url.lower() else "jpg")
-                        fname = f"img_{len(saved)+1:02d}.{ext}"
-                        fpath = os.path.join(out_dir, fname)
-                        with open(fpath, "wb") as f:
-                            f.write(img_bytes)
-                        saved.append(fname)
-                        if log_fn:
-                            log_fn(f"    [+] Verified & Downloaded: {fname} ({len(img_bytes)//1024} KB)")
-                    except Exception:
-                        continue
-        except Exception:
-            pass
+                    ext = "png" if "png" in img_id.lower() else "jpg"
+                    fname = f"img_{len(saved)+1:02d}.{ext}"
+                    fpath = os.path.join(out_dir, fname)
+                    with open(fpath, "wb") as f:
+                        f.write(img_bytes)
+                    saved.append(fname)
+                    if log_fn:
+                        log_fn(f"    [+] Downloaded HD Photo: {fname} ({len(img_bytes)//1024} KB)")
+                except Exception:
+                    continue
+    except Exception as e:
+        if log_fn:
+            log_fn(f"  [-] Swiggy DAPI search error: {e}")
 
     return saved
 
