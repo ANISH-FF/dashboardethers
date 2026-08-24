@@ -344,7 +344,10 @@ export default function ReportingPage() {
       const discountPct = (discount / grossBase) * 100;
       const adsPct = (ads / grossBase) * 100;
       const commissionPct = postGmv > 0 ? (commission / postGmv) * 100 : 0;
-      const netPayoutPct = (netPayout / grossBase) * 100;
+      const netPayoutWithHyperpure = netPayout + hyperpure;
+      const netPayoutPct = (activeTab === "zomato_delivery" || activeTab === "overall_delivery")
+        ? (netPayoutWithHyperpure / grossBase) * 100
+        : (netPayout / grossBase) * 100;
       const overallBurnPct = 100 - netPayoutPct;
 
       return {
@@ -374,7 +377,7 @@ export default function ReportingPage() {
         adsPct,
         hyperpure,
         netPayout,
-        netPayoutWithHyperpure: netPayout + hyperpure,
+        netPayoutWithHyperpure,
         netPayoutPct,
         overallBurnPct,
       };
@@ -517,7 +520,14 @@ export default function ReportingPage() {
 
       {/* Summary KPI Highlights */}
       {currentItems.length > 0 && (() => {
+        const isHyperpureTab = activeTab === "zomato_delivery" || activeTab === "overall_delivery";
         const totalNetPayout = currentItems.reduce((acc, curr: any) => acc + (curr.netPayout || 0), 0);
+        const totalNetPayoutForPct = currentItems.reduce((acc, curr: any) => {
+          if (isHyperpureTab) {
+            return acc + (curr.netPayoutWithHyperpure !== undefined ? curr.netPayoutWithHyperpure : (curr.netPayout || 0) + (curr.hyperpure || 0));
+          }
+          return acc + (curr.netPayout || 0);
+        }, 0);
         const totalAds = currentItems.reduce((acc, curr: any) => acc + (curr.ads || 0), 0);
         
         // Base for weighted average (SubTotalWithPkg for delivery, PreGmv for dine-in)
@@ -525,7 +535,7 @@ export default function ReportingPage() {
           return acc + (curr.subTotalWithPkg || curr.preGmv || curr.subTotal || 0);
         }, 0);
 
-        const weightedNetPayoutPct = totalBaseGross > 0 ? (totalNetPayout / totalBaseGross) * 100 : 0;
+        const weightedNetPayoutPct = totalBaseGross > 0 ? (totalNetPayoutForPct / totalBaseGross) * 100 : 0;
         const weightedBurnPct = totalBaseGross > 0 ? 100 - weightedNetPayoutPct : 0;
 
         return (

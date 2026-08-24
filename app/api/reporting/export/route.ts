@@ -67,7 +67,9 @@ function computeRollupList<T extends Record<string, any>>(items: T[], isRollupOn
     const discountPct = Number(((discount / grossBase) * 100).toFixed(2));
     const adsPct = Number(((ads / grossBase) * 100).toFixed(2));
     const commissionPct = postGmv > 0 ? Number(((commission / postGmv) * 100).toFixed(2)) : 0;
-    const netPayoutPct = Number(((netPayout / grossBase) * 100).toFixed(2));
+    const netPayoutWithHyperpure = netPayout + hyperpure;
+    const isHyperpureSec = groupItems[0]?.section === "zomato_delivery" || groupItems[0]?.section === "overall_delivery" || hyperpure > 0;
+    const netPayoutPct = Number((((isHyperpureSec ? netPayoutWithHyperpure : netPayout) / grossBase) * 100).toFixed(2));
     const overallBurnPct = Number((100 - netPayoutPct).toFixed(2));
 
     const rollupObj: any = {
