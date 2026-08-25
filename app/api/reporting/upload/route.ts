@@ -30,35 +30,61 @@ const GEMINI_FALLBACK_MODELS = [
   "gemini-2.5-flash",
 ];
 
-async function singlePass(prompt: string, parts: any[], geminiKey: string): Promise<Record<string, any> | null> {
-  for (const model of GEMINI_FALLBACK_MODELS) {
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts }],
-            generationConfig: {
-              temperature: 0,
-              responseMimeType: "application/json",
-            },
-          }),
-        }
-      );
-      if (!response.ok) continue;
-      const data = await response.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!text) continue;
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) continue;
-      return JSON.parse(jsonMatch[0]);
-    } catch {
-      continue;
-    }
+async function singlePass(prompt: string, parts: any[], geminiKey: string, model: string): Promise<Record<string, any> | null> {
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts }],
+          generationConfig: {
+            temperature: 0,
+            responseMimeType: "application/json",
+          },
+        }),
+      }
+    );
+    if (!response.ok) return null;
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) return null;
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return null;
+    return JSON.parse(jsonMatch[0]);
+  } catch {
+    return null;
   }
-  return null;
+}
+
+// Math validation: Zomato — A + B - C - D - E - F = Est. Payout
+function validateZomatoMath(ocr: Record<string, any>): boolean {
+  const A = Math.abs(Number(ocr.commissionable_value || 0));
+  const B = Math.abs(Number(ocr.cancelled_order_refund || 0));
+  const C = Math.abs(Number(ocr.order_level_deduction || 0));
+  const D = Math.abs(Number(ocr.tax_deduction || 0));
+  const E = Math.abs(Number(ocr.ads || 0));
+  const F = Math.abs(Number(ocr.hyperpure || 0));
+  const netPayout = Number(ocr.net_payout || 0);
+  if (A === 0 && netPayout === 0) return true; // nothing extracted, skip
+  const calculated = A + B - C - D - E - F;
+  const tolerance = Math.max(300, Math.abs(netPayout) * 0.04); // 4% or ₹300
+  return Math.abs(calculated - netPayout) <= tolerance;
+}
+
+// Math validation: Swiggy — A - B - C - D - E = Net Payout
+function validateSwiggyMath(ocr: Record<string, any>): boolean {
+  const A = Math.abs(Number(ocr.commissionable_value || 0));
+  const B = Math.abs(Number(ocr.total_fees || 0));
+  const C = Math.abs(Number(ocr.complaints_cancellation || 0));
+  const D = Math.abs(Number(ocr.total_taxes || 0));
+  const E = Math.abs(Number(ocr.ads || 0));
+  const netPayout = Number(ocr.net_payout || 0);
+  if (A === 0 && netPayout === 0) return true; // nothing extracted, skip
+  const calculated = A - B - C - D - E;
+  const tolerance = Math.max(300, Math.abs(netPayout) * 0.04); // 4% or ₹300
+  return Math.abs(calculated - netPayout) <= tolerance;
 }
 
 function jsonValuesMatch(a: Record<string, any>, b: Record<string, any>): boolean {
@@ -114,12 +140,12 @@ async function extractJsonWithGemini(prompt: string, imageBase64List: string[]) 
     });
   }
 
-  // Pass 1
-  const pass1 = await singlePass(prompt, parts, geminiKey);
+  // Pass 1 — gemini-2.5-flash-lite
+  const pass1 = await singlePass(prompt, parts, geminiKey, "gemini-2.5-flash-lite");
   if (!pass1) throw new Error("All Gemini models failed on Pass 1.");
 
-  // Pass 2
-  const pass2 = await singlePass(prompt, parts, geminiKey);
+  // Pass 2 — gemini-2.5-flash (different model to catch systematic errors)
+  const pass2 = await singlePass(prompt, parts, geminiKey, "gemini-2.5-flash");
   if (!pass2) throw new Error("All Gemini models failed on Pass 2.");
 
   // Compare Pass 1 & 2
@@ -127,8 +153,8 @@ async function extractJsonWithGemini(prompt: string, imageBase64List: string[]) 
     return pass1; // ✅ Both match — done
   }
 
-  // Mismatch → Pass 3 (Tiebreaker)
-  const pass3 = await singlePass(prompt, parts, geminiKey);
+  // Mismatch → Pass 3 (Tiebreaker — flash-lite)
+  const pass3 = await singlePass(prompt, parts, geminiKey, "gemini-2.5-flash-lite");
   if (!pass3) return pass1; // Fallback to Pass 1 if Pass 3 fails
 
   return pickTiebreaker(pass1, pass2, pass3); // ✅ Majority wins
@@ -169,6 +195,11 @@ export async function POST(req: NextRequest) {
       }
 
       const rawJson = await extractJsonWithGemini(ZOMATO_DELIVERY_GEMINI_PROMPT, b64List);
+
+      // Math validation: A + B - C - D - E - F must equal Est. Payout
+      if (!validateZomatoMath(rawJson)) {
+        throw new Error("Payout values don't add up mathematically. Please re-upload a clearer screenshot.");
+      }
 
       const computed = computeZomatoDeliveryMetrics(rawJson as any, {
         periodLabel,
@@ -352,6 +383,11 @@ export async function POST(req: NextRequest) {
       }
 
       const rawJson = await extractJsonWithGemini(SWIGGY_DELIVERY_GEMINI_PROMPT, b64List);
+
+      // Math validation: A - B - C - D - E must equal Net Payout
+      if (!validateSwiggyMath(rawJson)) {
+        throw new Error("Payout values don't add up mathematically. Please re-upload a clearer screenshot.");
+      }
 
       const computed = computeSwiggyDeliveryMetrics(rawJson as any, {
         periodLabel,

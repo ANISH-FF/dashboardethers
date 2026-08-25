@@ -4,36 +4,32 @@ function getGeminiApiKey() {
   return process.env.GEMINI_API_KEY;
 }
 
-async function singleOcrPass(prompt: string, parts: any[], apiKey: string): Promise<Record<string, any> | null> {
-  const models = ["gemini-2.5-flash-lite", "gemini-2.5-flash"];
-  for (const model of models) {
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts }],
-            generationConfig: {
-              temperature: 0,
-              responseMimeType: "application/json",
-            },
-          }),
-        }
-      );
-      if (!response.ok) continue;
-      const data = await response.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      if (!text) continue;
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) continue;
-      return JSON.parse(jsonMatch[0]);
-    } catch {
-      continue;
-    }
+async function singleOcrPass(prompt: string, parts: any[], apiKey: string, model: string): Promise<Record<string, any> | null> {
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts }],
+          generationConfig: {
+            temperature: 0,
+            responseMimeType: "application/json",
+          },
+        }),
+      }
+    );
+    if (!response.ok) return null;
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    if (!text) return null;
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return null;
+    return JSON.parse(jsonMatch[0]);
+  } catch {
+    return null;
   }
-  return null;
 }
 
 function ocrValuesMatch(a: Record<string, any>, b: Record<string, any>): boolean {
@@ -82,19 +78,19 @@ async function extractJsonWithGemini(prompt: string, imageBase64List: string[]) 
     parts.push({ inlineData: { mimeType, data: cleanB64 } });
   }
 
-  // Pass 1
-  const pass1 = await singleOcrPass(prompt, parts, apiKey);
+  // Pass 1 — gemini-2.5-flash-lite
+  const pass1 = await singleOcrPass(prompt, parts, apiKey, "gemini-2.5-flash-lite");
   if (!pass1) throw new Error("No output from Gemini OCR on Pass 1.");
 
-  // Pass 2
-  const pass2 = await singleOcrPass(prompt, parts, apiKey);
+  // Pass 2 — gemini-2.5-flash (different model to catch systematic errors)
+  const pass2 = await singleOcrPass(prompt, parts, apiKey, "gemini-2.5-flash");
   if (!pass2) return pass1;
 
   // Both match → done
   if (ocrValuesMatch(pass1, pass2)) return pass1;
 
-  // Mismatch → Pass 3 tiebreaker
-  const pass3 = await singleOcrPass(prompt, parts, apiKey);
+  // Mismatch → Pass 3 tiebreaker (flash-lite)
+  const pass3 = await singleOcrPass(prompt, parts, apiKey, "gemini-2.5-flash-lite");
   if (!pass3) return pass1;
 
   return ocrTiebreaker(pass1, pass2, pass3);
