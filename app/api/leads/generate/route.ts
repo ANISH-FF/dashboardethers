@@ -36,6 +36,7 @@ STRICT CONSTRAINTS:
 1. EXCLUDE national/international chain brands (e.g. KFC, Domino's, McDonald's, Burger King, Pizza Hut, Subway, Starbucks, Haldiram's).
 2. Focus strictly on independent, local ${category} outlets in ${location}.
 3. Provide details: brandName, owner/POC name (use 'Store Manager' if unknown), a valid 10-digit Indian phone number starting with 9, 8, or 7, short neighborhood address, and estimated monthly contract value in INR.
+4. IMPORTANT: Only include restaurants that have any active presence on Swiggy or Zomato — either online delivery OR Swiggy Dine-In / Zomato Dining (dineout). Exclude restaurants with zero presence on any food aggregator platform.
 
 Return ONLY a raw JSON array of objects following this exact structure:
 [
