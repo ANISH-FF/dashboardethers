@@ -30,13 +30,15 @@ export async function POST(req: NextRequest) {
     const count = Math.min(Math.max(Number(body.count) || 10, 1), 10);
 
     const prompt = `You are a B2B lead discovery assistant for food & beverage outlets in India.
-Generate up to ${count} real or realistic independent local ${category}s operating in or near "${location}".
+Think as if you are browsing the Swiggy or Zomato app in "${location}" right now — only suggest ${category}s that would genuinely appear in search results on these platforms.
 
 STRICT CONSTRAINTS:
 1. EXCLUDE national/international chain brands (e.g. KFC, Domino's, McDonald's, Burger King, Pizza Hut, Subway, Starbucks, Haldiram's).
 2. Focus strictly on independent, local ${category} outlets in ${location}.
 3. Provide details: brandName, owner/POC name (use 'Store Manager' if unknown), a valid 10-digit Indian phone number starting with 9, 8, or 7, short neighborhood address, and estimated monthly contract value in INR.
 4. IMPORTANT: Only include restaurants that have any active presence on Swiggy or Zomato — either online delivery OR Swiggy Dine-In / Zomato Dining (dineout). Exclude restaurants with zero presence on any food aggregator platform.
+5. CRITICAL: Do NOT hallucinate or invent restaurant names. Only include restaurants you have high confidence about from your training data — real places with identifiable cuisine type, known locality, and likely online ordering presence.
+6. In the comments field, mention the cuisine type and what the restaurant is known for — this helps confirm it is a real, identifiable outlet.
 
 Return ONLY a raw JSON array of objects following this exact structure:
 [
@@ -45,7 +47,7 @@ Return ONLY a raw JSON array of objects following this exact structure:
     "poc": "Owner/Manager Name",
     "ownerPhone": "9835XXXXXX",
     "address": "Short neighborhood address",
-    "comments": "Specialty or key highlight"
+    "comments": "Cuisine type & what they are known for"
   }
 ]`;
 
