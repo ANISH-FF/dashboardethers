@@ -81,7 +81,10 @@ function pickTiebreaker(a: Record<string, any>, b: Record<string, any>, c: Recor
     if (Math.abs(va - vb) <= 1) result[key] = a[key]; // Pass 1 & 2 agree
     else if (Math.abs(va - vc) <= 1) result[key] = a[key]; // Pass 1 & 3 agree
     else if (Math.abs(vb - vc) <= 1) result[key] = b[key]; // Pass 2 & 3 agree
-    else result[key] = a[key]; // All 3 differ — fallback to Pass 1
+    else {
+      // All 3 differ — screenshot could not be read accurately, reject entirely
+      throw new Error("Screenshot could not be read accurately. Please try uploading again.");
+    }
   }
   return result;
 }

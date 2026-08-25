@@ -54,7 +54,10 @@ function ocrTiebreaker(a: Record<string, any>, b: Record<string, any>, c: Record
     if (Math.abs(va - vb) <= 1) result[key] = a[key];
     else if (Math.abs(va - vc) <= 1) result[key] = a[key];
     else if (Math.abs(vb - vc) <= 1) result[key] = b[key];
-    else result[key] = a[key];
+    else {
+      // All 3 differ — screenshot could not be read accurately, reject entirely
+      throw new Error("Screenshot could not be read accurately. Please try uploading again.");
+    }
   }
   return result;
 }
