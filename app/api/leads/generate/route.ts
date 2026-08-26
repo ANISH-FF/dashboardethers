@@ -42,7 +42,7 @@ async function fetchGooglePlacesLeads(
     headers: {
       "Content-Type": "application/json",
       "X-Goog-Api-Key": apiKey,
-      "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.internationalPhoneNumber,places.rating,places.userRatingCount,places.googleMapsUri,places.businessStatus,places.primaryTypeDisplayName",
+      "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.internationalPhoneNumber,places.primaryTypeDisplayName,places.businessStatus",
     },
     body: JSON.stringify({
       textQuery: query,
@@ -90,9 +90,7 @@ async function fetchGooglePlacesLeads(
       continue;
     }
 
-    const ratingStr = place.rating ? `${place.rating}⭐ (${place.userRatingCount || 0} reviews)` : "";
     const typeStr = place.primaryTypeDisplayName?.text || category;
-    const cleanComment = ratingStr ? `${ratingStr} • ${typeStr}` : (typeStr || `Discovered in ${location}`);
 
     freshLeads.push({
       brandName: rawName,
@@ -100,10 +98,7 @@ async function fetchGooglePlacesLeads(
       ownerPhone: rawPhone || "Contact Not Publicly Listed",
       location: place.formattedAddress || location,
       category: typeStr || category,
-      comments: cleanComment,
-      rating: place.rating,
-      userRatingCount: place.userRatingCount,
-      googleMapsUri: place.googleMapsUri,
+      comments: "", // Empty by default for employee manual notes
     });
 
     // Mark in set to prevent intra-batch duplicates
@@ -150,7 +145,7 @@ export async function POST(req: NextRequest) {
         brandName: item.brandName,
         poc: item.poc || "Owner / Manager",
         ownerPhone: item.ownerPhone,
-        comments: item.comments || `Discovered in ${location}`,
+        comments: "", // Clean empty comments for employee call notes
         location: item.location || location,
         category: item.category || category,
         status: "In Talks",
