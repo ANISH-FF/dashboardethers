@@ -66,11 +66,20 @@ function validateZomatoMath(ocr: Record<string, any>): boolean {
   const D = Math.abs(Number(ocr.tax_deduction || 0));
   const E = Math.abs(Number(ocr.ads || 0));
   const F = Math.abs(Number(ocr.hyperpure || 0));
-  const netPayout = Number(ocr.net_payout || 0);
+  let netPayout = Number(ocr.net_payout || 0);
   if (A === 0 && netPayout === 0) return true; // nothing extracted, skip
   const calculated = A + B - C - D - E - F;
   const tolerance = 2.5; // Strict zero-tolerance (<= ₹2.5 for decimal rounding only)
-  return Math.abs(calculated - netPayout) <= tolerance;
+  
+  if (Math.abs(calculated - netPayout) <= tolerance) {
+    return true;
+  }
+  // Auto-correct if AI dropped the minus sign from red negative payout text
+  if (Math.abs(calculated + netPayout) <= tolerance) {
+    ocr.net_payout = calculated;
+    return true;
+  }
+  return false;
 }
 
 // Math validation: Swiggy — A - B - C - D - E = Net Payout
@@ -80,11 +89,20 @@ function validateSwiggyMath(ocr: Record<string, any>): boolean {
   const C = Math.abs(Number(ocr.complaints_cancellation || 0));
   const D = Math.abs(Number(ocr.total_taxes || 0));
   const E = Math.abs(Number(ocr.ads || 0));
-  const netPayout = Number(ocr.net_payout || 0);
+  let netPayout = Number(ocr.net_payout || 0);
   if (A === 0 && netPayout === 0) return true; // nothing extracted, skip
   const calculated = A - B - C - D - E;
   const tolerance = 2.5; // Strict zero-tolerance (<= ₹2.5 for decimal rounding only)
-  return Math.abs(calculated - netPayout) <= tolerance;
+
+  if (Math.abs(calculated - netPayout) <= tolerance) {
+    return true;
+  }
+  // Auto-correct if AI dropped the minus sign
+  if (Math.abs(calculated + netPayout) <= tolerance) {
+    ocr.net_payout = calculated;
+    return true;
+  }
+  return false;
 }
 
 async function extractJsonWithGemini(
