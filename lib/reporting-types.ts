@@ -112,9 +112,9 @@ export function computeZomatoDelivery(
   const subTotal = Number(input.subTotal || 0);
   const packagingCharges = Number(input.packagingCharges || 0);
   const subTotalWithPkg =
-    input.subTotalWithPkg !== undefined && input.subTotalWithPkg !== 0
-      ? Number(input.subTotalWithPkg)
-      : subTotal + packagingCharges;
+    (subTotal > 0 || packagingCharges > 0)
+      ? (subTotal + packagingCharges)
+      : Number(input.subTotalWithPkg || 0);
 
   const cancelledOrderRefund = Number(input.cancelledOrderRefund || 0);
   const discount = Number(input.discount || 0);
@@ -175,9 +175,9 @@ export function computeSwiggyDelivery(
   const subTotal = Number(input.subTotal || 0);
   const packagingCharges = Number(input.packagingCharges || 0);
   const subTotalWithPkg =
-    input.subTotalWithPkg !== undefined && input.subTotalWithPkg !== 0
-      ? Number(input.subTotalWithPkg)
-      : subTotal + packagingCharges;
+    (subTotal > 0 || packagingCharges > 0)
+      ? (subTotal + packagingCharges)
+      : Number(input.subTotalWithPkg || 0);
 
   const discount = Number(input.discount || 0);
   const discountPct =

@@ -18,6 +18,8 @@ Respond ONLY with a JSON object containing these exact keys (use 0 if a field is
   "packaging_charges": number,
   "sub_total_with_pkg": number,
   "cancelled_order_refund": number,
+  "promo_discount": number,
+  "other_discount": number,
   "discount": number,
   "delivery_charge_discount": number,
   "commissionable_value": number,
@@ -36,7 +38,9 @@ Extraction Rules:
 - "packaging_charges": Total container/packaging fee collected.
 - "sub_total_with_pkg": Subtotal + Packaging charges.
 - "cancelled_order_refund": Amount credited/refunded for cancelled orders.
-- "discount": Sum of promo discounts, flat offs, Zomato Gold discounts, freebies, relisted discounts borne by merchant.
+- "promo_discount": Read strictly from "Restaurant discount (Promos)" line (e.g. 23712.06), else 0.
+- "other_discount": Read strictly from "Restaurant discount (Flat offs, Freebies, Gold, relisted orders and others)" line (e.g. 12480.00), else 0.
+- "discount": Sum of promo discounts and flat offs/other discounts borne by merchant.
 - "delivery_charge_discount": Read strictly from "Delivery charge discount" line if present (e.g. 200.25), else 0.
 - "commissionable_value": Read strictly from "Net order value (A)" on Zomato screenshot (e.g. 63905.53), else sub_total + packaging_charges - discount.
 - "order_level_deduction": Read strictly from "Order level deductions (C)" header on Zomato screenshot (e.g. 16580.86), else sum of base service fee, payment mechanism fee, long distance enablement fee.
@@ -69,7 +73,13 @@ export function computeZomatoDeliveryMetrics(
       : subTotal + packagingCharges;
 
   const cancelledOrderRefund = Math.abs(Number(rawInput.cancelled_order_refund || 0));
-  const baseDiscount = Math.abs(Number(rawInput.discount || 0));
+  
+  const promoDisc = Math.abs(Number(rawInput.promo_discount || 0));
+  const otherDisc = Math.abs(Number(rawInput.other_discount || 0));
+  const baseDiscount = (promoDisc > 0 || otherDisc > 0)
+    ? (promoDisc + otherDisc)
+    : Math.abs(Number(rawInput.discount || 0));
+
   const deliveryChargeDiscount = Math.abs(Number(rawInput.delivery_charge_discount || 0));
   const discount = baseDiscount + deliveryChargeDiscount;
   

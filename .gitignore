@@ -13,4 +13,9 @@ public/uploads/*
 !public/uploads/Hemanyasignature.jpeg
 !public/uploads/tanishasignature.jpeg
 data/PICTURE AUTOMATION BACKUP/
+__pycache__/
+*.pyc
+*.tsbuildinfo
+reporting_backup/
+qwality test/
 

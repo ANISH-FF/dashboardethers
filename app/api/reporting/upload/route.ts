@@ -69,7 +69,7 @@ function validateZomatoMath(ocr: Record<string, any>): boolean {
   const netPayout = Number(ocr.net_payout || 0);
   if (A === 0 && netPayout === 0) return true; // nothing extracted, skip
   const calculated = A + B - C - D - E - F;
-  const tolerance = Math.max(300, Math.abs(netPayout) * 0.04); // 4% or ₹300
+  const tolerance = 2.5; // Strict zero-tolerance (<= ₹2.5 for decimal rounding only)
   return Math.abs(calculated - netPayout) <= tolerance;
 }
 
@@ -83,39 +83,15 @@ function validateSwiggyMath(ocr: Record<string, any>): boolean {
   const netPayout = Number(ocr.net_payout || 0);
   if (A === 0 && netPayout === 0) return true; // nothing extracted, skip
   const calculated = A - B - C - D - E;
-  const tolerance = Math.max(300, Math.abs(netPayout) * 0.04); // 4% or ₹300
+  const tolerance = 2.5; // Strict zero-tolerance (<= ₹2.5 for decimal rounding only)
   return Math.abs(calculated - netPayout) <= tolerance;
 }
 
-function jsonValuesMatch(a: Record<string, any>, b: Record<string, any>): boolean {
-  for (const key of Object.keys(a)) {
-    const va = Number(a[key] ?? 0);
-    const vb = Number(b[key] ?? 0);
-    // Allow < 1 rupee difference (decimal formatting tolerance)
-    if (Math.abs(va - vb) > 1) return false;
-  }
-  return true;
-}
-
-function pickTiebreaker(a: Record<string, any>, b: Record<string, any>, c: Record<string, any>): Record<string, any> {
-  // For each key, pick the value that appears in at least 2 of 3 passes
-  const result: Record<string, any> = {};
-  for (const key of Object.keys(a)) {
-    const va = Number(a[key] ?? 0);
-    const vb = Number(b[key] ?? 0);
-    const vc = Number(c[key] ?? 0);
-    if (Math.abs(va - vb) <= 1) result[key] = a[key]; // Pass 1 & 2 agree
-    else if (Math.abs(va - vc) <= 1) result[key] = a[key]; // Pass 1 & 3 agree
-    else if (Math.abs(vb - vc) <= 1) result[key] = b[key]; // Pass 2 & 3 agree
-    else {
-      // All 3 differ — screenshot could not be read accurately, reject entirely
-      throw new Error("Screenshot could not be read accurately. Please try uploading again.");
-    }
-  }
-  return result;
-}
-
-async function extractJsonWithGemini(prompt: string, imageBase64List: string[]) {
+async function extractJsonWithGemini(
+  prompt: string, 
+  imageBase64List: string[], 
+  validateFn?: (data: Record<string, any>) => boolean
+) {
   const geminiKey = getGeminiApiKey();
   if (!geminiKey) {
     throw new Error("Missing GEMINI_API_KEY in .env");
@@ -140,24 +116,25 @@ async function extractJsonWithGemini(prompt: string, imageBase64List: string[]) 
     });
   }
 
-  // Pass 1 — gemini-2.5-flash-lite
-  const pass1 = await singlePass(prompt, parts, geminiKey, "gemini-2.5-flash-lite");
-  if (!pass1) throw new Error("All Gemini models failed on Pass 1.");
-
-  // Pass 2 — gemini-2.5-flash (different model to catch systematic errors)
-  const pass2 = await singlePass(prompt, parts, geminiKey, "gemini-2.5-flash");
-  if (!pass2) throw new Error("All Gemini models failed on Pass 2.");
-
-  // Compare Pass 1 & 2
-  if (jsonValuesMatch(pass1, pass2)) {
-    return pass1; // ✅ Both match — done
+  // Pass 1: Primary High-Precision Gemini 2.5 Flash
+  const pass1 = await singlePass(prompt, parts, geminiKey, "gemini-2.5-flash");
+  if (pass1) {
+    if (!validateFn || validateFn(pass1)) {
+      return pass1; // ✅ Math verified on Pass 1
+    }
+    console.warn("[OCR Math Verification] Pass 1 math validation failed. Triggering automatic high-grade retry...");
   }
 
-  // Mismatch → Pass 3 (Tiebreaker — flash-lite)
-  const pass3 = await singlePass(prompt, parts, geminiKey, "gemini-2.5-flash-lite");
-  if (!pass3) return pass1; // Fallback to Pass 1 if Pass 3 fails
+  // Pass 2: Automatic Retry Pass with Gemini 2.5 Flash
+  const pass2 = await singlePass(prompt, parts, geminiKey, "gemini-2.5-flash");
+  if (pass2) {
+    if (!validateFn || validateFn(pass2)) {
+      return pass2; // ✅ Math verified on retry
+    }
+  }
 
-  return pickTiebreaker(pass1, pass2, pass3); // ✅ Majority wins
+  // Fallback: If both fail strict math check, throw clean error
+  throw new Error("Screenshot calculations could not be verified accurately. Please try uploading a clearer, uncropped screenshot.");
 }
 
 
@@ -194,12 +171,7 @@ export async function POST(req: NextRequest) {
         b64List.push(Buffer.from(bytes).toString("base64"));
       }
 
-      const rawJson = await extractJsonWithGemini(ZOMATO_DELIVERY_GEMINI_PROMPT, b64List);
-
-      // Math validation: A + B - C - D - E - F must equal Est. Payout
-      if (!validateZomatoMath(rawJson)) {
-        throw new Error("Payout values don't add up mathematically. Please re-upload a clearer screenshot.");
-      }
+      const rawJson = await extractJsonWithGemini(ZOMATO_DELIVERY_GEMINI_PROMPT, b64List, validateZomatoMath);
 
       const computed = computeZomatoDeliveryMetrics(rawJson as any, {
         periodLabel,
@@ -382,12 +354,7 @@ export async function POST(req: NextRequest) {
         b64List.push(Buffer.from(bytes).toString("base64"));
       }
 
-      const rawJson = await extractJsonWithGemini(SWIGGY_DELIVERY_GEMINI_PROMPT, b64List);
-
-      // Math validation: A - B - C - D - E must equal Net Payout
-      if (!validateSwiggyMath(rawJson)) {
-        throw new Error("Payout values don't add up mathematically. Please re-upload a clearer screenshot.");
-      }
+      const rawJson = await extractJsonWithGemini(SWIGGY_DELIVERY_GEMINI_PROMPT, b64List, validateSwiggyMath);
 
       const computed = computeSwiggyDeliveryMetrics(rawJson as any, {
         periodLabel,

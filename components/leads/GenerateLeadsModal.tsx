@@ -106,8 +106,6 @@ export function GenerateLeadsModal({ onClose, onLeadsGenerated }: GenerateLeadsM
               <option value="Restaurant">Restaurant</option>
               <option value="Cafe">Cafe</option>
               <option value="Bakery">Bakery</option>
-              <option value="Cloud Kitchen">Cloud Kitchen</option>
-              <option value="Fine Dining">Fine Dining</option>
               <option value="Fast Food">Fast Food</option>
             </select>
           </div>

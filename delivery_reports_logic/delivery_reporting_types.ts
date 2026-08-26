@@ -8,6 +8,8 @@ export interface ZomatoDeliveryRawOCR {
   packaging_charges: number;
   sub_total_with_pkg?: number;
   cancelled_order_refund: number;
+  promo_discount?: number;
+  other_discount?: number;
   discount: number;
   delivery_charge_discount?: number;
   commissionable_value: number;
