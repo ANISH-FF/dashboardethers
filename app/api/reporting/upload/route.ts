@@ -102,6 +102,7 @@ function validateSwiggyMath(ocr: Record<string, any>): boolean {
     ocr.net_payout = calculated;
     return true;
   }
+  console.log(`[Validation Math Diff] Expected: ${calculated}, Got: ${netPayout}`);
   return false;
 }
 
@@ -125,6 +126,10 @@ async function extractJsonWithGemini(
       const match = partsArr[0].match(/data:(.*?);base64/);
       if (match) mimeType = match[1];
       cleanB64 = partsArr[1];
+    } else {
+      if (cleanB64.startsWith("iVBORw0KGgo")) mimeType = "image/png";
+      else if (cleanB64.startsWith("/9j/")) mimeType = "image/jpeg";
+      else if (cleanB64.startsWith("UklGR")) mimeType = "image/webp";
     }
     parts.push({
       inlineData: {
@@ -137,25 +142,24 @@ async function extractJsonWithGemini(
   // Pass 1: Primary High-Precision Gemini 2.5 Flash
   const pass1 = await singlePass(prompt, parts, geminiKey, "gemini-2.5-flash");
   if (pass1) {
+    console.log("[OCR Pass 1 Output]:", JSON.stringify(pass1));
     if (!validateFn || validateFn(pass1)) {
       return pass1; // ✅ Math verified on Pass 1
     }
     console.warn("[OCR Math Verification] Pass 1 math validation failed. Triggering automatic high-grade retry...");
   }
 
-  // Pass 2: Automatic Retry Pass with Gemini 2.5 Flash
+  // Pass 2: High-Grade Retry Pass with Gemini 2.5 Flash
   const pass2 = await singlePass(prompt, parts, geminiKey, "gemini-2.5-flash");
   if (pass2) {
+    console.log("[OCR Pass 2 Output]:", JSON.stringify(pass2));
     if (!validateFn || validateFn(pass2)) {
       return pass2; // ✅ Math verified on retry
     }
   }
 
-  // Fallback: If both fail strict math check, throw clean error
   throw new Error("Screenshot calculations could not be verified accurately. Please try uploading a clearer, uncropped screenshot.");
 }
-
-
 
 export async function POST(req: NextRequest) {
   try {

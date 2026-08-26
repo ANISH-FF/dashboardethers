@@ -125,6 +125,10 @@ async function extractJsonWithGemini(
       const match = partsArr[0].match(/data:(.*?);base64/);
       if (match) mimeType = match[1];
       cleanB64 = partsArr[1];
+    } else {
+      if (cleanB64.startsWith("iVBORw0KGgo")) mimeType = "image/png";
+      else if (cleanB64.startsWith("/9j/")) mimeType = "image/jpeg";
+      else if (cleanB64.startsWith("UklGR")) mimeType = "image/webp";
     }
     parts.push({ inlineData: { mimeType, data: cleanB64 } });
   }
@@ -132,6 +136,7 @@ async function extractJsonWithGemini(
   // Pass 1 — Primary High-Precision Gemini 2.5 Flash
   const pass1 = await singleOcrPass(prompt, parts, apiKey, "gemini-2.5-flash");
   if (pass1) {
+    console.log("[Projections OCR Pass 1 Output]:", JSON.stringify(pass1));
     if (!validateFn || validateFn(pass1)) {
       return pass1; // ✅ Math verified on Pass 1
     }
@@ -141,6 +146,7 @@ async function extractJsonWithGemini(
   // Pass 2 — Automatic Retry Pass with Gemini 2.5 Flash
   const pass2 = await singleOcrPass(prompt, parts, apiKey, "gemini-2.5-flash");
   if (pass2) {
+    console.log("[Projections OCR Pass 2 Output]:", JSON.stringify(pass2));
     if (!validateFn || validateFn(pass2)) {
       return pass2; // ✅ Math verified on retry
     }
@@ -193,17 +199,17 @@ Rules:
 - "sub_total": Sum of base item prices.
 - "packaging_charges": Total container/packaging fee collected.
 - "sub_total_with_pkg": Subtotal + Packaging charges.
-- "cancelled_order_refund": Read strictly from "Cancelled order refunds" under Additions (B) (e.g. 3113.73), else 0.
+- "cancelled_order_refund": Read from "Additions (B)" header or "Cancelled order refunds" line (e.g. 97.97 or 3113.73), else 0.
 - "promo_discount": Read strictly from "Restaurant discount (Promos)" line (e.g. 23712.06), else 0.
 - "other_discount": Read strictly from "Restaurant discount (Flat offs, Freebies, Gold, relisted orders and others)" line (e.g. 12480.00), else 0.
 - "discount": Sum of promo discounts and flat offs/other discounts borne by merchant.
 - "delivery_charge_discount": Read strictly from "Delivery charge discount" line if present (e.g. 200.25), else 0.
 - "commissionable_value": Read strictly from "Net order value (A)" on Zomato screenshot (e.g. 63905.53), else sub_total + packaging_charges - discount.
-- "order_level_deduction": Read strictly from "Order level deductions (C)" header on Zomato screenshot (e.g. 79412.33), else sum of base service fee, payment mechanism fee, long distance enablement fee.
-- "tax_deduction": Read strictly from "Tax deductions (D)" header on Zomato screenshot (e.g. 31040.89), else sum of GST on service fees, TCS (Sec 52), TDS (Sec 194O), and GST u/s 9(5).
-- "ads": Read from Growth / Ad spend section (e.g. 90844.54).
-- "hyperpure": Read B2B raw material procurement deduction if present (e.g. 53241.55).
-- "net_payout": Read strictly from "FINAL PAYOUT" or "Est. payout (A + B + C + D + E + F)". Include negative sign if red/minus (e.g. -15548.59).`;
+- "order_level_deduction": Read strictly from "Order level deductions (C)" header on Zomato screenshot (e.g. 14667.80), else sum of base service fee, payment mechanism fee, long distance enablement fee.
+- "tax_deduction": Read strictly from "Tax deductions (D)" header on Zomato screenshot (e.g. 5640.95), else sum of GST on service fees, TCS (Sec 52), TDS (Sec 194O), and GST u/s 9(5).
+- "ads": Read from Investments in growth (E) / Online ordering ads spend section (e.g. 14322.78), else 0.
+- "hyperpure": Read from Hyperpure spend (F) B2B raw material procurement deduction if present (e.g. 39750.60), else 0.
+- "net_payout": Read strictly from "FINAL PAYOUT" or "Est. payout (A + B + C + D + E + F)". Include negative sign if red/minus (e.g. -12511.27).`;
 
       const raw = await extractJsonWithGemini(prompt, b64List, validateZomatoMath);
 
