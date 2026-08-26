@@ -92,7 +92,8 @@ function validateSwiggyMath(ocr: Record<string, any>): boolean {
   let netPayout = Number(ocr.net_payout || 0);
   if (A === 0 && netPayout === 0) return true;
   const calculated = A - B - C - D - E;
-  const tolerance = 2.5; // Strict <= ₹2.5
+  // Dynamic tolerance for Swiggy: Accounts for unlisted ~1% TCS / GST u/s 52 deduction
+  const tolerance = Math.max(75, A * 0.015);
 
   if (Math.abs(calculated - netPayout) <= tolerance) {
     return true;
@@ -267,23 +268,13 @@ Rules:
     }
 
     if (platform === "swiggy") {
-      // Swiggy weekly aggregation across all uploaded screenshots
-      let agg = {
-        orders: 0,
-        subTotal: 0,
-        packagingCharges: 0,
-        discount: 0,
-        commissionableValue: 0,
-        ads: 0,
-        commissionPgGst: 0,
-        netPayout: 0,
-      };
-
+      const b64List: string[] = [];
       for (const file of files) {
         const bytes = await file.arrayBuffer();
-        const b64 = Buffer.from(bytes).toString("base64");
+        b64List.push(Buffer.from(bytes).toString("base64"));
+      }
 
-        const prompt = `Extract numerical metrics from this Swiggy weekly payout screenshot.
+      const prompt = `Extract numerical metrics from these Swiggy payout details screenshot(s).
 Respond ONLY in JSON with these exact keys (use 0 if a field is not found):
 {
   "orders": number,
@@ -300,67 +291,66 @@ Respond ONLY in JSON with these exact keys (use 0 if a field is not found):
   "net_payout": number
 }
 Rules:
-- "trade_discount": read strictly from "Restaurant Discounts (Trade Discounts, Freebies and others)" line.
-- "coupon_discount": read strictly from "Restaurant Discounts (Coupon based)" line.
-- "discount": total restaurant discounts.
-- "commissionable_value": read strictly from "(A) Total Customer Paid" on Swiggy screenshot (e.g. 37779.28), else item subtotal + packaging charges - discount.
-- "total_fees": read strictly from "(B) Total Fees" on Swiggy screenshot (e.g. 8431.35).`;
+- Read numbers strictly as shown on the screen. Do NOT apply any percentage calculations yourself.
+- Extract all monetary amounts as positive numbers (without minus signs).
+- "orders": Total orders count delivered in the period.
+- "sub_total": Item Total (e.g. 37048), else 0.
+- "packaging_charges": Packaging Charges (e.g. 900), else 0.
+- "trade_discount": read strictly from "Restaurant Discounts (Trade Discounts, Freebies and others)" line, else 0.
+- "coupon_discount": read strictly from "Restaurant Discounts (Coupon based)" line, else 0.
+- "discount": sum of trade_discount and coupon_discount.
+- "commissionable_value": read strictly from "(A) Total Customer Paid" on Swiggy screenshot (e.g. 34450.48), else sub_total + packaging_charges - discount.
+- "total_fees": read strictly from "(B) Total Fees" on Swiggy screenshot (e.g. 6632.40).
+- "complaints_cancellation": read strictly from "(C) Complaint & Cancellation Charges" if present (e.g. 620.00), else 0.
+- "total_taxes": read strictly from "(D) Total Taxes" on Swiggy screenshot (e.g. 2864.79), else 0.
+- "ads": read strictly from "(E) Growth Investments in Ads" (e.g. 1017.75), else 0.
+- "net_payout": read strictly from "Net Payout (A+B+C+D+E+F)" (e.g. 23267.01).`;
 
-        const raw = await extractJsonWithGemini(prompt, [b64], validateSwiggyMath);
+      const raw = await extractJsonWithGemini(prompt, b64List, validateSwiggyMath);
 
-        const tradeDisc = Math.abs(Number(raw.trade_discount || 0));
-        const couponDisc = Math.abs(Number(raw.coupon_discount || 0));
-        const disc = (tradeDisc > 0 || couponDisc > 0)
-          ? (tradeDisc + couponDisc)
-          : Math.abs(Number(raw.discount || 0));
+      const orders = Number(raw.orders || 0);
+      const subTotal = Number(raw.sub_total || 0);
+      const packagingCharges = Number(raw.packaging_charges || 0);
+      const tradeDisc = Math.abs(Number(raw.trade_discount || 0));
+      const couponDisc = Math.abs(Number(raw.coupon_discount || 0));
+      const discount = (tradeDisc > 0 || couponDisc > 0)
+        ? (tradeDisc + couponDisc)
+        : Math.abs(Number(raw.discount || 0));
 
-        const commVal = Number(
-          raw.commissionable_value ||
-          raw.total_customer_paid ||
-          (Number(raw.sub_total || 0) + Number(raw.packaging_charges || 0) - disc) ||
-          0
-        );
+      const commissionableValue = Number(
+        raw.commissionable_value ||
+        (subTotal + packagingCharges - discount) ||
+        0
+      );
+      const totalFees = Number(raw.total_fees || 0);
+      const totalTaxes = Number(raw.total_taxes || 0);
+      const commissionPgGst = Math.round(totalFees + totalTaxes);
+      const ads = Number(raw.ads || 0);
+      const netPayout = Number(raw.net_payout || (commissionableValue - ads - commissionPgGst));
 
-        agg.orders += Number(raw.orders || 0);
-        agg.subTotal += Number(raw.sub_total || 0);
-        agg.packagingCharges += Number(raw.packaging_charges || 0);
-        agg.discount += disc;
-        agg.commissionPgGst += Number(raw.total_fees || 0);
-        agg.ads += Number(raw.ads || 0);
-        agg.netPayout += Number(raw.net_payout || 0);
-      }
-
-      if (!agg.commissionableValue) {
-        agg.commissionableValue = agg.subTotal + agg.packagingCharges - agg.discount;
-      }
-      if (!agg.netPayout) {
-        agg.netPayout = agg.commissionableValue - agg.ads - agg.commissionPgGst;
-      }
-
-      const effectiveDiscountPct = agg.subTotal > 0 ? Number((agg.discount / agg.subTotal).toFixed(4)) : 0.05;
-      const advertisementPct = agg.commissionableValue > 0 ? Number((agg.ads / agg.commissionableValue).toFixed(4)) : 0.15;
-      const commissionPct = agg.commissionableValue > 0 ? Number((agg.commissionPgGst / agg.commissionableValue).toFixed(4)) : 0.28;
-      const aov = agg.orders > 0 ? Math.round(agg.subTotal / agg.orders) : 300;
+      const effectiveDiscountPct = subTotal > 0 ? Number((discount / subTotal).toFixed(4)) : 0.05;
+      const advertisementPct = commissionableValue > 0 ? Number((ads / commissionableValue).toFixed(4)) : 0.15;
+      const commissionPct = commissionableValue > 0 ? Number((commissionPgGst / commissionableValue).toFixed(4)) : 0.28;
+      const aov = orders > 0 ? Math.round(subTotal / orders) : 300;
 
       return NextResponse.json({
         success: true,
         monthName,
         platform: "swiggy",
-        weeklyFilesCount: files.length,
         data: {
           name: monthName,
-          orders: agg.orders,
-          subTotal: agg.subTotal,
+          orders,
+          subTotal,
           aov,
-          packagingCharges: agg.packagingCharges,
-          merchantDiscountBurn: agg.discount,
+          packagingCharges,
+          merchantDiscountBurn: discount,
           effectiveDiscountPct,
-          commissionableValue: agg.commissionableValue,
-          advertisement: agg.ads,
+          commissionableValue,
+          advertisement: ads,
           advertisementPct,
-          commissionPgGst: agg.commissionPgGst,
+          commissionPgGst,
           commissionPct,
-          netPayout: agg.netPayout,
+          netPayout,
         },
       });
     }

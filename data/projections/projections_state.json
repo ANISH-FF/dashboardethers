@@ -271,7 +271,7 @@
   },
   "9": {
     "brandId": "9",
-    "brandName": "Kwality Kitchen",
+    "brandName": "Dzomsa",
     "historicalMonths": [
       {
         "name": "May '26",
@@ -297,30 +297,9 @@
       {
         "name": "Jun '26",
         "isProjection": false,
-        "orders": 879,
-        "subTotal": 353124,
-        "aov": 402,
-        "packagingCharges": 12587.9,
-        "subTotalWithPkg": 365711.9,
-        "merchantDiscountBurn": 36769.56,
-        "effectiveDiscountPct": 0.1005,
-        "commissionableValue": 345390.08,
-        "advertisement": 90844.54,
-        "advertisementPct": 0.263,
-        "commissionPgGst": 110453,
-        "commissionPct": 0.3198,
-        "netPayout": 147206.09,
-        "payoutPct": 41.69,
-        "burnPct": 58.31,
-        "m2o": 0.063,
-        "menuOpens": 13952
-      },
-      {
-        "name": "Jul '26",
-        "isProjection": false,
         "orders": 900,
         "subTotal": 270000,
-        "aov": 404,
+        "aov": 766,
         "packagingCharges": 0,
         "subTotalWithPkg": 270000,
         "merchantDiscountBurn": 0,
@@ -333,13 +312,34 @@
         "netPayout": 270000,
         "payoutPct": 100,
         "burnPct": 0,
+        "m2o": 0.063,
+        "menuOpens": 14286
+      },
+      {
+        "name": "Jul '26",
+        "isProjection": false,
+        "orders": 218,
+        "subTotal": 85423,
+        "aov": 392,
+        "packagingCharges": 2490,
+        "subTotalWithPkg": 87913,
+        "merchantDiscountBurn": 29081.940000000002,
+        "effectiveDiscountPct": 0.3308,
+        "commissionableValue": 61772.89,
+        "advertisement": 14322.78,
+        "advertisementPct": 0.2319,
+        "commissionPgGst": 20309,
+        "commissionPct": 0.3288,
+        "netPayout": 27239.329999999998,
+        "payoutPct": 31.89,
+        "burnPct": 68.11,
         "m2o": 0.06,
-        "menuOpens": 15000
+        "menuOpens": 3633
       }
     ],
     "projectedMonths": [
       {
-        "name": "Sep '26",
+        "name": "May '26",
         "isProjection": true,
         "orders": 430,
         "subTotal": 322332,
@@ -360,7 +360,7 @@
         "menuOpens": 6143
       },
       {
-        "name": "Oct '26",
+        "name": "Jun '26",
         "isProjection": true,
         "orders": 497,
         "subTotal": 382931,
@@ -381,7 +381,7 @@
         "menuOpens": 6213
       },
       {
-        "name": "Nov '26",
+        "name": "Jul '26",
         "isProjection": true,
         "orders": 544,
         "subTotal": 435200,

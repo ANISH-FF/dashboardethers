@@ -92,7 +92,8 @@ function validateSwiggyMath(ocr: Record<string, any>): boolean {
   let netPayout = Number(ocr.net_payout || 0);
   if (A === 0 && netPayout === 0) return true; // nothing extracted, skip
   const calculated = A - B - C - D - E;
-  const tolerance = 2.5; // Strict zero-tolerance (<= ₹2.5 for decimal rounding only)
+  // Dynamic tolerance for Swiggy: Accounts for unlisted ~1% TCS / GST u/s 52 deduction
+  const tolerance = Math.max(75, A * 0.015);
 
   if (Math.abs(calculated - netPayout) <= tolerance) {
     return true;
@@ -102,7 +103,7 @@ function validateSwiggyMath(ocr: Record<string, any>): boolean {
     ocr.net_payout = calculated;
     return true;
   }
-  console.log(`[Validation Math Diff] Expected: ${calculated}, Got: ${netPayout}`);
+  console.log(`[Swiggy Validation Math Diff] Expected: ${calculated}, Got: ${netPayout}, Allowed: ${tolerance}`);
   return false;
 }
 
