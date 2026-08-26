@@ -433,6 +433,20 @@ export default function ProjectionsPage() {
       };
 
       next[index] = calculateMonthMetrics(updatedPartial);
+
+      // Auto-persist to API so edits stay saved across page navigation
+      fetch("/api/projections", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          brandId: activeBrand?.id || "default",
+          brandName: brandName || activeBrand?.name || "Active Brand",
+          historicalMonths: next,
+          projectedMonths,
+          notes,
+        }),
+      }).catch((err) => console.error("Error auto-saving historicalMonths:", err));
+
       return next;
     });
   };
@@ -476,6 +490,20 @@ export default function ProjectionsPage() {
       };
 
       next[index] = calculateMonthMetrics(updatedPartial);
+
+      // Auto-persist to API so edits stay saved across page navigation
+      fetch("/api/projections", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          brandId: activeBrand?.id || "default",
+          brandName: brandName || activeBrand?.name || "Active Brand",
+          historicalMonths,
+          projectedMonths: next,
+          notes,
+        }),
+      }).catch((err) => console.error("Error auto-saving projectedMonths:", err));
+
       return next;
     });
   };
@@ -1791,10 +1819,6 @@ export default function ProjectionsPage() {
                                     setMonthCardStatus((prev) => {
                                       const next = [...prev];
                                       next[idx].m2oPct = val;
-                                      const orders = next[idx].data?.orders || 0;
-                                      if (orders > 0 && val > 0) {
-                                        next[idx].menuOpens = Math.round(orders / (val / 100));
-                                      }
                                       return next;
                                     });
                                   }}
@@ -1813,10 +1837,6 @@ export default function ProjectionsPage() {
                                   setMonthCardStatus((prev) => {
                                     const next = [...prev];
                                     next[idx].menuOpens = val;
-                                    const orders = next[idx].data?.orders || 0;
-                                    if (orders > 0 && val > 0) {
-                                      next[idx].m2oPct = Number(((orders / val) * 100).toFixed(1));
-                                    }
                                     return next;
                                   });
                                 }}

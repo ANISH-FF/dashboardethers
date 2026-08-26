@@ -188,6 +188,7 @@ Respond ONLY with a JSON object containing these exact keys (use 0 if a field is
   "delivery_charge_discount": number,
   "commissionable_value": number,
   "order_level_deduction": number,
+  "gst_on_service_fees": number,
   "tax_deduction": number,
   "ads": number,
   "hyperpure": number,
@@ -207,6 +208,7 @@ Rules:
 - "delivery_charge_discount": Read strictly from "Delivery charge discount" line if present (e.g. 200.25), else 0.
 - "commissionable_value": Read strictly from "Net order value (A)" on Zomato screenshot (e.g. 63905.53), else sub_total + packaging_charges - discount.
 - "order_level_deduction": Read strictly from "Order level deductions (C)" header on Zomato screenshot (e.g. 14667.80), else sum of base service fee, payment mechanism fee, long distance enablement fee.
+- "gst_on_service_fees": Read strictly from "GST on service and payment mechanism fees @18%" line under Tax deductions (D) (e.g. 14264.50 or 2640.24), else 0.
 - "tax_deduction": Read strictly from "Tax deductions (D)" header on Zomato screenshot (e.g. 5640.95), else sum of GST on service fees, TCS (Sec 52), TDS (Sec 194O), and GST u/s 9(5).
 - "ads": Read from Investments in growth (E) / Online ordering ads spend section (e.g. 14322.78), else 0.
 - "hyperpure": Read from Hyperpure spend (F) B2B raw material procurement deduction if present (e.g. 39750.60), else 0.
@@ -235,9 +237,15 @@ Rules:
       );
       const ads = Number(raw.ads || 0);
       const orderLevelDeduction = Number(raw.order_level_deduction || raw.commission_and_fees || 0);
-      const taxDeduction = Number(raw.tax_deduction || raw.gst_on_service_fees || 0);
-      const commissionPgGst = Math.round(orderLevelDeduction + taxDeduction);
-      const rawNetPayout = Number(raw.net_payout || (commissionableValue - ads - commissionPgGst));
+      const gstOnServiceFees = Number(raw.gst_on_service_fees || 0);
+      
+      // Projections: Commission + PG + 18% GST (excluding TDS & Food GST 9(5))
+      const commissionPgGst = Math.round(
+        gstOnServiceFees > 0
+          ? orderLevelDeduction + gstOnServiceFees
+          : orderLevelDeduction * 1.18
+      );
+      const rawNetPayout = Number(raw.net_payout || (commissionableValue - ads - (orderLevelDeduction + Number(raw.tax_deduction || 0))));
       const netPayout = rawNetPayout + hyperpure;
 
       const effectiveDiscountPct = subTotal > 0 ? Number((discount / subTotal).toFixed(4)) : 0.05;
