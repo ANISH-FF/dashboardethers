@@ -63,7 +63,7 @@ function validateZomatoMath(ocr: Record<string, any>): boolean {
   const A = Math.abs(Number(ocr.commissionable_value || 0));
   const B = Math.abs(Number(ocr.cancelled_order_refund || 0));
   const C = Math.abs(Number(ocr.order_level_deduction || 0));
-  const D = Math.abs(Number(ocr.gst_on_service_fees || 0));
+  const D = Math.abs(Number(ocr.tax_deduction || ocr.gst_on_service_fees || 0));
   const E = Math.abs(Number(ocr.ads || 0));
   const F = Math.abs(Number(ocr.hyperpure || 0));
   const netPayout = Number(ocr.net_payout || 0);
@@ -149,34 +149,43 @@ export async function POST(req: NextRequest) {
         b64List.push(Buffer.from(bytes).toString("base64"));
       }
 
-      const prompt = `Extract numerical data from Zomato Payout details screenshot(s). Return ONLY valid JSON with keys:
+      const prompt = `Extract raw numerical values from these Zomato Payout details screenshot(s).
+Respond ONLY with a JSON object containing these exact keys (use 0 if a field is not found):
 {
   "total_orders": number,
   "sub_total": number,
   "packaging_charges": number,
+  "sub_total_with_pkg": number,
+  "cancelled_order_refund": number,
   "promo_discount": number,
   "other_discount": number,
   "discount": number,
   "delivery_charge_discount": number,
   "commissionable_value": number,
-  "hyperpure": number,
   "order_level_deduction": number,
-  "gst_on_service_fees": number,
+  "tax_deduction": number,
   "ads": number,
+  "hyperpure": number,
   "net_payout": number
 }
 Rules:
-- Read numbers strictly as shown on the screen.
-- "commissionable_value": read strictly from "Net order value (A)" on Zomato screenshot (e.g. 63905.53), else item subtotal + packaging charges - discount.
-- "promo_discount": read strictly from "Restaurant discount (Promos)" line (e.g. 23712.06), else 0.
-- "other_discount": read strictly from "Restaurant discount (Flat offs, Freebies, Gold, relisted orders and others)" line (e.g. 12480.00), else 0.
-- "discount": sum of promo discounts and flat offs/other discounts.
-- "delivery_charge_discount": read strictly from "Delivery charge discount" line if present (e.g. 200.25), else 0.
-- "hyperpure": read B2B raw material procurement deduction / Hyperpure deduction if present, else 0.
-- "order_level_deduction": read strictly from "Order level deductions (C)" header on Zomato screenshot (e.g. 61777.20).
-- "gst_on_service_fees": read strictly from "GST on service & platform fees" / "GST on Order level deductions (18%)" (e.g. 11119.83). If not explicitly listed, calculate as 18% of order_level_deduction.
-- "ads": advertisement / ad spend amount if shown, else 0.
-- "net_payout": read strictly from "Est. payout (A + B + C + D + E + F)". Include negative sign if payout is negative/red (e.g. -15548.59).`;
+- Read numbers strictly as shown on the screen. Do NOT apply any percentage calculations yourself.
+- Extract monetary amounts as positive numbers, EXCEPT "net_payout" which must include a minus sign if negative.
+- "total_orders": total orders count delivered in the period.
+- "sub_total": Sum of base item prices.
+- "packaging_charges": Total container/packaging fee collected.
+- "sub_total_with_pkg": Subtotal + Packaging charges.
+- "cancelled_order_refund": Read strictly from "Cancelled order refunds" under Additions (B) (e.g. 3113.73), else 0.
+- "promo_discount": Read strictly from "Restaurant discount (Promos)" line (e.g. 23712.06), else 0.
+- "other_discount": Read strictly from "Restaurant discount (Flat offs, Freebies, Gold, relisted orders and others)" line (e.g. 12480.00), else 0.
+- "discount": Sum of promo discounts and flat offs/other discounts borne by merchant.
+- "delivery_charge_discount": Read strictly from "Delivery charge discount" line if present (e.g. 200.25), else 0.
+- "commissionable_value": Read strictly from "Net order value (A)" on Zomato screenshot (e.g. 63905.53), else sub_total + packaging_charges - discount.
+- "order_level_deduction": Read strictly from "Order level deductions (C)" header on Zomato screenshot (e.g. 79412.33), else sum of base service fee, payment mechanism fee, long distance enablement fee.
+- "tax_deduction": Read strictly from "Tax deductions (D)" header on Zomato screenshot (e.g. 31040.89), else sum of GST on service fees, TCS (Sec 52), TDS (Sec 194O), and GST u/s 9(5).
+- "ads": Read from Growth / Ad spend section (e.g. 90844.54).
+- "hyperpure": Read B2B raw material procurement deduction if present (e.g. 53241.55).
+- "net_payout": Read strictly from "FINAL PAYOUT" or "Est. payout (A + B + C + D + E + F)". Include negative sign if red/minus (e.g. -15548.59).`;
 
       const raw = await extractJsonWithGemini(prompt, b64List, validateZomatoMath);
 
@@ -201,10 +210,8 @@ Rules:
       );
       const ads = Number(raw.ads || 0);
       const orderLevelDeduction = Number(raw.order_level_deduction || raw.commission_and_fees || 0);
-      const gstOnServiceFees = Number(
-        raw.gst_on_service_fees || (orderLevelDeduction > 0 ? orderLevelDeduction * 0.18 : 0)
-      );
-      const commissionPgGst = Math.round(orderLevelDeduction + gstOnServiceFees);
+      const taxDeduction = Number(raw.tax_deduction || raw.gst_on_service_fees || 0);
+      const commissionPgGst = Math.round(orderLevelDeduction + taxDeduction);
       const rawNetPayout = Number(raw.net_payout || (commissionableValue - ads - commissionPgGst));
       const netPayout = rawNetPayout + hyperpure;
 
