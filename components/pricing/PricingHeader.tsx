@@ -341,7 +341,7 @@ export function PricingHeader({
               </div>
             </div>
             <div className="p-2 rounded bg-rose-500/10 text-rose-400">
-              <DollarSign className="w-3.5 h-3.5" />
+              <Percent className="w-3.5 h-3.5" />
             </div>
           </div>
 

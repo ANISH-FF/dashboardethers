@@ -58,7 +58,7 @@ function ocrTiebreaker(a: Record<string, any>, b: Record<string, any>, c: Record
   return result;
 }
 
-// Math validation: Zomato — A + B - C - D - E - F = Est. Payout
+// Math validation: Zomato — A + B - C - D - E - F - G = Est. Payout
 function validateZomatoMath(ocr: Record<string, any>): boolean {
   const A = Math.abs(Number(ocr.commissionable_value || 0));
   const B = Math.abs(Number(ocr.cancelled_order_refund || 0));
@@ -66,9 +66,10 @@ function validateZomatoMath(ocr: Record<string, any>): boolean {
   const D = Math.abs(Number(ocr.tax_deduction || ocr.gst_on_service_fees || 0));
   const E = Math.abs(Number(ocr.ads || 0));
   const F = Math.abs(Number(ocr.hyperpure || 0));
+  const G = Math.abs(Number(ocr.miscellaneous_deductions || 0));
   let netPayout = Number(ocr.net_payout || 0);
   if (A === 0 && netPayout === 0) return true;
-  const calculated = A + B - C - D - E - F;
+  const calculated = A + B - C - D - E - F - G;
   const tolerance = 2.5; // Strict <= ₹2.5
   
   if (Math.abs(calculated - netPayout) <= tolerance) {
@@ -192,6 +193,7 @@ Respond ONLY with a JSON object containing these exact keys (use 0 if a field is
   "tax_deduction": number,
   "ads": number,
   "hyperpure": number,
+  "miscellaneous_deductions": number,
   "net_payout": number
 }
 Rules:
@@ -212,7 +214,8 @@ Rules:
 - "tax_deduction": Read strictly from "Tax deductions (D)" header on Zomato screenshot (e.g. 5640.95), else sum of GST on service fees, TCS (Sec 52), TDS (Sec 194O), and GST u/s 9(5).
 - "ads": Read from Investments in growth (E) / Online ordering ads spend section (e.g. 14322.78), else 0.
 - "hyperpure": Read from Hyperpure spend (F) B2B raw material procurement deduction if present (e.g. 39750.60), else 0.
-- "net_payout": Read strictly from "FINAL PAYOUT" or "Est. payout (A + B + C + D + E + F)". Include negative sign if red/minus (e.g. -12511.27).`;
+- "miscellaneous_deductions": Read strictly from "Miscellaneous deductions (G)" line if present (e.g. 25.36), else 0.
+- "net_payout": Read strictly from "FINAL PAYOUT" or "Est. payout (A + B + C + D + E + F + G)". Include negative sign if red/minus (e.g. -12511.27).`;
 
       const raw = await extractJsonWithGemini(prompt, b64List, validateZomatoMath);
 

@@ -58,7 +58,7 @@ async function singlePass(prompt: string, parts: any[], geminiKey: string, model
   }
 }
 
-// Math validation: Zomato — A + B - C - D - E - F = Est. Payout
+// Math validation: Zomato — A + B - C - D - E - F - G = Est. Payout
 function validateZomatoMath(ocr: Record<string, any>): boolean {
   const A = Math.abs(Number(ocr.commissionable_value || 0));
   const B = Math.abs(Number(ocr.cancelled_order_refund || 0));
@@ -66,9 +66,10 @@ function validateZomatoMath(ocr: Record<string, any>): boolean {
   const D = Math.abs(Number(ocr.tax_deduction || 0));
   const E = Math.abs(Number(ocr.ads || 0));
   const F = Math.abs(Number(ocr.hyperpure || 0));
+  const G = Math.abs(Number(ocr.miscellaneous_deductions || 0));
   let netPayout = Number(ocr.net_payout || 0);
   if (A === 0 && netPayout === 0) return true; // nothing extracted, skip
-  const calculated = A + B - C - D - E - F;
+  const calculated = A + B - C - D - E - F - G;
   const tolerance = 2.5; // Strict zero-tolerance (<= ₹2.5 for decimal rounding only)
   
   if (Math.abs(calculated - netPayout) <= tolerance) {

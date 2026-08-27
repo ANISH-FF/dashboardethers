@@ -27,6 +27,7 @@ Respond ONLY with a JSON object containing these exact keys (use 0 if a field is
   "tax_deduction": number,
   "ads": number,
   "hyperpure": number,
+  "miscellaneous_deductions": number,
   "net_payout": number
 }
 
@@ -47,7 +48,8 @@ Extraction Rules:
 - "tax_deduction": Read strictly from "Tax deductions (D)" header on Zomato screenshot (e.g. 5640.95), else sum of GST on service fees, TCS (Sec 52), TDS (Sec 194O), and GST u/s 9(5).
 - "ads": Read from Investments in growth (E) / Online ordering ads spend section (e.g. 14322.78), else 0.
 - "hyperpure": Read from Hyperpure spend (F) B2B raw material procurement deduction if present (e.g. 39750.60), else 0.
-- "net_payout": Read strictly from "FINAL PAYOUT" or "Est. payout (A + B + C + D + E + F)". Include negative sign if red/minus (e.g. -12511.27).
+- "miscellaneous_deductions": Read strictly from "Miscellaneous deductions (G)" line if present (e.g. 25.36), else 0.
+- "net_payout": Read strictly from "FINAL PAYOUT" or "Est. payout (A + B + C + D + E + F + G)". Include negative sign if red/minus (e.g. -12511.27).
 `.trim();
 
 /**

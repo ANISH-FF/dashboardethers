@@ -1304,7 +1304,7 @@ export default function ProjectionsPage() {
             {/* Historical Past 3 Months Modeler */}
             <div className="mb-6">
               <span className="text-xs font-bold uppercase tracking-widest text-ink/50 block mb-3">
-                📜 Past 3 Months Historical Baseline
+                Past 3 Months Historical Baseline
               </span>
               <div className="grid md:grid-cols-3 gap-6">
                 {historicalMonths.map((month, idx) => (
@@ -1412,7 +1412,7 @@ export default function ProjectionsPage() {
             {/* Forward 3 Months Modeler */}
             <div>
               <span className="text-xs font-bold uppercase tracking-widest text-emerald-400 block mb-3">
-                🎯 Forward 3 Months Target Forecast
+                Forward 3 Months Target Forecast
               </span>
               <div className="grid md:grid-cols-3 gap-6">
                 {projectedMonths.map((month, idx) => (
