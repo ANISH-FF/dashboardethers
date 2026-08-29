@@ -229,7 +229,13 @@ export function IssueDocumentModal({ employees, onClose, onIssueDocument }: Issu
                 <label className="label">Certificate Category</label>
                 <select
                   value={certificateType}
-                  onChange={(e) => setCertificateType(e.target.value as any)}
+                  onChange={(e) => {
+                    const val = e.target.value as "internship" | "experience" | "appreciation";
+                    setCertificateType(val);
+                    if (val === "internship") setTitle("Certificate of Internship");
+                    else if (val === "experience") setTitle("Certificate of Experience");
+                    else setTitle("Certificate of Employment");
+                  }}
                   className="input"
                 >
                   <option value="appreciation">Employment Certificate</option>

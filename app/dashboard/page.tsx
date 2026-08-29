@@ -288,6 +288,44 @@ export default function DashboardHome() {
         </div>
       </div>
 
+      {/* Luxury Continuous Founder Marquee Strip */}
+      <div className="relative overflow-hidden rounded-xl border border-line bg-paper/50 backdrop-blur-sm py-2 px-4 shadow-sm">
+        {/* Edge Fade Gradients for Seamless Depth */}
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-paper to-transparent z-10" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-paper to-transparent z-10" />
+
+        <div className="animate-marquee font-mono text-[11px] uppercase tracking-[0.22em] text-ink/75">
+          <span className="flex shrink-0 items-center gap-8 pr-8">
+            <span className="flex items-center gap-2.5">
+              <span className="text-emerald-400 font-bold">✦</span>
+              <span>Grind until Mom &amp; Dad have your card and &ldquo;how much?&rdquo; is no longer a question.</span>
+            </span>
+            <span className="flex items-center gap-2.5">
+              <span className="text-emerald-400 font-bold">✦</span>
+              <span>Grind until Mom &amp; Dad have your card and &ldquo;how much?&rdquo; is no longer a question.</span>
+            </span>
+            <span className="flex items-center gap-2.5">
+              <span className="text-emerald-400 font-bold">✦</span>
+              <span>Grind until Mom &amp; Dad have your card and &ldquo;how much?&rdquo; is no longer a question.</span>
+            </span>
+          </span>
+          <span className="flex shrink-0 items-center gap-8 pr-8" aria-hidden="true">
+            <span className="flex items-center gap-2.5">
+              <span className="text-emerald-400 font-bold">✦</span>
+              <span>Grind until Mom &amp; Dad have your card and &ldquo;how much?&rdquo; is no longer a question.</span>
+            </span>
+            <span className="flex items-center gap-2.5">
+              <span className="text-emerald-400 font-bold">✦</span>
+              <span>Grind until Mom &amp; Dad have your card and &ldquo;how much?&rdquo; is no longer a question.</span>
+            </span>
+            <span className="flex items-center gap-2.5">
+              <span className="text-emerald-400 font-bold">✦</span>
+              <span>Grind until Mom &amp; Dad have your card and &ldquo;how much?&rdquo; is no longer a question.</span>
+            </span>
+          </span>
+        </div>
+      </div>
+
       {/* Real-time Telemetry Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         <StatCard

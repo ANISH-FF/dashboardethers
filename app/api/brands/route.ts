@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   getBrands,
   createBrand,
+  updateBrand,
   deleteBrand,
   createBrandInvoice,
   createBrandProposal,
@@ -36,6 +37,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ proposal, brands });
     }
 
+    if (body.action === "update_details" || body.action === "update_brand") {
+      if (!body.id && !body.brandId) return NextResponse.json({ error: "Brand ID is required" }, { status: 400 });
+      const id = body.id || body.brandId;
+      const brand = updateBrand(id, body.data || body);
+      const brands = getBrands();
+      return NextResponse.json({ brand, brands });
+    }
+
     if (!body.name || !body.name.trim()) {
       return NextResponse.json({ error: "Brand name is required" }, { status: 400 });
     }
@@ -48,6 +57,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ brand, brands });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "Failed to process brand request" }, { status: 500 });
+  }
+}
+
+export async function PUT(req: Request) {
+  try {
+    const body = await req.json();
+    const id = body.id || body.brandId;
+    if (!id) return NextResponse.json({ error: "Brand ID is required" }, { status: 400 });
+    const brand = updateBrand(id, body);
+    const brands = getBrands();
+    return NextResponse.json({ brand, brands });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || "Failed to update brand" }, { status: 500 });
   }
 }
 

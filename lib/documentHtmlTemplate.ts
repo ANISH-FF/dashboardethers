@@ -6,13 +6,18 @@ export function generateDocumentHtml(doc: EmployeeDocument): string {
   const tanishaSigUri = "/uploads/tanishasignature.jpeg";
 
   const safeTitle = 
-    doc.type === "certificate" ? "Certificate of Employment" :
-    doc.type === "offer_letter" ? "Offer Letter of Employment" :
-    doc.type === "employment_terms" ? "Employment Agreement Terms & Conditions" :
-    doc.type === "increment_letter" ? "Salary Increment & Revision Letter" :
-    doc.type === "recommendation_letter" ? "Letter of Recommendation" :
-    doc.type === "completion_letter" ? "Letter of Completion" :
-    `Salary Slip — ${doc.monthYear || "July 2026"}`;
+    doc.type === "certificate" ? (
+      doc.title ||
+      (doc.certificateType === "internship" ? "Certificate of Internship" :
+       doc.certificateType === "experience" ? "Certificate of Experience" :
+       "Certificate of Employment")
+    ) :
+    doc.type === "offer_letter" ? (doc.title || "Offer Letter of Employment") :
+    doc.type === "employment_terms" ? (doc.title || "Employment Agreement Terms & Conditions") :
+    doc.type === "increment_letter" ? (doc.title || "Salary Increment & Revision Letter") :
+    doc.type === "recommendation_letter" ? (doc.title || "Letter of Recommendation") :
+    doc.type === "completion_letter" ? (doc.title || "Letter of Completion") :
+    (doc.title || `Salary Slip — ${doc.monthYear || "July 2026"}`);
 
   return `<!DOCTYPE html>
 <html lang="en">

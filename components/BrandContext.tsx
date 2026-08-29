@@ -13,6 +13,22 @@ export type Brand = {
   onboardingDate?: string;
   invoices?: BrandInvoice[];
   proposals?: BrandProposal[];
+  // Legal & Business Details
+  fssaiNumber?: string;
+  gstNumber?: string;
+  panCard?: string;
+  bankDetails?: string;
+  timing?: string;
+  cuisine?: string;
+  // Contact Information
+  ownerName?: string;
+  ownerNumber?: string;
+  managerName?: string;
+  managerNumber?: string;
+  // Assets & Media
+  offlineMenuLink?: string;
+  facadeShootLink?: string;
+  foodImagesLink?: string;
 };
 
 export const INITIAL_BRANDS: Brand[] = [
@@ -42,6 +58,7 @@ type BrandContextType = {
   setActiveBrand: (brand: Brand) => void;
   brands: Brand[];
   addBrand: (data: { name: string; type?: string; status?: string }) => Promise<Brand | null>;
+  updateBrandDetails: (brandId: string, details: Partial<Brand>) => Promise<boolean>;
   deleteBrand: (id: string) => Promise<boolean>;
   addBrandInvoice: (brandId: string, invoiceData: Partial<BrandInvoice>) => Promise<BrandInvoice | null>;
   addBrandProposal: (brandId: string, proposalData: Partial<BrandProposal>) => Promise<BrandProposal | null>;
@@ -182,6 +199,27 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
     return false;
   }
 
+  async function updateBrandDetails(brandId: string, details: Partial<Brand>): Promise<boolean> {
+    try {
+      const res = await fetch("/api/brands", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: brandId, ...details }),
+      });
+      if (res.ok) {
+        const result = await res.json();
+        if (result.brands) setBrands(result.brands);
+        if (activeBrand.id === brandId && result.brand) {
+          setActiveBrand(result.brand);
+        }
+        return true;
+      }
+    } catch (e) {
+      console.error("Failed to update brand details:", e);
+    }
+    return false;
+  }
+
   async function removeBrandProposal(brandId: string, proposalId: string): Promise<boolean> {
     try {
       const res = await fetch(`/api/brands?action=delete_proposal&brandId=${brandId}&proposalId=${proposalId}`, {
@@ -205,6 +243,7 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
         setActiveBrand,
         brands,
         addBrand,
+        updateBrandDetails,
         deleteBrand,
         addBrandInvoice,
         addBrandProposal,

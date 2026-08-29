@@ -335,6 +335,22 @@ export type Brand = {
   onboardingDate?: string;
   invoices?: BrandInvoice[];
   proposals?: BrandProposal[];
+  // Legal & Business Details
+  fssaiNumber?: string;
+  gstNumber?: string;
+  panCard?: string;
+  bankDetails?: string;
+  timing?: string;
+  cuisine?: string;
+  // Contact Information
+  ownerName?: string;
+  ownerNumber?: string;
+  managerName?: string;
+  managerNumber?: string;
+  // Assets & Media
+  offlineMenuLink?: string;
+  facadeShootLink?: string;
+  foodImagesLink?: string;
 };
 
 export const INITIAL_BRANDS: Brand[] = [
@@ -382,6 +398,15 @@ export function createBrand(partial: Partial<Brand>): Brand {
   brands.push(brand);
   saveBrands(brands);
   return brand;
+}
+
+export function updateBrand(id: string, patch: Partial<Brand>): Brand | null {
+  const brands = getBrands();
+  const idx = brands.findIndex((b) => b.id === id);
+  if (idx === -1) return null;
+  brands[idx] = { ...brands[idx], ...patch };
+  saveBrands(brands);
+  return brands[idx];
 }
 
 export function deleteBrand(id: string): boolean {

@@ -95,13 +95,18 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
                 {/* Main Title */}
                 <div className="pt-2 relative z-10">
                   <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#2F3119] tracking-tight">
-                    {doc.type === "certificate" && "Certificate of Employment"}
-                    {doc.type === "offer_letter" && "Offer Letter of Employment"}
-                    {doc.type === "employment_terms" && "Employment Agreement Terms & Conditions"}
-                    {doc.type === "increment_letter" && "Salary Increment & Revision Letter"}
-                    {doc.type === "recommendation_letter" && "Letter of Recommendation"}
-                    {doc.type === "completion_letter" && "Letter of Completion"}
-                    {doc.type === "payslip" && `Salary Slip — ${doc.monthYear || "July 2026"}`}
+                    {doc.type === "certificate" && (
+                      doc.title ||
+                      (doc.certificateType === "internship" ? "Certificate of Internship" :
+                       doc.certificateType === "experience" ? "Certificate of Experience" :
+                       "Certificate of Employment")
+                    )}
+                    {doc.type === "offer_letter" && (doc.title || "Offer Letter of Employment")}
+                    {doc.type === "employment_terms" && (doc.title || "Employment Agreement Terms & Conditions")}
+                    {doc.type === "increment_letter" && (doc.title || "Salary Increment & Revision Letter")}
+                    {doc.type === "recommendation_letter" && (doc.title || "Letter of Recommendation")}
+                    {doc.type === "completion_letter" && (doc.title || "Letter of Completion")}
+                    {doc.type === "payslip" && (doc.title || `Salary Slip — ${doc.monthYear || "July 2026"}`)}
                   </h1>
                 </div>
 

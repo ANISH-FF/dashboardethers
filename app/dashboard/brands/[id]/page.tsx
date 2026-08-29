@@ -19,12 +19,31 @@ import {
   FileSpreadsheet,
   Sparkles,
   DollarSign,
+  Check,
 } from "lucide-react";
 import { useBrand, Brand, BrandInvoice, BrandProposal } from "@/components/BrandContext";
 import { BrandInvoiceModal } from "@/components/brands/BrandInvoiceModal";
 import { BrandProposalModal } from "@/components/brands/BrandProposalModal";
 
-function DocField({ label, value, icon: Icon, type = "text" }: { label: string; value: string; icon: any; type?: string }) {
+function DocField({
+  label,
+  value,
+  placeholder,
+  icon: Icon,
+  type = "text",
+  onChange,
+  onBlur,
+  disabled = false,
+}: {
+  label: string;
+  value: string;
+  placeholder?: string;
+  icon: any;
+  type?: string;
+  onChange?: (val: string) => void;
+  onBlur?: () => void;
+  disabled?: boolean;
+}) {
   return (
     <div>
       <label className="text-[11px] font-bold uppercase tracking-wider text-ink/50 mb-1.5 flex items-center gap-1.5">
@@ -33,15 +52,19 @@ function DocField({ label, value, icon: Icon, type = "text" }: { label: string; 
       </label>
       <input 
         type={type} 
-        defaultValue={value} 
-        className="w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm text-ink outline-none transition-all focus:border-ink focus:ring-1 focus:ring-ink"
+        value={value} 
+        onChange={(e) => onChange && onChange(e.target.value)}
+        onBlur={onBlur}
+        placeholder={placeholder}
+        disabled={disabled}
+        className="w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm text-ink outline-none transition-all focus:border-ink focus:ring-1 focus:ring-ink placeholder:text-ink/25 disabled:opacity-60"
       />
     </div>
   );
 }
 
 export default function BrandDetail({ params }: { params: { id: string } }) {
-  const { brands, addBrandInvoice, addBrandProposal, removeBrandInvoice, removeBrandProposal } = useBrand();
+  const { brands, updateBrandDetails, addBrandInvoice, addBrandProposal, removeBrandInvoice, removeBrandProposal } = useBrand();
 
   const [session, setSession] = useState<{ email: string; name: string; role: string } | null>(null);
 
@@ -69,6 +92,77 @@ export default function BrandDetail({ params }: { params: { id: string } }) {
     status: "Active",
     invoices: [],
     proposals: [],
+  };
+
+  const [formData, setFormData] = useState({
+    fssaiNumber: brand.fssaiNumber || "",
+    gstNumber: brand.gstNumber || "",
+    panCard: brand.panCard || "",
+    bankDetails: brand.bankDetails || "",
+    timing: brand.timing || "",
+    cuisine: brand.cuisine || brand.type || "",
+    ownerName: brand.ownerName || "",
+    ownerNumber: brand.ownerNumber || "",
+    managerName: brand.managerName || "",
+    managerNumber: brand.managerNumber || "",
+    offlineMenuLink: brand.offlineMenuLink || "",
+    facadeShootLink: brand.facadeShootLink || "",
+    foodImagesLink: brand.foodImagesLink || "",
+  });
+
+  const [savingDetails, setSavingDetails] = useState(false);
+  const [savedSuccess, setSavedSuccess] = useState(false);
+
+  useEffect(() => {
+    if (brand) {
+      setFormData({
+        fssaiNumber: brand.fssaiNumber || "",
+        gstNumber: brand.gstNumber || "",
+        panCard: brand.panCard || "",
+        bankDetails: brand.bankDetails || "",
+        timing: brand.timing || "",
+        cuisine: brand.cuisine || brand.type || "",
+        ownerName: brand.ownerName || "",
+        ownerNumber: brand.ownerNumber || "",
+        managerName: brand.managerName || "",
+        managerNumber: brand.managerNumber || "",
+        offlineMenuLink: brand.offlineMenuLink || "",
+        facadeShootLink: brand.facadeShootLink || "",
+        foodImagesLink: brand.foodImagesLink || "",
+      });
+    }
+  }, [
+    brand.id,
+    brand.fssaiNumber,
+    brand.gstNumber,
+    brand.panCard,
+    brand.bankDetails,
+    brand.timing,
+    brand.cuisine,
+    brand.ownerName,
+    brand.ownerNumber,
+    brand.managerName,
+    brand.managerNumber,
+    brand.offlineMenuLink,
+    brand.facadeShootLink,
+    brand.foodImagesLink,
+  ]);
+
+  const handleFieldChange = (field: keyof typeof formData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveDetails = async () => {
+    setSavingDetails(true);
+    try {
+      await updateBrandDetails(brand.id, formData);
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 2500);
+    } catch (e) {
+      console.error("Failed to save brand details:", e);
+    } finally {
+      setSavingDetails(false);
+    }
   };
 
   const invoices = brand.invoices || [];
@@ -286,12 +380,54 @@ export default function BrandDetail({ params }: { params: { id: string } }) {
         <div className="card space-y-6">
           <h2 className="text-sm font-bold border-b border-line pb-2 text-ink">Legal & Business Details</h2>
           <div className="grid sm:grid-cols-2 gap-5">
-            <DocField label="FSSAI Number" value="10012011000629" icon={FileText} />
-            <DocField label="GST Number" value="22AAAAA0000A1Z5" icon={FileText} />
-            <DocField label="PAN Card" value="ABCDE1234F" icon={FileText} />
-            <DocField label="Bank Details (AC/IFSC)" value="123456789 / HDFC0001234" icon={Building} />
-            <DocField label="Timing" value="11:00 AM - 11:00 PM" icon={Clock} />
-            <DocField label="Cuisine" value={brand.type} icon={UtensilsCrossed} />
+            <DocField 
+              label="FSSAI Number" 
+              value={formData.fssaiNumber} 
+              placeholder="e.g. 10012011000629"
+              icon={FileText} 
+              onChange={(v) => handleFieldChange("fssaiNumber", v)}
+              onBlur={handleSaveDetails}
+            />
+            <DocField 
+              label="GST Number" 
+              value={formData.gstNumber} 
+              placeholder="e.g. 22AAAAA0000A1Z5"
+              icon={FileText} 
+              onChange={(v) => handleFieldChange("gstNumber", v)}
+              onBlur={handleSaveDetails}
+            />
+            <DocField 
+              label="PAN Card" 
+              value={formData.panCard} 
+              placeholder="e.g. ABCDE1234F"
+              icon={FileText} 
+              onChange={(v) => handleFieldChange("panCard", v)}
+              onBlur={handleSaveDetails}
+            />
+            <DocField 
+              label="Bank Details (AC/IFSC)" 
+              value={formData.bankDetails} 
+              placeholder="e.g. 123456789 / HDFC0001234"
+              icon={Building} 
+              onChange={(v) => handleFieldChange("bankDetails", v)}
+              onBlur={handleSaveDetails}
+            />
+            <DocField 
+              label="Timing" 
+              value={formData.timing} 
+              placeholder="e.g. 11:00 AM - 11:00 PM"
+              icon={Clock} 
+              onChange={(v) => handleFieldChange("timing", v)}
+              onBlur={handleSaveDetails}
+            />
+            <DocField 
+              label="Cuisine" 
+              value={formData.cuisine} 
+              placeholder="e.g. Cloud Kitchen / Multi Cuisine"
+              icon={UtensilsCrossed} 
+              onChange={(v) => handleFieldChange("cuisine", v)}
+              onBlur={handleSaveDetails}
+            />
           </div>
         </div>
 
@@ -299,10 +435,38 @@ export default function BrandDetail({ params }: { params: { id: string } }) {
         <div className="card space-y-6">
           <h2 className="text-sm font-bold border-b border-line pb-2 text-ink">Contact Information</h2>
           <div className="grid sm:grid-cols-2 gap-5">
-            <DocField label="Owner Name" value="Rahul Sharma" icon={Users} />
-            <DocField label="Owner Number" value="+91 9876543210" icon={Users} />
-            <DocField label="Manager Name" value="Amit Kumar" icon={Users} />
-            <DocField label="Manager Number" value="+91 9123456789" icon={Users} />
+            <DocField 
+              label="Owner Name" 
+              value={formData.ownerName} 
+              placeholder="Enter Owner Name"
+              icon={Users} 
+              onChange={(v) => handleFieldChange("ownerName", v)}
+              onBlur={handleSaveDetails}
+            />
+            <DocField 
+              label="Owner Number" 
+              value={formData.ownerNumber} 
+              placeholder="e.g. +91 9876543210"
+              icon={Users} 
+              onChange={(v) => handleFieldChange("ownerNumber", v)}
+              onBlur={handleSaveDetails}
+            />
+            <DocField 
+              label="Manager Name" 
+              value={formData.managerName} 
+              placeholder="Enter Manager Name"
+              icon={Users} 
+              onChange={(v) => handleFieldChange("managerName", v)}
+              onBlur={handleSaveDetails}
+            />
+            <DocField 
+              label="Manager Number" 
+              value={formData.managerNumber} 
+              placeholder="e.g. +91 9123456789"
+              icon={Users} 
+              onChange={(v) => handleFieldChange("managerNumber", v)}
+              onBlur={handleSaveDetails}
+            />
           </div>
         </div>
 
@@ -310,9 +474,33 @@ export default function BrandDetail({ params }: { params: { id: string } }) {
         <div className="card space-y-6 lg:col-span-2">
           <h2 className="text-sm font-bold border-b border-line pb-2 text-ink">Assets & Media</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            <DocField label="Offline Menu Link" value="https://drive.google.com/..." icon={LinkIcon} type="url" />
-            <DocField label="Facade Shoot" value="https://drive.google.com/..." icon={Camera} type="url" />
-            <DocField label="Food & Ambience Images" value="https://drive.google.com/..." icon={ImageIcon} type="url" />
+            <DocField 
+              label="Offline Menu Link" 
+              value={formData.offlineMenuLink} 
+              placeholder="https://drive.google.com/..."
+              icon={LinkIcon} 
+              type="url" 
+              onChange={(v) => handleFieldChange("offlineMenuLink", v)}
+              onBlur={handleSaveDetails}
+            />
+            <DocField 
+              label="Facade Shoot Link" 
+              value={formData.facadeShootLink} 
+              placeholder="https://drive.google.com/..."
+              icon={Camera} 
+              type="url" 
+              onChange={(v) => handleFieldChange("facadeShootLink", v)}
+              onBlur={handleSaveDetails}
+            />
+            <DocField 
+              label="Food & Ambience Images" 
+              value={formData.foodImagesLink} 
+              placeholder="https://drive.google.com/..."
+              icon={ImageIcon} 
+              type="url" 
+              onChange={(v) => handleFieldChange("foodImagesLink", v)}
+              onBlur={handleSaveDetails}
+            />
           </div>
         </div>
       </div>
