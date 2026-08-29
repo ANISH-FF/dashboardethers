@@ -116,7 +116,7 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
               {doc.type === "certificate" && (
                 <div className="text-sm sm:text-base font-serif text-[#2C322C] leading-[2.1] text-left space-y-4 py-4 relative z-10 max-w-3xl mx-auto">
                   <p>
-                    This is to certify that <strong className="text-[#2F3119] font-sans font-bold">"{doc.employeeName}"</strong>, was working in our company from <strong className="text-[#2F3119] font-sans font-bold">{doc.joiningDate || "5-April-2026"}</strong> to <strong className="text-[#2F3119] font-sans font-bold">{doc.issueDate || "31-July-2026"}</strong> as <strong className="text-[#2F3119] font-sans font-bold">“{doc.designation || "Growth & LinkedIn Branding Consultant"}.”</strong>
+                    This is to certify that <strong className="text-[#2F3119] font-sans font-bold">"{doc.employeeName}"</strong>{doc.dateOfBirth ? <>, with date of birth <strong className="text-[#2F3119] font-sans font-bold">{doc.dateOfBirth}</strong></> : ""}, was working in our company from <strong className="text-[#2F3119] font-sans font-bold">{doc.joiningDate || "5-April-2026"}</strong> to <strong className="text-[#2F3119] font-sans font-bold">{doc.issueDate || "31-July-2026"}</strong> as <strong className="text-[#2F3119] font-sans font-bold">“{doc.designation || "Growth & LinkedIn Branding Consultant"}.”</strong>
                   </p>
                   <p>
                     During their tenure of employment, we found them to be diligent and hard working.

@@ -218,7 +218,7 @@ export function generateDocumentHtml(doc: EmployeeDocument): string {
 
             <div class="body-text">
                 ${doc.type === "certificate" ? `
-                    <p>This is to certify that <span class="highlight">"${doc.employeeName}"</span>, was working in our company from <span class="highlight">${doc.joiningDate || "5-April-2026"}</span> to <span class="highlight">${doc.issueDate || "31-July-2026"}</span> as <span class="highlight">“${doc.designation || "Growth & LinkedIn Branding Consultant"}.”</span></p>
+                    <p>This is to certify that <span class="highlight">"${doc.employeeName}"</span>${doc.dateOfBirth ? `, with date of birth <span class="highlight">${doc.dateOfBirth}</span>` : ""}, was working in our company from <span class="highlight">${doc.joiningDate || "5-April-2026"}</span> to <span class="highlight">${doc.issueDate || "31-July-2026"}</span> as <span class="highlight">“${doc.designation || "Growth & LinkedIn Branding Consultant"}.”</span></p>
                     <p>During their tenure of employment, we found them to be diligent and hard working.</p>
                     <p>In this period, their conduct and overall performance was excellent and much appreciated by the management.</p>
                     <p>${doc.content ? doc.content : "The management takes this opportunity to thank them for their devoted contribution and wish them all the very best for their future endeavors."}</p>

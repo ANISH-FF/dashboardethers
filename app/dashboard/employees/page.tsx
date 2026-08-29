@@ -185,6 +185,24 @@ export default function EmployeeHubPage() {
     }
   };
 
+  const [deleteDocTarget, setDeleteDocTarget] = useState<EmployeeDocument | null>(null);
+  const [isDeletingDoc, setIsDeletingDoc] = useState(false);
+
+  const confirmDeleteDoc = async () => {
+    if (!deleteDocTarget) return;
+    setIsDeletingDoc(true);
+    try {
+      const id = deleteDocTarget.id;
+      setDocuments((prev) => prev.filter((d) => d.id !== id));
+      await fetch(`/api/documents?id=${id}`, { method: "DELETE" });
+      setDeleteDocTarget(null);
+    } catch (e) {
+      console.error("Failed to dismiss document:", e);
+    } finally {
+      setIsDeletingDoc(false);
+    }
+  };
+
   // Set Custom Password Modal State (Co-Founders only)
   const [passwordModalEmp, setPasswordModalEmp] = useState<any | null>(null);
   const [customPasswordInput, setCustomPasswordInput] = useState("");
@@ -684,6 +702,13 @@ export default function EmployeeHubPage() {
                         >
                           <Eye className="w-3.5 h-3.5" /> View / Print PDF
                         </button>
+                        <button
+                          onClick={() => setDeleteDocTarget(doc)}
+                          className="p-2 rounded-lg border border-line text-ink/40 hover:text-rose-400 hover:border-rose-500/30 hover:bg-rose-500/10 transition-all"
+                          title="Dismiss from Admin View"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -1006,6 +1031,61 @@ export default function EmployeeHubPage() {
           onClose={() => setIsIssueModalOpen(false)}
           onIssueDocument={handleIssueDocument}
         />
+      )}
+
+      {/* Modal: Dismiss Document from Admin View */}
+      {deleteDocTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="card bg-paper-dark border-line w-full max-w-md p-6 space-y-4 relative shadow-2xl animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-line pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400">
+                  <Trash2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-ink">Dismiss Document</h3>
+                  <p className="text-[11px] text-ink/50">Admin View Cleanup</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setDeleteDocTarget(null)}
+                className="text-ink/40 hover:text-ink p-1 rounded transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-paper border border-line space-y-1 text-xs">
+              <p className="font-bold text-ink">{deleteDocTarget.title}</p>
+              <p className="text-ink/60 font-mono text-[11px]">
+                Issued to: {deleteDocTarget.employeeName} ({deleteDocTarget.verificationCode || deleteDocTarget.id})
+              </p>
+            </div>
+
+            <p className="text-xs text-ink/70 leading-relaxed">
+              This will remove the document from your admin overview. It remains fully active and accessible to the employee.
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-line">
+              <button
+                type="button"
+                onClick={() => setDeleteDocTarget(null)}
+                disabled={isDeletingDoc}
+                className="btn btn-secondary text-xs"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteDoc}
+                disabled={isDeletingDoc}
+                className="px-4 py-2 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold shadow-lg shadow-rose-500/20 transition-all disabled:opacity-50"
+              >
+                {isDeletingDoc ? "Removing..." : "Remove from Screen"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -395,7 +395,7 @@ export function GlobalQuickChat() {
                       <span className="text-[9px] text-zinc-600">{timeStr}</span>
                     </div>
                     <div
-                      className={`max-w-[85%] px-3 py-2 rounded-2xl text-xs leading-relaxed ${
+                      className={`max-w-[85%] px-3 py-2 rounded-2xl text-xs leading-relaxed whitespace-pre-wrap break-words ${
                         isMe
                           ? "bg-emerald-600 text-white rounded-tr-none shadow-md font-medium"
                           : "bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-tl-none"
@@ -410,23 +410,31 @@ export function GlobalQuickChat() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Quick Input Bar */}
-          <form onSubmit={handleSendMessage} className="p-3 bg-[#090a0d] border-t border-zinc-800/80 flex items-center gap-2">
-            <input
-              type="text"
+          {/* Quick Input Bar with Multi-line Stack Support */}
+          <div className="p-3 bg-[#090a0d] border-t border-zinc-800/80 flex items-end gap-2">
+            <textarea
+              rows={1}
               value={inputMsg}
               onChange={(e) => setInputMsg(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
               placeholder={`Message ${activeTargetName}...`}
-              className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-purple-500"
+              className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-purple-500 resize-none min-h-[38px] max-h-28 overflow-y-auto leading-relaxed"
             />
             <button
-              type="submit"
+              type="button"
+              onClick={() => handleSendMessage()}
               disabled={!inputMsg.trim() || sending}
-              className="p-2 rounded-xl bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white disabled:opacity-40 shadow-md transition-all shrink-0"
+              className="p-2 rounded-xl bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white disabled:opacity-40 shadow-md transition-all shrink-0 mb-0.5"
+              title="Send message (Ctrl+Enter)"
             >
               <Send className="w-3.5 h-3.5" />
             </button>
-          </form>
+          </div>
 
         </div>
       )}

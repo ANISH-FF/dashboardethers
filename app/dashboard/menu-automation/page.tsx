@@ -750,8 +750,8 @@ function determineSmartVariantTitle(selectedItems: MenuItem[]): string {
   // ════════════════════════════════════════════════════════════════
   if (items.length === 0 && !loading) {
     return (
-      <div className="-m-4 md:-m-6 digitizer-vars">
-        <div style={{ height: "calc(100vh - 4rem)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "1.5rem", background: "var(--bg-primary)" }}>
+      <div className="digitizer-vars w-full">
+        <div style={{ minHeight: "calc(100vh - 9rem)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "2rem", background: "var(--bg-primary)", borderRadius: 12, border: "1px solid var(--border)" }}>
           <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
             <div style={{ width: 64, height: 64, borderRadius: 16, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1rem" }}>
               <Image src="/uploads/logo.png" alt="Ethers Logo" width={64} height={64} style={{ objectFit: "contain" }} className="brightness-0 dark:invert" />
@@ -877,9 +877,8 @@ function determineSmartVariantTitle(selectedItems: MenuItem[]): string {
   };
 
   return (
-    <div className="-m-4 md:-m-6 digitizer-vars">
-      <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--bg-primary)" }}>
-        <style>{`
+    <div className="digitizer-vars w-full h-[calc(100vh-5.5rem)] flex flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-primary)] shadow-2xl">
+      <style>{`
           .digitizer-vars {
             --bg-primary:    #0a0a0a;
             --bg-secondary:  #111111;
@@ -947,9 +946,9 @@ function determineSmartVariantTitle(selectedItems: MenuItem[]): string {
               { label: "ONLINE HIKE", val: onlineHike, color: "#fff", setter: (v: number) => applyMenuPricingHike(v, halfPct) },
               { label: "HALF PORTION", val: halfPct, color: "#4ade80", setter: (v: number) => applyMenuPricingHike(onlineHike, v) },
             ].map((ctrl, i) => (
-              <div key={i} style={{ padding: "0.35rem 0.8rem", borderRight: i === 0 ? "1px solid var(--border)" : "none" }}>
-                <div style={{ fontSize: "0.58rem", fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>{ctrl.label}</div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 2, marginTop: 1 }}>
+              <div key={i} style={{ padding: "0.4rem 0.85rem", borderRight: i === 0 ? "1px solid var(--border)" : "none", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase", lineHeight: "1.2", marginBottom: 2 }}>{ctrl.label}</div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 2 }}>
                   <input
                     type="number"
                     value={ctrl.val}
@@ -1070,7 +1069,7 @@ function determineSmartVariantTitle(selectedItems: MenuItem[]): string {
           <thead>
             <tr style={{ background: "var(--bg-secondary)", position: "sticky", top: 0, zIndex: 10, borderBottom: "1px solid var(--border)" }}>
               {([
-                { label: "#",      w: 44,   align: "center" },
+                { label: "#",      w: 56,   align: "center" },
                 { label: "Diet",   w: 90,   align: "center" },
                 { label: "Category", w: 125 },
                 { label: "Sub-Category", w: 125 },
@@ -1138,7 +1137,7 @@ function determineSmartVariantTitle(selectedItems: MenuItem[]): string {
               return (
                 <tr key={item.id} className="tr-hover" style={{ borderBottom: "1px solid var(--border-subtle)", background: isSelected ? "rgba(168,85,247,0.08)" : "transparent" }}>
                   {/* # */}
-                  <td style={{ padding: "0.85rem 0.75rem", textAlign: "center", color: "var(--text-muted)", fontWeight: 500, width: 44 }}>
+                  <td style={{ padding: "0.85rem 0.85rem", textAlign: "center", color: "var(--text-muted)", fontWeight: 600, width: 56 }}>
                     {idx + 1}
                   </td>
 
@@ -1449,7 +1448,6 @@ function determineSmartVariantTitle(selectedItems: MenuItem[]): string {
           </div>
         </div>
       )}
-      </div>
     </div>
   );
 }

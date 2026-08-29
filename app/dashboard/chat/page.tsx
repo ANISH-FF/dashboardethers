@@ -388,7 +388,7 @@ export default function TeamChatPage() {
                       <span className="text-[10px] text-white/30">{formatTimestamp(msg.timestamp)}</span>
                     </div>
                     <div
-                      className={`p-3 rounded-2xl text-xs leading-relaxed break-words shadow-lg ${
+                      className={`p-3 rounded-2xl text-xs leading-relaxed whitespace-pre-wrap break-words shadow-lg ${
                         isSelf
                           ? "bg-emerald-600/90 text-white rounded-tr-none border border-emerald-500/30"
                           : "bg-[#141419] text-white/90 rounded-tl-none border border-white/10"
@@ -422,39 +422,47 @@ export default function TeamChatPage() {
           </div>
         )}
 
-        {/* Message Input Box */}
-        <form onSubmit={handleSendMessage} className="p-4 border-t border-white/10 bg-[#0d0d12]/80 backdrop-blur">
-          <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-2xl p-1.5 focus-within:border-emerald-500/50 transition-all">
+        {/* Message Input Box with Multi-line Stack Support */}
+        <div className="p-4 border-t border-white/10 bg-[#0d0d12]/80 backdrop-blur">
+          <div className="flex items-end gap-2 bg-white/5 border border-white/10 rounded-2xl p-1.5 focus-within:border-emerald-500/50 transition-all">
             <button
               type="button"
               onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              className="p-2 text-white/40 hover:text-white/80 rounded-xl transition-all"
+              className="p-2 text-white/40 hover:text-white/80 rounded-xl transition-all shrink-0 mb-0.5"
               title="Insert Emoji"
             >
               <Smile size={18} />
             </button>
 
-            <input
-              type="text"
+            <textarea
+              rows={1}
               placeholder={`Message ${targetType === "channel" ? "#" + targetId : selectedUser?.name || "user"}...`}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              className="flex-1 bg-transparent px-2 text-xs text-white placeholder-white/40 focus:outline-none"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
+              className="flex-1 bg-transparent px-2 py-1.5 text-xs text-white placeholder-white/40 focus:outline-none resize-none min-h-[38px] max-h-32 overflow-y-auto leading-relaxed"
             />
 
             <button
-              type="submit"
+              type="button"
+              onClick={() => handleSendMessage()}
               disabled={!inputText.trim() || sending}
-              className={`p-2.5 rounded-xl font-bold transition-all flex items-center justify-center ${
+              className={`p-2.5 rounded-xl font-bold transition-all flex items-center justify-center shrink-0 mb-0.5 ${
                 inputText.trim() && !sending
                   ? "bg-emerald-500 text-black hover:bg-emerald-400 shadow-lg shadow-emerald-500/20"
                   : "bg-white/5 text-white/20 cursor-not-allowed"
               }`}
+              title="Send message (Ctrl+Enter)"
             >
               <Send size={15} />
             </button>
           </div>
-        </form>
+        </div>
       </div>
 
       {/* ─── NEW CHANNEL MODAL ──────────────────────────────────────────────── */}

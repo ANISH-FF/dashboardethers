@@ -32,6 +32,7 @@ export function IssueDocumentModal({ employees, onClose, onIssueDocument }: Issu
   const [noticePeriodDays, setNoticePeriodDays] = useState(30);
   const [annualLeaves, setAnnualLeaves] = useState(18);
   const [projectTitle, setProjectTitle] = useState("F&B Operations Consulting");
+  const [dateOfBirth, setDateOfBirth] = useState("");
   
   const [content, setContent] = useState("");
   const [certificateType, setCertificateType] = useState<"internship" | "experience" | "appreciation">("appreciation");
@@ -54,6 +55,7 @@ export function IssueDocumentModal({ employees, onClose, onIssueDocument }: Issu
         certificateType: docType === "certificate" ? certificateType : undefined,
         title,
         issueDate,
+        dateOfBirth: docType === "certificate" ? dateOfBirth : undefined,
         joiningDate: (docType === "offer_letter" || docType === "employment_terms" || docType === "completion_letter" || docType === "certificate") ? joiningDate : undefined,
         effectiveDate: (docType === "increment_letter" || docType === "employment_terms") ? effectiveDate : undefined,
         monthYear: docType === "payslip" ? monthYear : undefined,
@@ -205,6 +207,18 @@ export function IssueDocumentModal({ employees, onClose, onIssueDocument }: Issu
                   type="date"
                   value={effectiveDate}
                   onChange={(e) => setEffectiveDate(e.target.value)}
+                  className="input font-mono"
+                />
+              </div>
+            )}
+
+            {docType === "certificate" && (
+              <div>
+                <label className="label">Date of Birth (Optional)</label>
+                <input
+                  type="date"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
                   className="input font-mono"
                 />
               </div>

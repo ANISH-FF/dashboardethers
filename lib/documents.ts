@@ -43,6 +43,8 @@ export type EmployeeDocument = {
   newSalary?: number;
   effectiveDate?: string;
   projectTitle?: string;
+  dateOfBirth?: string;
+  hiddenFromAdmin?: boolean;
 };
 
 function ensureFile() {
@@ -72,6 +74,15 @@ export function getDocumentsForEmployee(email: string): EmployeeDocument[] {
   return all.filter((d) => d.employeeEmail.toLowerCase() === email.toLowerCase());
 }
 
+export function deleteDocumentForAdmin(id: string): boolean {
+  const all = getDocuments();
+  const target = all.find((d) => d.id === id);
+  if (!target) return false;
+  target.hiddenFromAdmin = true;
+  saveDocuments(all);
+  return true;
+}
+
 export function createDocument(partial: Partial<EmployeeDocument>): EmployeeDocument {
   const all = getDocuments();
   const now = new Date().toISOString().split("T")[0];
@@ -97,6 +108,7 @@ export function createDocument(partial: Partial<EmployeeDocument>): EmployeeDocu
     newSalary: partial.newSalary,
     effectiveDate: partial.effectiveDate || now,
     projectTitle: partial.projectTitle || "F&B Operations Consulting",
+    dateOfBirth: partial.dateOfBirth,
   };
   all.unshift(doc);
   saveDocuments(all);
