@@ -234,7 +234,7 @@ export function generateDocumentHtml(doc: EmployeeDocument): string {
                     <p>Dear <span class="highlight">${doc.employeeName}</span>,</p>
                     <p>We are thrilled to invite you to join Ethers Consultancy as our new <span class="highlight">${doc.designation}</span>. At Ethers Consultancy, we focus on building a high-caliber team, and we are certain your contributions will be vital to our continued success.</p>
                     <p><span class="highlight">Role & Responsibilities:</span> Your role will involve optimizing menus, pricing strategies, managing accounts for partner cloud kitchens, and contributing to marketing initiatives on platforms like Swiggy and Zomato.</p>
-                    <p><span class="highlight">Duration & Commitment:</span> This tenure begins on <span class="highlight">${doc.joiningDate || doc.issueDate}</span> in Kolkata, with a minimum commitment of <span class="highlight">${doc.probationMonths || 6} months</span>.</p>
+                    <p><span class="highlight">Duration & Commitment:</span> This tenure begins on <span class="highlight">${doc.joiningDate || doc.issueDate}</span> in Kolkata, with a minimum commitment of <span class="highlight">${doc.probationMonths || 3} months</span>.</p>
                     <p><span class="highlight">Compensation & Benefits:</span> Fixed monthly payout of <span class="highlight">Rs. ${(doc.salaryDetails?.netSalary || 5000).toLocaleString("en-IN")}/-</span> plus performance incentives.</p>
                     <p>We look forward to having you on board as we continue to grow Ethers Consultancy!</p>
                 ` : ""}

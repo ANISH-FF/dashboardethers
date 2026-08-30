@@ -288,41 +288,47 @@ export default function DashboardHome() {
         </div>
       </div>
 
-      {/* Luxury Continuous Founder Marquee Strip */}
-      <div className="relative overflow-hidden rounded-xl border border-line bg-paper/50 backdrop-blur-sm py-2 px-4 shadow-sm">
-        {/* Edge Fade Gradients for Seamless Depth */}
-        <div className="pointer-events-none absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-paper to-transparent z-10" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-paper to-transparent z-10" />
+      {/* Luxury Continuous Founder Marquee Strip (Obsidian Mesh & Silver Metallic Gradient) */}
+      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-zinc-950 via-[#0c0c0f] to-zinc-950 py-2.5 px-4 shadow-2xl backdrop-blur-xl">
+        {/* Subtle Ambient Radial Glow */}
+        <div className="pointer-events-none absolute -top-12 left-1/2 -translate-x-1/2 w-96 h-24 bg-emerald-500/10 blur-3xl rounded-full" />
+        
+        {/* Marquee Content with Edge Fades */}
+        <div className="relative w-full overflow-hidden">
+          {/* Edge Fade Gradients for Seamless Depth */}
+          <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-[#0c0c0f] to-transparent z-10" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-[#0c0c0f] to-transparent z-10" />
 
-        <div className="animate-marquee font-mono text-[11px] uppercase tracking-[0.22em] text-ink/75">
-          <span className="flex shrink-0 items-center gap-8 pr-8">
-            <span className="flex items-center gap-2.5">
-              <span className="text-emerald-400 font-bold">✦</span>
-              <span>Grind until Mom &amp; Dad have your card and &ldquo;how much?&rdquo; is no longer a question.</span>
-            </span>
-            <span className="flex items-center gap-2.5">
-              <span className="text-emerald-400 font-bold">✦</span>
-              <span>Grind until Mom &amp; Dad have your card and &ldquo;how much?&rdquo; is no longer a question.</span>
-            </span>
-            <span className="flex items-center gap-2.5">
-              <span className="text-emerald-400 font-bold">✦</span>
-              <span>Grind until Mom &amp; Dad have your card and &ldquo;how much?&rdquo; is no longer a question.</span>
-            </span>
-          </span>
-          <span className="flex shrink-0 items-center gap-8 pr-8" aria-hidden="true">
-            <span className="flex items-center gap-2.5">
-              <span className="text-emerald-400 font-bold">✦</span>
-              <span>Grind until Mom &amp; Dad have your card and &ldquo;how much?&rdquo; is no longer a question.</span>
-            </span>
-            <span className="flex items-center gap-2.5">
-              <span className="text-emerald-400 font-bold">✦</span>
-              <span>Grind until Mom &amp; Dad have your card and &ldquo;how much?&rdquo; is no longer a question.</span>
-            </span>
-            <span className="flex items-center gap-2.5">
-              <span className="text-emerald-400 font-bold">✦</span>
-              <span>Grind until Mom &amp; Dad have your card and &ldquo;how much?&rdquo; is no longer a question.</span>
-            </span>
-          </span>
+          <div className="animate-marquee select-none whitespace-nowrap">
+            <div className="flex shrink-0 items-center gap-10 pr-10 font-mono text-xs sm:text-sm font-bold uppercase tracking-[0.22em] bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
+              <span className="flex items-center gap-3">
+                <span className="text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.7)]">✦</span>
+                <span>Grind until Mom &amp; Dad have your card and &ldquo;how much?&rdquo; is no longer a question.</span>
+              </span>
+              <span className="flex items-center gap-3">
+                <span className="text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.7)]">✦</span>
+                <span>Grind until Mom &amp; Dad have your card and &ldquo;how much?&rdquo; is no longer a question.</span>
+              </span>
+              <span className="flex items-center gap-3">
+                <span className="text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.7)]">✦</span>
+                <span>Grind until Mom &amp; Dad have your card and &ldquo;how much?&rdquo; is no longer a question.</span>
+              </span>
+            </div>
+            <div className="flex shrink-0 items-center gap-10 pr-10 font-mono text-xs sm:text-sm font-bold uppercase tracking-[0.22em] bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent" aria-hidden="true">
+              <span className="flex items-center gap-3">
+                <span className="text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.7)]">✦</span>
+                <span>Grind until Mom &amp; Dad have your card and &ldquo;how much?&rdquo; is no longer a question.</span>
+              </span>
+              <span className="flex items-center gap-3">
+                <span className="text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.7)]">✦</span>
+                <span>Grind until Mom &amp; Dad have your card and &ldquo;how much?&rdquo; is no longer a question.</span>
+              </span>
+              <span className="flex items-center gap-3">
+                <span className="text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.7)]">✦</span>
+                <span>Grind until Mom &amp; Dad have your card and &ldquo;how much?&rdquo; is no longer a question.</span>
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 

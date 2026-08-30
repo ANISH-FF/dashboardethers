@@ -155,7 +155,7 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
                   </p>
 
                   <p>
-                    <strong className="font-sans font-bold text-[#2F3119]">Duration & Commitment:</strong> This tenure begins on <strong className="font-sans font-bold">{doc.joiningDate || doc.issueDate}</strong>, in Kolkata, with a mandatory minimum commitment of <strong className="font-sans font-bold">{doc.probationMonths || 6} months</strong> for successful completion.
+                    <strong className="font-sans font-bold text-[#2F3119]">Duration & Commitment:</strong> This tenure begins on <strong className="font-sans font-bold">{doc.joiningDate || doc.issueDate}</strong>, in Kolkata, with a mandatory minimum commitment of <strong className="font-sans font-bold">{doc.probationMonths || 3} months</strong> for successful completion.
                   </p>
 
                   <p>

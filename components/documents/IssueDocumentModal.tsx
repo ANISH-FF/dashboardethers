@@ -62,7 +62,7 @@ export function IssueDocumentModal({ employees, onClose, onIssueDocument }: Issu
         salaryDetails: { basic, hra, allowances, deductions, netSalary },
         oldSalary: docType === "increment_letter" ? oldSalary : undefined,
         newSalary: docType === "increment_letter" ? newSalary : undefined,
-        probationMonths: docType === "employment_terms" ? probationMonths : undefined,
+        probationMonths: (docType === "employment_terms" || docType === "offer_letter") ? probationMonths : undefined,
         noticePeriodDays: docType === "employment_terms" ? noticePeriodDays : undefined,
         annualLeaves: docType === "employment_terms" ? annualLeaves : undefined,
         projectTitle: (docType === "completion_letter" || docType === "recommendation_letter") ? projectTitle : undefined,
@@ -80,7 +80,7 @@ export function IssueDocumentModal({ employees, onClose, onIssueDocument }: Issu
     if (type === "payslip") {
       setTitle("Monthly Salary Slip - July 2026");
     } else if (type === "offer_letter") {
-      setTitle("Official Offer & Appointment Letter (1-Page)");
+      setTitle("Official Offer & Appointment Letter");
     } else if (type === "employment_terms") {
       setTitle("Employment Agreement Terms & Conditions");
     } else if (type === "increment_letter") {
@@ -241,6 +241,21 @@ export function IssueDocumentModal({ employees, onClose, onIssueDocument }: Issu
                   <option value="appreciation">Employment Certificate</option>
                   <option value="experience">Experience Certificate</option>
                   <option value="internship">Internship Completion</option>
+                </select>
+              </div>
+            )}
+
+            {docType === "offer_letter" && (
+              <div>
+                <label className="label">Duration & Commitment</label>
+                <select
+                  value={probationMonths}
+                  onChange={(e) => setProbationMonths(Number(e.target.value))}
+                  className="input font-mono"
+                >
+                  <option value={3}>3 Months Commitment</option>
+                  <option value={6}>6 Months Commitment</option>
+                  <option value={12}>12 Months Commitment</option>
                 </select>
               </div>
             )}
