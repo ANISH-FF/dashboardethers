@@ -26,6 +26,8 @@ Respond ONLY in JSON with these exact keys (use 0 if a field is not found):
   "complaints_cancellation": number,
   "total_taxes": number,
   "ads": number,
+  "other_deductions": number,
+  "other_refunds": number,
   "net_payout": number
 }
 
@@ -45,6 +47,8 @@ Extraction Rules:
 - "complaints_cancellation": Read strictly from complaints/cancellation deduction if present (e.g. 405.09).
 - "total_taxes": Read strictly from TCS + TDS + GST u/s 9(5) taxes total (e.g. 1197.7).
 - "ads": Read strictly from "(E) Growth Investments in Ads" or sum of all ad spend, CPC campaigns, and Ad GST rows under Growth Services (e.g. 132.75).
+- "other_deductions": Read strictly any negative deductions or charges under "(F) Other Charges & Refunds" (e.g. "Unsettled Deductions from Previous Weeks" 367.13), else 0.
+- "other_refunds": Read strictly any positive refund or credit under "(F) Other Charges & Refunds", else 0.
 - "net_payout": Read strictly from "FINAL PAYOUT" / "Net Payout" at top/bottom of screen (e.g. 10316.79).
 `.trim();
 
@@ -98,6 +102,9 @@ export function computeSwiggyDeliveryMetrics(
     ? options.manualAdsOverride
     : Math.abs(Number(rawInput.ads || 0));
 
+  const otherDeductions = Math.abs(Number(rawInput.other_deductions || 0));
+  const otherRefunds = Math.abs(Number(rawInput.other_refunds || 0));
+
   const baseForAds = subTotal > 0 ? subTotal : subTotalWithPkg;
   const adsPct =
     baseForAds > 0 ? Number(((ads / baseForAds) * 100).toFixed(2)) : 0;
@@ -133,6 +140,8 @@ export function computeSwiggyDeliveryMetrics(
     tax,
     ads,
     adsPct,
+    otherDeductions,
+    otherRefunds,
     netPayout,
     netPayoutPct,
     overallBurnPct,

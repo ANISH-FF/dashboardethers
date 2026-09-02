@@ -350,6 +350,24 @@ export function GlobalQuickChat() {
 
           {/* Channel / DM Selector Pills */}
           <div className="px-3.5 py-2 bg-[#090a0d] border-b border-zinc-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            {/* Pinned AI Copilot Pill */}
+            <button
+              onClick={() => {
+                setTargetType("dm");
+                setTargetId("assistant@ethers.ai");
+              }}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shrink-0 flex items-center gap-1.5 ${
+                targetType === "dm" && targetId.toLowerCase() === "assistant@ethers.ai"
+                  ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-sm font-extrabold"
+                  : "text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20"
+              }`}
+            >
+              <Sparkles className="w-3 h-3" />
+              Ethers AI
+            </button>
+
+            <span className="w-px h-4 bg-zinc-800 shrink-0" />
+
             {channels.map((c) => (
               <button
                 key={c.id}
@@ -378,11 +396,14 @@ export function GlobalQuickChat() {
 
             {messages.length === 0 ? (
               <div className="text-center py-10 text-zinc-500 text-xs font-mono">
-                No messages yet in {activeTargetName}. Start the conversation!
+                {targetType === "dm" && targetId.toLowerCase() === "assistant@ethers.ai"
+                  ? "Ask Ethers AI anything about Menu, Reporting, Hygiene Check, or Employee Hub."
+                  : `No messages yet in ${activeTargetName}. Start the conversation.`}
               </div>
             ) : (
               messages.map((m) => {
                 const isMe = m.sender_email.toLowerCase() === currentUser?.email?.toLowerCase();
+                const isAi = m.sender_email.toLowerCase() === "assistant@ethers.ai";
                 const timeStr = new Date(m.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
                 return (
@@ -391,13 +412,21 @@ export function GlobalQuickChat() {
                     className={`flex flex-col ${isMe ? "items-end" : "items-start"} animate-in fade-in duration-200`}
                   >
                     <div className="flex items-center gap-1.5 mb-1">
-                      <span className="text-[10px] font-bold text-zinc-400">{isMe ? "You" : m.sender_name}</span>
+                      {isAi ? (
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                          <Sparkles className="w-2.5 h-2.5" /> Ethers AI
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-zinc-400">{isMe ? "You" : m.sender_name}</span>
+                      )}
                       <span className="text-[9px] text-zinc-600">{timeStr}</span>
                     </div>
                     <div
                       className={`max-w-[85%] px-3 py-2 rounded-2xl text-xs leading-relaxed whitespace-pre-wrap break-words ${
                         isMe
                           ? "bg-emerald-600 text-white rounded-tr-none shadow-md font-medium"
+                          : isAi
+                          ? "bg-[#101317] border border-emerald-500/30 text-zinc-100 rounded-tl-none shadow-md"
                           : "bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-tl-none"
                       }`}
                     >

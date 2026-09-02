@@ -279,10 +279,10 @@ export function generateDocumentHtml(doc: EmployeeDocument): string {
                             <tr><th>Earnings</th><th>Amount (Rs)</th><th>Deductions</th><th>Amount (Rs)</th></tr>
                         </thead>
                         <tbody>
-                            <tr><td>Basic Salary</td><td>${(doc.salaryDetails?.basic || 2500).toLocaleString("en-IN")}</td><td>Professional Tax</td><td>110</td></tr>
-                            <tr><td>HRA</td><td>${(doc.salaryDetails?.hra || 1500).toLocaleString("en-IN")}</td><td>TDS</td><td>0</td></tr>
-                            <tr><td>Allowances</td><td>${(doc.salaryDetails?.allowances || 1000).toLocaleString("en-IN")}</td><td>Total Deductions</td><td>110</td></tr>
-                            <tr style="font-weight: 700; background-color: #f4f4f5;"><td>Net Disbursed</td><td colspan="3">Rs. ${(doc.salaryDetails?.netSalary || 5000).toLocaleString("en-IN")}</td></tr>
+                            <tr><td>Basic Salary</td><td>${(doc.salaryDetails?.basic ?? (doc.salaryDetails?.netSalary ?? 5000)).toLocaleString("en-IN")}</td><td>TDS / Deductions</td><td>${(doc.salaryDetails?.deductions ?? 0).toLocaleString("en-IN")}</td></tr>
+                            <tr><td>HRA</td><td>${(doc.salaryDetails?.hra ?? 0).toLocaleString("en-IN")}</td><td>Total Deductions</td><td>${(doc.salaryDetails?.deductions ?? 0).toLocaleString("en-IN")}</td></tr>
+                            <tr><td>Allowances</td><td>${(doc.salaryDetails?.allowances ?? 0).toLocaleString("en-IN")}</td><td>-</td><td>-</td></tr>
+                            <tr style="font-weight: 700; background-color: #f4f4f5;"><td>Net Disbursed</td><td colspan="3">Rs. ${(doc.salaryDetails?.netSalary ?? ((doc.salaryDetails?.basic ?? 0) + (doc.salaryDetails?.hra ?? 0) + (doc.salaryDetails?.allowances ?? 0) - (doc.salaryDetails?.deductions ?? 0))).toLocaleString("en-IN")}</td></tr>
                         </tbody>
                     </table>
                 ` : ""}

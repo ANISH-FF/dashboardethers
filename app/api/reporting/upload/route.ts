@@ -83,16 +83,18 @@ function validateZomatoMath(ocr: Record<string, any>): boolean {
   return false;
 }
 
-// Math validation: Swiggy — A - B - C - D - E = Net Payout
+// Math validation: Swiggy — A - B - C - D - E - otherDeductions + otherRefunds = Net Payout
 function validateSwiggyMath(ocr: Record<string, any>): boolean {
   const A = Math.abs(Number(ocr.commissionable_value || 0));
   const B = Math.abs(Number(ocr.total_fees || 0));
   const C = Math.abs(Number(ocr.complaints_cancellation || 0));
   const D = Math.abs(Number(ocr.total_taxes || 0));
   const E = Math.abs(Number(ocr.ads || 0));
+  const otherDeductions = Math.abs(Number(ocr.other_deductions || 0));
+  const otherRefunds = Math.abs(Number(ocr.other_refunds || 0));
   let netPayout = Number(ocr.net_payout || 0);
   if (A === 0 && netPayout === 0) return true; // nothing extracted, skip
-  const calculated = A - B - C - D - E;
+  const calculated = A - B - C - D - E - otherDeductions + otherRefunds;
   // Dynamic tolerance for Swiggy: Accounts for unlisted ~1% TCS / GST u/s 52 deduction
   const tolerance = Math.max(75, A * 0.015);
 

@@ -28,6 +28,7 @@ interface LeadsTableProps {
 
 const FOLLOW_UP_OPTIONS: FollowUpStatus[] = ["In Talks", "Not Responded", "Scheduled a meeting", "Pending"];
 const STATUS_OPTIONS: LeadStatus[] = ["In Talks", "Converted", "Not Converted", "Not Responding"];
+const POC_OPTIONS = ["Store Manager", "Owner", "General Manager", "Partner", "Outlet In-Charge", "Operations Head"];
 
 export function LeadsTable({ leads, loading, onUpdateLead, onDeleteLead, onBulkDeleteLeads, onSelectLead }: LeadsTableProps) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -105,6 +106,15 @@ export function LeadsTable({ leads, loading, onUpdateLead, onDeleteLead, onBulkD
     setUpdatingId(leadId);
     try {
       await onUpdateLead({ id: leadId, date: value });
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const handlePocChange = async (leadId: string, value: string) => {
+    setUpdatingId(leadId);
+    try {
+      await onUpdateLead({ id: leadId, poc: value });
     } finally {
       setUpdatingId(null);
     }
@@ -279,12 +289,33 @@ export function LeadsTable({ leads, loading, onUpdateLead, onDeleteLead, onBulkD
                     </div>
                   </td>
 
-                  {/* POC */}
+                  {/* POC (Clean 1-Click Dropdown) */}
                   <td className="py-3 px-4 text-ink/80">
-                    <div className="font-semibold text-ink/90">{lead.poc || "Not specified"}</div>
-                    {lead.assignedTo && (
-                      <span className="text-[10px] text-ink/40">Rep: {lead.assignedTo}</span>
-                    )}
+                    <div className="relative inline-flex flex-col gap-1 w-36">
+                      <div className="relative">
+                        <select
+                          value={lead.poc || "Store Manager"}
+                          onChange={(e) => handlePocChange(lead.id, e.target.value)}
+                          className="w-full appearance-none rounded-lg border border-line bg-paper-dark/60 hover:bg-paper-dark px-2.5 py-1 text-xs font-semibold text-ink cursor-pointer outline-none transition-all pr-6 focus:border-purple-500/50 shadow-sm"
+                          title="Click to select POC (e.g. Owner or Store Manager)"
+                        >
+                          {POC_OPTIONS.map((opt) => (
+                            <option key={`${lead.id}-poc-${opt}`} value={opt} className="bg-paper-dark text-ink font-sans">
+                              {opt}
+                            </option>
+                          ))}
+                          {lead.poc && !POC_OPTIONS.includes(lead.poc) && (
+                            <option value={lead.poc} className="bg-paper-dark text-ink font-sans">
+                              {lead.poc}
+                            </option>
+                          )}
+                        </select>
+                        <ChevronDown className="w-3 h-3 absolute right-2 top-2 pointer-events-none opacity-60 text-ink/70" />
+                      </div>
+                      {lead.assignedTo && (
+                        <span className="text-[10px] text-ink/40 px-1">Rep: {lead.assignedTo}</span>
+                      )}
+                    </div>
                   </td>
 
                   {/* Dates (Drop Down / Datepicker) */}

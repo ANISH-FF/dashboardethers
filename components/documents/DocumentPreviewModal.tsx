@@ -335,26 +335,26 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
                       <tbody className="divide-y divide-zinc-200 font-medium text-zinc-900">
                         <tr>
                           <td className="p-2.5">Basic Salary</td>
-                          <td className="p-2.5 text-right font-mono">₹{(doc.salaryDetails?.basic || Math.round((doc.salaryDetails?.netSalary || 5000) * 0.5)).toLocaleString("en-IN")}</td>
-                          <td className="p-2.5 border-l border-zinc-200">Professional Tax (PT)</td>
-                          <td className="p-2.5 text-right font-mono">₹110.00</td>
+                          <td className="p-2.5 text-right font-mono">₹{(doc.salaryDetails?.basic ?? (doc.salaryDetails?.netSalary ?? 5000)).toLocaleString("en-IN")}</td>
+                          <td className="p-2.5 border-l border-zinc-200">TDS / Deductions</td>
+                          <td className="p-2.5 text-right font-mono">₹{(doc.salaryDetails?.deductions ?? 0).toLocaleString("en-IN")}</td>
                         </tr>
                         <tr>
                           <td className="p-2.5">House Rent Allowance (HRA)</td>
-                          <td className="p-2.5 text-right font-mono">₹{(doc.salaryDetails?.hra || Math.round((doc.salaryDetails?.netSalary || 5000) * 0.3)).toLocaleString("en-IN")}</td>
-                          <td className="p-2.5 border-l border-zinc-200">TDS / Deductions</td>
-                          <td className="p-2.5 text-right font-mono">₹{(doc.salaryDetails?.deductions || 0).toLocaleString("en-IN")}</td>
+                          <td className="p-2.5 text-right font-mono">₹{(doc.salaryDetails?.hra ?? 0).toLocaleString("en-IN")}</td>
+                          <td className="p-2.5 border-l border-zinc-200 font-bold">Total Deductions</td>
+                          <td className="p-2.5 text-right font-mono font-bold text-zinc-900">₹{(doc.salaryDetails?.deductions ?? 0).toLocaleString("en-IN")}</td>
                         </tr>
                         <tr>
                           <td className="p-2.5">Special Allowance & Bonus</td>
-                          <td className="p-2.5 text-right font-mono">₹{(doc.salaryDetails?.allowances || Math.round((doc.salaryDetails?.netSalary || 5000) * 0.2)).toLocaleString("en-IN")}</td>
-                          <td className="p-2.5 border-l border-zinc-200 font-bold">Total Deductions</td>
-                          <td className="p-2.5 text-right font-mono font-bold text-zinc-900">₹{(110 + (doc.salaryDetails?.deductions || 0)).toLocaleString("en-IN")}</td>
+                          <td className="p-2.5 text-right font-mono">₹{(doc.salaryDetails?.allowances ?? 0).toLocaleString("en-IN")}</td>
+                          <td className="p-2.5 border-l border-zinc-200 text-zinc-400">-</td>
+                          <td className="p-2.5 text-right font-mono text-zinc-400">-</td>
                         </tr>
                         <tr className="bg-zinc-100 font-bold text-sm border-t-2 border-zinc-900">
                           <td className="p-3 text-zinc-900" colSpan={2}>Net Monthly Salary Disbursed</td>
                           <td className="p-3 text-right text-zinc-900 font-mono" colSpan={2}>
-                            ₹{(doc.salaryDetails?.netSalary || 5000).toLocaleString("en-IN")}
+                            ₹{(doc.salaryDetails?.netSalary ?? ((doc.salaryDetails?.basic ?? 0) + (doc.salaryDetails?.hra ?? 0) + (doc.salaryDetails?.allowances ?? 0) - (doc.salaryDetails?.deductions ?? 0))).toLocaleString("en-IN")}
                           </td>
                         </tr>
                       </tbody>

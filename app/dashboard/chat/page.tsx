@@ -252,6 +252,8 @@ export default function TeamChatPage() {
             <div className="space-y-1">
               {filteredUsers.map((u) => {
                 const isActive = targetType === "dm" && targetId.toLowerCase() === u.email.toLowerCase();
+                const isAi = u.email.toLowerCase() === "assistant@ethers.ai";
+
                 return (
                   <button
                     key={u.id}
@@ -262,29 +264,41 @@ export default function TeamChatPage() {
                     className={`w-full text-left px-3 py-2 rounded-xl flex items-center justify-between transition-all text-xs font-medium ${
                       isActive 
                         ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-semibold" 
+                        : isAi
+                        ? "bg-emerald-500/5 border border-emerald-500/20 text-emerald-300 hover:bg-emerald-500/10"
                         : "text-white/70 hover:bg-white/5 hover:text-white"
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className="relative flex-shrink-0">
-                        <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-white uppercase">
-                          {u.name.charAt(0)}
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold uppercase ${
+                          isAi 
+                            ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40" 
+                            : "bg-white/10 text-white"
+                        }`}>
+                          {isAi ? <Sparkles className="w-3 h-3" /> : u.name.charAt(0)}
                         </div>
                         <span className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-[#0d0d12] ${
                           u.isOnline ? (u.isIdle ? "bg-amber-400" : "bg-emerald-400") : "bg-zinc-600"
                         }`} />
                       </div>
                       <div className="truncate min-w-0">
-                        <div className="truncate font-medium">{u.name}</div>
+                        <div className="truncate font-medium flex items-center gap-1">
+                          {u.name}
+                        </div>
                         <div className="text-[10px] text-white/40 truncate">{u.designation || u.role}</div>
                       </div>
                     </div>
 
-                    {u.isOnline && (
+                    {isAi ? (
+                      <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/15 px-1.5 py-0.5 rounded border border-emerald-500/30 animate-pulse">
+                        24/7 AI
+                      </span>
+                    ) : u.isOnline ? (
                       <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
                         {u.isIdle ? "Idle" : "Live"}
                       </span>
-                    )}
+                    ) : null}
                   </button>
                 );
               })}
@@ -318,30 +332,28 @@ export default function TeamChatPage() {
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-white">#{selectedChannel?.name || targetId}</h3>
-                  <p className="text-xs text-white/40">{selectedChannel?.description || "Team Channel"}</p>
+                  <p className="text-xs text-white/40">{selectedChannel?.description || "Public team channel"}</p>
                 </div>
               </>
             ) : (
               <>
-                <div className="relative">
-                  <div className="w-9 h-9 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-sm font-bold text-emerald-400">
-                    {selectedUser?.name ? selectedUser.name.charAt(0) : "U"}
-                  </div>
-                  <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border border-[#0d0d12] ${
-                    selectedUser?.isOnline ? (selectedUser.isIdle ? "bg-amber-400" : "bg-emerald-400") : "bg-zinc-600"
-                  }`} />
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                  {selectedUser?.email.toLowerCase() === "assistant@ethers.ai" ? <Sparkles size={18} /> : <User size={18} />}
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">{selectedUser?.name || targetId}</h3>
-                  <div className="flex items-center gap-2 text-xs text-white/50">
-                    <span>{selectedUser?.designation || selectedUser?.role}</span>
-                    {selectedUser?.isOnline && (
-                      <>
-                        <span>•</span>
-                        <span className="text-emerald-400 font-medium">Working in: {selectedUser.activeSection}</span>
-                      </>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    {selectedUser?.name || targetId}
+                    {selectedUser?.email.toLowerCase() === "assistant@ethers.ai" && (
+                      <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/20 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                        AI Copilot
+                      </span>
                     )}
-                  </div>
+                  </h3>
+                  <p className="text-xs text-white/40">
+                    {selectedUser?.email.toLowerCase() === "assistant@ethers.ai"
+                      ? "Intelligent Dashboard Copilot • 24/7 Online"
+                      : `${selectedUser?.designation || "Staff Member"} • ${selectedUser?.email}`}
+                  </p>
                 </div>
               </>
             )}
@@ -357,40 +369,65 @@ export default function TeamChatPage() {
         </div>
 
         {/* Messages Feed */}
-        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4 no-scrollbar">
+        <div
+          ref={messagesContainerRef}
+          className="flex-1 overflow-y-auto p-6 space-y-4 font-sans text-xs scroll-smooth"
+        >
           {messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center p-8">
-              <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white/30 mb-3">
-                <MessageSquare size={22} />
+            <div className="h-full flex flex-col items-center justify-center text-center p-8 text-white/30">
+              <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-3">
+                <Sparkles size={24} className="text-emerald-400" />
               </div>
-              <h4 className="text-sm font-bold text-white">No messages yet</h4>
-              <p className="text-xs text-white/40 mt-1 max-w-xs">
-                Start the conversation with your team members in #{targetType === "channel" ? targetId : selectedUser?.name}.
+              <p className="text-sm font-semibold text-white/60">
+                {targetId.toLowerCase() === "assistant@ethers.ai"
+                  ? "Chat with Ethers AI Copilot"
+                  : `No messages in ${targetType === "channel" ? "#" + targetId : selectedUser?.name || targetId}`}
+              </p>
+              <p className="text-xs text-white/40 mt-1 max-w-sm">
+                {targetId.toLowerCase() === "assistant@ethers.ai"
+                  ? "Ask me about Pricing Strategy, Menu Automation, Performance Reporting, or HR Documents!"
+                  : "Say hello and start the conversation!"}
               </p>
             </div>
           ) : (
             messages.map((msg) => {
-              const isSelf = msg.sender_email.toLowerCase() === currentUser?.email?.toLowerCase();
+              const isSelf = msg.sender_email.toLowerCase() === currentUser?.email.toLowerCase();
+              const isAi = msg.sender_email.toLowerCase() === "assistant@ethers.ai";
+
               return (
                 <div
                   key={msg.id}
-                  className={`flex items-start gap-3 ${isSelf ? "flex-row-reverse" : "flex-row"}`}
+                  className={`flex gap-3 animate-in fade-in duration-200 ${
+                    isSelf ? "flex-row-reverse" : "flex-row"
+                  }`}
                 >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
-                    isSelf ? "bg-emerald-500/20 border border-emerald-500/30 text-emerald-400" : "bg-white/10 text-white"
+                  <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold ${
+                    isSelf 
+                      ? "bg-emerald-500/20 border border-emerald-500/30 text-emerald-400" 
+                      : isAi
+                      ? "bg-emerald-500/20 border border-emerald-500/40 text-emerald-400"
+                      : "bg-white/10 text-white"
                   }`}>
-                    {msg.sender_name ? msg.sender_name.charAt(0) : "U"}
+                    {isAi ? <Sparkles className="w-3.5 h-3.5" /> : (msg.sender_name ? msg.sender_name.charAt(0) : "U")}
                   </div>
 
-                  <div className={`max-w-[70%] ${isSelf ? "items-end text-right" : "items-start text-left"}`}>
+                  <div className={`max-w-[75%] ${isSelf ? "items-end text-right" : "items-start text-left"}`}>
                     <div className="flex items-center gap-2 mb-1 px-1">
-                      <span className="text-[11px] font-semibold text-white/60">{msg.sender_name}</span>
+                      {isAi ? (
+                        <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
+                          <Sparkles className="w-2.5 h-2.5" /> Ethers AI
+                        </span>
+                      ) : (
+                        <span className="text-[11px] font-semibold text-white/60">{msg.sender_name}</span>
+                      )}
                       <span className="text-[10px] text-white/30">{formatTimestamp(msg.timestamp)}</span>
                     </div>
                     <div
-                      className={`p-3 rounded-2xl text-xs leading-relaxed whitespace-pre-wrap break-words shadow-lg ${
+                      className={`p-3.5 rounded-2xl text-xs leading-relaxed whitespace-pre-wrap break-words shadow-lg ${
                         isSelf
                           ? "bg-emerald-600/90 text-white rounded-tr-none border border-emerald-500/30"
+                          : isAi
+                          ? "bg-[#0e1115] text-zinc-100 rounded-tl-none border border-emerald-500/30 shadow-emerald-950/20"
                           : "bg-[#141419] text-white/90 rounded-tl-none border border-white/10"
                       }`}
                     >

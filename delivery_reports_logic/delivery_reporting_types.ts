@@ -69,6 +69,8 @@ export interface SwiggyDeliveryRawOCR {
   complaints_cancellation: number;
   total_taxes: number;
   ads: number;
+  other_deductions?: number;
+  other_refunds?: number;
   net_payout: number;
 }
 
@@ -94,6 +96,8 @@ export interface SwiggyDeliveryMetrics {
   complaintsCancellation: number; // Complaints & cancellation charges
   tax: number; // TCS + TDS + GST 9(5)
   ads: number; // (E) Growth Investments in Ads
+  otherDeductions?: number; // (F) Unsettled Deductions / Other Charges
+  otherRefunds?: number; // (F) Other Refunds added
   netPayout: number; // FINAL PAYOUT
 
   // Derived Performance Metrics

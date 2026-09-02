@@ -15,7 +15,8 @@ import {
   Save,
   CheckCircle,
   Clock,
-  Sparkles
+  Sparkles,
+  ChevronDown
 } from "lucide-react";
 
 interface ModalProps {
@@ -27,6 +28,7 @@ interface ModalProps {
 export function LeadDetailModal({ lead, onClose, onUpdateLead }: ModalProps) {
   if (!lead) return null;
 
+  const [poc, setPoc] = useState(lead.poc || "");
   const [comments, setComments] = useState(lead.comments || "");
   const [newNote, setNewNote] = useState("");
   const [followUp1, setFollowUp1] = useState<FollowUpStatus>(lead.followUp1);
@@ -38,6 +40,7 @@ export function LeadDetailModal({ lead, onClose, onUpdateLead }: ModalProps) {
 
   useEffect(() => {
     if (lead) {
+      setPoc(lead.poc || "");
       setComments(lead.comments || "");
       setFollowUp1(lead.followUp1);
       setFollowUp2(lead.followUp2);
@@ -45,7 +48,7 @@ export function LeadDetailModal({ lead, onClose, onUpdateLead }: ModalProps) {
       setStatus(lead.status);
       setScheduledMeeting(lead.scheduledMeeting || "");
     }
-  }, [lead.id, lead.followUp1, lead.followUp2, lead.followUp3, lead.status, lead.comments, lead.scheduledMeeting]);
+  }, [lead.id, lead.poc, lead.followUp1, lead.followUp2, lead.followUp3, lead.status, lead.comments, lead.scheduledMeeting]);
 
   const cleanPhone = lead.ownerPhone.replace(/[^\d+]/g, "");
   const waUrl = cleanPhone ? `https://wa.me/${cleanPhone.replace("+", "")}` : "#";
@@ -65,6 +68,7 @@ export function LeadDetailModal({ lead, onClose, onUpdateLead }: ModalProps) {
     try {
       await onUpdateLead({
         id: lead.id,
+        poc: poc.trim(),
         comments,
         followUp1,
         followUp2,
@@ -108,16 +112,36 @@ export function LeadDetailModal({ lead, onClose, onUpdateLead }: ModalProps) {
         {/* Body Content */}
         <div className="p-6 overflow-y-auto space-y-6 flex-1 no-scrollbar">
           
-          {/* Quick Action Bar */}
-          <div className="p-4 rounded-xl bg-paper-dark border border-line flex items-center justify-between">
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-ink/40">Point of Contact</span>
-              <p className="text-sm font-bold text-ink flex items-center gap-2">
-                <User className="w-4 h-4 text-ink/50" /> {lead.poc || "Not specified"}
-              </p>
-              <p className="text-xs font-mono text-ink/70">{lead.ownerPhone}</p>
+          {/* Quick Action Bar with Selectable POC */}
+          <div className="p-4 rounded-xl bg-paper-dark border border-line flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1.5 flex-1 max-w-sm">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-ink/40 flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-ink/50" /> Point of Contact (POC)
+              </span>
+              
+              <div className="relative">
+                <select
+                  value={poc || "Store Manager"}
+                  onChange={(e) => setPoc(e.target.value)}
+                  className="w-full appearance-none rounded-lg border border-line bg-paper px-3 py-2 text-xs font-semibold text-ink cursor-pointer outline-none transition-all pr-8 focus:border-purple-500/50 shadow-sm"
+                >
+                  <option value="Store Manager">Store Manager</option>
+                  <option value="Owner">Owner</option>
+                  <option value="General Manager">General Manager</option>
+                  <option value="Partner">Partner</option>
+                  <option value="Outlet In-Charge">Outlet In-Charge</option>
+                  <option value="Operations Head">Operations Head</option>
+                  {poc && !["Store Manager", "Owner", "General Manager", "Partner", "Outlet In-Charge", "Operations Head"].includes(poc) && (
+                    <option value={poc}>{poc}</option>
+                  )}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-3 pointer-events-none opacity-60 text-ink/70" />
+              </div>
+
+              <p className="text-xs font-mono text-ink/70 pt-0.5">{lead.ownerPhone}</p>
             </div>
-            <div className="flex items-center gap-2">
+
+            <div className="flex items-center gap-2 self-start sm:self-center">
               {lead.ownerPhone && (
                 <>
                   <a

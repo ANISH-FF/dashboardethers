@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession, getPublicEmployees } from "@/lib/auth";
+import { generateEthersAiReply } from "@/lib/aiAssistant";
 import fs from "fs";
 import path from "path";
 
@@ -96,8 +97,23 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    let relevantMessages = [];
+    // Pinned AI Assistant contact
+    const aiUser = {
+      id: "ethers-ai-assistant",
+      name: "Ethers AI Assistant",
+      email: "assistant@ethers.ai",
+      role: "ai",
+      designation: "Intelligent Dashboard Copilot",
+      isOnline: true,
+      isIdle: false,
+      isAi: true,
+      activeSection: "24/7 AI Engine",
+      lastSeen: Date.now()
+    };
 
+    const finalUserList = [aiUser, ...userList];
+
+    let relevantMessages = [];
     const currentUserEmail = session.email.toLowerCase();
 
     // All messages relevant to the current user (all channel msgs + DMs sent to/by current user)
@@ -131,7 +147,7 @@ export async function GET(req: NextRequest) {
         role: session.role
       },
       channels: chatData.channels || [],
-      users: userList,
+      users: finalUserList,
       messages: relevantMessages,
       allUserMessages: allUserMessages
     });
@@ -186,18 +202,53 @@ export async function POST(req: NextRequest) {
       timestamp: new Date().toISOString()
     };
 
+    const currentUserEmail = session.email.toLowerCase();
+
     if (target_type === "channel") {
       (newMsg as any).channel_id = target_id;
       chatData.messages = chatData.messages || [];
       chatData.messages.push(newMsg);
+      writeChatData(chatData);
+      return NextResponse.json({ ok: true, message: newMsg });
     } else {
       (newMsg as any).recipient_email = target_id;
       chatData.direct_messages = chatData.direct_messages || [];
       chatData.direct_messages.push(newMsg);
-    }
 
-    writeChatData(chatData);
-    return NextResponse.json({ ok: true, message: newMsg });
+      // If user is talking to Ethers AI Assistant
+      if (target_id.toLowerCase() === "assistant@ethers.ai") {
+        // Collect recent history between this user and AI
+        const history = (chatData.direct_messages || [])
+          .filter(
+            (m: any) =>
+              (m.sender_email.toLowerCase() === currentUserEmail && m.recipient_email.toLowerCase() === "assistant@ethers.ai") ||
+              (m.sender_email.toLowerCase() === "assistant@ethers.ai" && m.recipient_email.toLowerCase() === currentUserEmail)
+          )
+          .map((m: any) => ({
+            role: m.sender_email.toLowerCase() === "assistant@ethers.ai" ? "assistant" : "user",
+            content: m.content
+          }));
+
+        const aiReplyText = await generateEthersAiReply(content.trim(), history);
+
+        const aiMsg = {
+          id: "msg_ai_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
+          sender_email: "assistant@ethers.ai",
+          sender_name: "Ethers AI Assistant",
+          recipient_email: session.email,
+          content: aiReplyText,
+          timestamp: new Date().toISOString()
+        };
+
+        chatData.direct_messages.push(aiMsg);
+        writeChatData(chatData);
+
+        return NextResponse.json({ ok: true, message: newMsg, reply: aiMsg });
+      }
+
+      writeChatData(chatData);
+      return NextResponse.json({ ok: true, message: newMsg });
+    }
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to process chat request" }, { status: 500 });
   }
