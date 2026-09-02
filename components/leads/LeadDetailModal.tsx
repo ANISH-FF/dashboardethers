@@ -29,6 +29,7 @@ export function LeadDetailModal({ lead, onClose, onUpdateLead }: ModalProps) {
   if (!lead) return null;
 
   const [poc, setPoc] = useState(lead.poc || "");
+  const [ownerPhone, setOwnerPhone] = useState(lead.ownerPhone || "");
   const [comments, setComments] = useState(lead.comments || "");
   const [newNote, setNewNote] = useState("");
   const [followUp1, setFollowUp1] = useState<FollowUpStatus>(lead.followUp1);
@@ -41,6 +42,7 @@ export function LeadDetailModal({ lead, onClose, onUpdateLead }: ModalProps) {
   useEffect(() => {
     if (lead) {
       setPoc(lead.poc || "");
+      setOwnerPhone(lead.ownerPhone || "");
       setComments(lead.comments || "");
       setFollowUp1(lead.followUp1);
       setFollowUp2(lead.followUp2);
@@ -48,9 +50,9 @@ export function LeadDetailModal({ lead, onClose, onUpdateLead }: ModalProps) {
       setStatus(lead.status);
       setScheduledMeeting(lead.scheduledMeeting || "");
     }
-  }, [lead.id, lead.poc, lead.followUp1, lead.followUp2, lead.followUp3, lead.status, lead.comments, lead.scheduledMeeting]);
+  }, [lead.id, lead.poc, lead.ownerPhone, lead.followUp1, lead.followUp2, lead.followUp3, lead.status, lead.comments, lead.scheduledMeeting]);
 
-  const cleanPhone = lead.ownerPhone.replace(/[^\d+]/g, "");
+  const cleanPhone = (ownerPhone || "").replace(/[^\d+]/g, "");
   const waUrl = cleanPhone ? `https://wa.me/${cleanPhone.replace("+", "")}` : "#";
 
   const handleAddNote = () => {
@@ -69,6 +71,7 @@ export function LeadDetailModal({ lead, onClose, onUpdateLead }: ModalProps) {
       await onUpdateLead({
         id: lead.id,
         poc: poc.trim(),
+        ownerPhone: ownerPhone.trim(),
         comments,
         followUp1,
         followUp2,
@@ -112,54 +115,83 @@ export function LeadDetailModal({ lead, onClose, onUpdateLead }: ModalProps) {
         {/* Body Content */}
         <div className="p-6 overflow-y-auto space-y-6 flex-1 no-scrollbar">
           
-          {/* Quick Action Bar with Selectable POC */}
-          <div className="p-4 rounded-xl bg-paper-dark border border-line flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="space-y-1.5 flex-1 max-w-sm">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-ink/40 flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5 text-ink/50" /> Point of Contact (POC)
-              </span>
-              
-              <div className="relative">
-                <select
-                  value={poc || "Store Manager"}
-                  onChange={(e) => setPoc(e.target.value)}
-                  className="w-full appearance-none rounded-lg border border-line bg-paper px-3 py-2 text-xs font-semibold text-ink cursor-pointer outline-none transition-all pr-8 focus:border-purple-500/50 shadow-sm"
-                >
-                  <option value="Store Manager">Store Manager</option>
-                  <option value="Owner">Owner</option>
-                  <option value="General Manager">General Manager</option>
-                  <option value="Partner">Partner</option>
-                  <option value="Outlet In-Charge">Outlet In-Charge</option>
-                  <option value="Operations Head">Operations Head</option>
-                  {poc && !["Store Manager", "Owner", "General Manager", "Partner", "Outlet In-Charge", "Operations Head"].includes(poc) && (
-                    <option value={poc}>{poc}</option>
-                  )}
-                </select>
-                <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-3 pointer-events-none opacity-60 text-ink/70" />
+          {/* Quick Action Bar with Editable POC & Phone */}
+          <div className="p-4 rounded-xl bg-paper-dark border border-line space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              {/* Point of Contact (Freely Editable + Quick Role Selector) */}
+              <div className="space-y-1.5 flex-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-ink/40 flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-ink/50" /> Point of Contact (POC)
+                  </span>
+                  <span className="text-[10px] text-ink/40">Editable Name / Role</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={poc}
+                    onChange={(e) => setPoc(e.target.value)}
+                    placeholder="e.g. Owner, Store Manager, Rahul (Owner)..."
+                    className="input text-xs py-2 px-3 bg-paper font-semibold text-ink border-line focus:border-purple-500/50 flex-1"
+                  />
+                  <div className="relative shrink-0">
+                    <select
+                      value={["Store Manager", "Owner", "General Manager", "Partner", "Outlet In-Charge", "Operations Head"].includes(poc) ? poc : ""}
+                      onChange={(e) => {
+                        if (e.target.value) setPoc(e.target.value);
+                      }}
+                      className="appearance-none rounded-lg border border-line bg-paper px-3 py-2 text-xs font-semibold text-ink/80 cursor-pointer outline-none hover:bg-paper-dark transition-all pr-7 focus:border-purple-500/50 shadow-sm"
+                      title="Quick select role"
+                    >
+                      <option value="" disabled>Quick Role ▾</option>
+                      <option value="Store Manager">Store Manager</option>
+                      <option value="Owner">Owner</option>
+                      <option value="General Manager">General Manager</option>
+                      <option value="Partner">Partner</option>
+                      <option value="Outlet In-Charge">Outlet In-Charge</option>
+                      <option value="Operations Head">Operations Head</option>
+                    </select>
+                    <ChevronDown className="w-3 h-3 absolute right-2 top-3 pointer-events-none opacity-60 text-ink/70" />
+                  </div>
+                </div>
               </div>
 
-              <p className="text-xs font-mono text-ink/70 pt-0.5">{lead.ownerPhone}</p>
+              {/* Action Buttons (Call / WhatsApp) */}
+              <div className="flex items-center gap-2 sm:self-end pt-1">
+                {cleanPhone && (
+                  <>
+                    <a
+                      href={`tel:${cleanPhone}`}
+                      className="btn btn-secondary text-xs flex items-center gap-1.5"
+                    >
+                      <Phone className="w-3.5 h-3.5 text-emerald-400" /> Call
+                    </a>
+                    <a
+                      href={waUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-secondary text-xs flex items-center gap-1.5"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 text-emerald-400" /> WhatsApp
+                    </a>
+                  </>
+                )}
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 self-start sm:self-center">
-              {lead.ownerPhone && (
-                <>
-                  <a
-                    href={`tel:${cleanPhone}`}
-                    className="btn btn-secondary text-xs flex items-center gap-1.5"
-                  >
-                    <Phone className="w-3.5 h-3.5 text-emerald-400" /> Call
-                  </a>
-                  <a
-                    href={waUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-secondary text-xs flex items-center gap-1.5"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5 text-emerald-400" /> WhatsApp
-                  </a>
-                </>
-              )}
+            {/* Editable Direct Contact Phone Number */}
+            <div className="space-y-1.5 pt-2 border-t border-line/60">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-ink/40 flex items-center gap-1.5">
+                <Phone className="w-3.5 h-3.5 text-emerald-400" /> Direct Contact Phone No. (Editable)
+              </span>
+              <input
+                type="tel"
+                value={ownerPhone}
+                onChange={(e) => setOwnerPhone(e.target.value)}
+                placeholder="Enter direct phone number (e.g. 9903791649)..."
+                className="input text-xs py-2 px-3 bg-paper font-mono font-semibold text-ink border-line focus:border-purple-500/50 w-full sm:max-w-md"
+              />
             </div>
           </div>
 

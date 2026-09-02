@@ -312,9 +312,6 @@ export function LeadsTable({ leads, loading, onUpdateLead, onDeleteLead, onBulkD
                         </select>
                         <ChevronDown className="w-3 h-3 absolute right-2 top-2 pointer-events-none opacity-60 text-ink/70" />
                       </div>
-                      {lead.assignedTo && (
-                        <span className="text-[10px] text-ink/40 px-1">Rep: {lead.assignedTo}</span>
-                      )}
                     </div>
                   </td>
 
