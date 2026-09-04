@@ -518,9 +518,15 @@ function determineSmartVariantTitle(selectedItems: MenuItem[]): string {
           const wb = XLSX.read(buffer, { type: "array" });
           let combinedCsv = "";
           wb.SheetNames.forEach((sheetName) => {
-            const csv = XLSX.utils.sheet_to_csv(wb.Sheets[sheetName]);
-            if (csv.trim()) {
-              combinedCsv += `\n--- SHEET: ${sheetName} ---\n${csv}\n`;
+            const rawCsv = XLSX.utils.sheet_to_csv(wb.Sheets[sheetName], { blankrows: false });
+            if (rawCsv.trim()) {
+              const cleanCsv = rawCsv
+                .split("\n")
+                .filter((line) => line.split(",").some((cell) => cell.trim().length > 0))
+                .join("\n");
+              if (cleanCsv.trim()) {
+                combinedCsv += `\n--- SHEET: ${sheetName} ---\n${cleanCsv}\n`;
+              }
             }
           });
           extractPayload = { rawText: combinedCsv };

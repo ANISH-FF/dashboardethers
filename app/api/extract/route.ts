@@ -46,13 +46,17 @@ export async function POST(req: NextRequest) {
 CRITICAL EXTRACTION RULES:
 1. NAME: UPPERCASE, clean item name exactly as printed (e.g. "MASALA CHAI", "BLACK TEA"). Do not include price or variant sizes inside the item name string.
 2. BASE_PRICE: Set to the starting / lowest variant price as a plain number (e.g. 50).
-3. MULTI-PRICE VARIANT RULE (EXTREMELY IMPORTANT):
-   - When a dish has multiple sizes/portions (e.g. from section headings like "(120/500ML)" or column headers like "Half / Full") AND slash-separated prices (e.g. "50/250" or "80/350"):
+3. VARIANTS & SPREADSHEET ROW-LEVEL VARIANTS RULE (EXTREMELY IMPORTANT):
+   - SPREADSHEET / CSV ROW-LEVEL VARIANTS: If the data contains a "variant name" / "variant" / "option" column, or multiple rows with the identical "Item Name" and different variant choices (e.g., "Tofu and Asparagus Teppanyaki Set" with variant "Japanese Style Clear Soup" and another row with variant "Suan La Tang Soup"):
+     - Combine all these rows into ONE single menu item entry in "items".
+     - In the "variants" field, list all variant options with their prices: e.g. "Japanese Style Clear Soup (₹1749), Suan La Tang Soup (₹1749)".
+     - Apply this rule even if the price is identical across variants! NEVER drop or ignore the variant names.
+   - MULTI-PRICE / SLASH NOTATION (MENU HEADERS): When a dish has multiple sizes/portions (e.g. from section headings like "(120/500ML)" or column headers like "Half / Full") AND slash-separated prices (e.g. "50/250" or "80/350"):
      - You MUST map each size option to its corresponding price in the "variants" field using format: "Size (₹Price)".
      - Example for DESI CHAI "50/250" under header "(120/500ML)": "base_price": 50, "variants": "120ML (₹50), 500ML (₹250)".
      - Example for SPL KESAR CHAI "80/350" under header "(120/500ML)": "base_price": 80, "variants": "120ML (₹80), 500ML (₹350)".
      - Example for Half/Full pizza "150/280": "base_price": 150, "variants": "Half (₹150), Full (₹280)".
-   - If only 1 size exists, set "variants" to "" and put quantity in "quantity" field (e.g., "quantity": "250ML").
+   - If only 1 size or option exists without any variant name, set "variants" to "" and put quantity in "quantity" field (e.g., "quantity": "250ML").
 4. ADD-ON SUB-SECTION RULE (EXTREMELY IMPORTANT):
    - DO NOT create separate item entries in "items" for add-ons, extras, or toppings listed under sub-headings like "ADD ON:", "ADDONS:", "EXTRAS:", "TOPPINGS:".
    - Options like "HONEY 30", "LEMON 30", "GINGER 30" under "ADD ON:" are NOT standalone menu dishes.
