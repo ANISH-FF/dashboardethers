@@ -101,9 +101,14 @@ function validateSwiggyMath(ocr: Record<string, any>): boolean {
   if (Math.abs(calculated - netPayout) <= tolerance) {
     return true;
   }
-  // Auto-correct if AI dropped the minus sign
+  // Auto-correct if AI dropped the minus sign (Swiggy writes -xxx on screen)
   if (Math.abs(calculated + netPayout) <= tolerance) {
     ocr.net_payout = calculated;
+    return true;
+  }
+  // Handle case where deductions exceed earnings and Swiggy writes ₹0 on screen
+  if (calculated < 0 && netPayout === 0) {
+    ocr.net_payout = Number(calculated.toFixed(2));
     return true;
   }
   console.log(`[Swiggy Validation Math Diff] Expected: ${calculated}, Got: ${netPayout}, Allowed: ${tolerance}`);
