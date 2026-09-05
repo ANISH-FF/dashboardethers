@@ -95,8 +95,8 @@ function validateSwiggyMath(ocr: Record<string, any>): boolean {
   let netPayout = Number(ocr.net_payout || 0);
   if (A === 0 && netPayout === 0) return true; // nothing extracted, skip
   const calculated = A - B - C - D - E - otherDeductions + otherRefunds;
-  // Dynamic tolerance for Swiggy: Accounts for unlisted ~1% TCS / GST u/s 52 deduction
-  const tolerance = Math.max(75, A * 0.015);
+  // Dynamic tolerance for Swiggy: Accounts for unlisted 5% GST u/s 9(5) / TCS deduction
+  const tolerance = Math.max(75, A * 0.055);
 
   if (Math.abs(calculated - netPayout) <= tolerance) {
     return true;

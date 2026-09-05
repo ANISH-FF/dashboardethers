@@ -44,7 +44,7 @@ Extraction Rules:
 - "commissionable_value": Read strictly from "(A) Total Customer Paid" on Swiggy screenshot (e.g. 14818.5), else sub_total + packaging_charges - discount.
 - "total_fees": Read strictly from "(B) Total Fees" on Swiggy screenshot (e.g. 2766.04).
 - "gst_on_fees": Read strictly from "GST @ 18%" under Total Taxes on Swiggy screenshot (e.g. 497.88), else 0.
-- "complaints_cancellation": Read strictly from complaints/cancellation deduction if present (e.g. 405.09).
+- "complaints_cancellation": Read strictly from section "(C) Complaint & Cancellation Charges" on Swiggy screenshot (e.g. 405.09). If section (C) shows 0, output 0. Do NOT read Restaurant Cancellation Charges from under section (B).
 - "total_taxes": Read strictly from TCS + TDS + GST u/s 9(5) taxes total (e.g. 1197.7).
 - "ads": Read strictly from "(E) Growth Investments in Ads" or sum of all ad spend, CPC campaigns, and Ad GST rows under Growth Services (e.g. 132.75).
 - "other_deductions": Read strictly any negative deductions or charges under "(F) Other Charges & Refunds" (e.g. "Unsettled Deductions from Previous Weeks" 367.13), else 0.
