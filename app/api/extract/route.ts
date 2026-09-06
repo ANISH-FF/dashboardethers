@@ -94,7 +94,7 @@ CRITICAL EXTRACTION RULES:
 
     const MODELS = ["gemini-2.5-flash-lite", "gemini-2.5-flash"];
     let lastError: Error | null = null;
-    let data: any = null;
+    let parsedData: any = null;
 
     for (const modelName of MODELS) {
       try {
@@ -127,44 +127,44 @@ CRITICAL EXTRACTION RULES:
         }
 
         if (response.ok) {
-          data = await response.json();
-          break;
-        }
+          const resJson = await response.json();
+          const rawTextContent = resJson.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (rawTextContent) {
+            const jsonMatch = rawTextContent.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              let candidateParsed: any = null;
+              try {
+                candidateParsed = JSON.parse(jsonMatch[0]);
+              } catch (parseErr) {
+                let cleaned = jsonMatch[0].trim();
+                const lastClosingBrace = cleaned.lastIndexOf("}");
+                if (lastClosingBrace !== -1) {
+                  try {
+                    candidateParsed = JSON.parse(cleaned.slice(0, lastClosingBrace + 1) + "\n]}");
+                  } catch {}
+                }
+              }
 
-        const errText = await response.text();
-        console.warn(`Model ${modelName} failed (${response.status}): ${errText}`);
-        lastError = new Error(`Gemini API (${modelName}) error: ${response.status}`);
+              if (candidateParsed && Array.isArray(candidateParsed.items) && candidateParsed.items.length > 0) {
+                parsedData = candidateParsed;
+                break; // Extraction succeeded!
+              }
+            }
+          }
+          lastError = new Error(`Model ${modelName} generated incomplete JSON output.`);
+        } else {
+          const errText = await response.text();
+          console.warn(`Model ${modelName} failed (${response.status}): ${errText}`);
+          lastError = new Error(`Gemini API (${modelName}) error: ${response.status}`);
+        }
       } catch (err: any) {
         console.warn(`Model ${modelName} exception:`, err);
         lastError = err;
       }
     }
 
-    if (!data) {
-      throw lastError || new Error("All Gemini vision models failed");
-    }
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!text) throw new Error("No output from Gemini");
-
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("No JSON found in response");
-
-    let parsedData: any = null;
-    try {
-      parsedData = JSON.parse(jsonMatch[0]);
-    } catch (parseErr) {
-      let cleaned = jsonMatch[0].trim();
-      const lastClosingBrace = cleaned.lastIndexOf("}");
-      if (lastClosingBrace !== -1) {
-        const repaired = cleaned.slice(0, lastClosingBrace + 1) + "\n]}";
-        try {
-          parsedData = JSON.parse(repaired);
-        } catch {}
-      }
-      if (!parsedData) {
-        throw parseErr;
-      }
+    if (!parsedData) {
+      throw lastError || new Error("All Gemini vision models failed to extract menu items.");
     }
 
     return NextResponse.json(parsedData);
