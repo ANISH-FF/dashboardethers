@@ -69,11 +69,17 @@ function resolveSpice(apiSpice: string, name: string): 0 | 1 | 2 | 3 {
 
 function fileToBase64(file: File): Promise<{ data: string; mediaType: string }> {
   return new Promise((resolve, reject) => {
-    if (!file.type.startsWith("image/")) {
+    let detectedMime = file.type;
+    const isPdf = file.name.toLowerCase().endsWith(".pdf") || detectedMime === "application/pdf" || detectedMime === "application/x-pdf";
+    if (isPdf) {
+      detectedMime = "application/pdf";
+    }
+
+    if (!file.type.startsWith("image/") || isPdf) {
       const reader = new FileReader();
       reader.onload = () => {
         const result = reader.result as string;
-        resolve({ data: result.split(",")[1], mediaType: file.type || "application/octet-stream" });
+        resolve({ data: result.split(",")[1], mediaType: detectedMime || "application/pdf" });
       };
       reader.onerror = reject;
       reader.readAsDataURL(file);
@@ -505,6 +511,16 @@ function determineSmartVariantTitle(selectedItems: MenuItem[]): string {
 
   const processFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
+
+    for (const file of Array.from(files)) {
+      const isPdf = file.name.toLowerCase().endsWith(".pdf") || file.type === "application/pdf";
+      if (isPdf && file.size > 5 * 1024 * 1024) {
+        const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+        setMenuNotice(`⚠️ File "${file.name}" is ${sizeMb} MB. To prevent browser freezing and ensure fast AI processing, please upload a compressed PDF under 5 MB.`);
+        return;
+      }
+    }
+
     setLoading(true);
     const allItems: MenuItem[] = [];
 

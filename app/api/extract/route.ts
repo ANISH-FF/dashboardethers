@@ -77,10 +77,14 @@ CRITICAL EXTRACTION RULES:
         text: `${prompt}\n\nRAW MENU DATA (FROM SPREADSHEET / CSV / DOCUMENT):\n${rawText}`,
       });
     } else if (imageBase64) {
+      let resolvedMime = mediaType;
+      if (!resolvedMime || resolvedMime === "application/octet-stream") {
+        resolvedMime = imageBase64.startsWith("JVBERi0") ? "application/pdf" : "image/jpeg";
+      }
       parts.push({ text: prompt });
       parts.push({
         inlineData: {
-          mimeType: mediaType || "image/jpeg",
+          mimeType: resolvedMime,
           data: imageBase64,
         },
       });
@@ -94,6 +98,16 @@ CRITICAL EXTRACTION RULES:
 
     for (const modelName of MODELS) {
       try {
+        const generationConfig: any = {
+          temperature: 0.1,
+          responseMimeType: "application/json",
+          maxOutputTokens: 8192,
+        };
+
+        if (modelName.includes("flash-lite")) {
+          generationConfig.thinkingConfig = { thinkingBudget: 0 };
+        }
+
         const response = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
           {
@@ -101,11 +115,7 @@ CRITICAL EXTRACTION RULES:
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               contents: [{ parts }],
-              generationConfig: {
-                temperature: 0.1,
-                responseMimeType: "application/json",
-                thinkingConfig: { thinkingBudget: 0 },
-              },
+              generationConfig,
             }),
           }
         );
@@ -140,7 +150,23 @@ CRITICAL EXTRACTION RULES:
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("No JSON found in response");
 
-    const parsedData = JSON.parse(jsonMatch[0]);
+    let parsedData: any = null;
+    try {
+      parsedData = JSON.parse(jsonMatch[0]);
+    } catch (parseErr) {
+      let cleaned = jsonMatch[0].trim();
+      const lastClosingBrace = cleaned.lastIndexOf("}");
+      if (lastClosingBrace !== -1) {
+        const repaired = cleaned.slice(0, lastClosingBrace + 1) + "\n]}";
+        try {
+          parsedData = JSON.parse(repaired);
+        } catch {}
+      }
+      if (!parsedData) {
+        throw parseErr;
+      }
+    }
+
     return NextResponse.json(parsedData);
   } catch (err) {
     console.error(err);

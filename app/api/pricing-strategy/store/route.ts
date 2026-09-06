@@ -2,19 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 
-const DATA_DIR = process.env.NODE_ENV === "development"
-  ? path.join(process.cwd(), ".next", "cache")
-  : path.join(process.cwd(), "data");
-
+const DATA_DIR = path.join(process.cwd(), "data");
 const PRICING_STORE_FILE = path.join(DATA_DIR, "pricing_strategy_store.json");
-const FALLBACK_STORE_FILE = path.join(process.cwd(), "data", "pricing_strategy_store.json");
+const CACHE_STORE_FILE = path.join(process.cwd(), ".next", "cache", "pricing_strategy_store.json");
 
 declare global {
   var _pricingStoreCache: Record<string, any> | undefined;
 }
 
 function getStore(): Record<string, any> {
-  if (globalThis._pricingStoreCache) {
+  if (globalThis._pricingStoreCache && Object.keys(globalThis._pricingStoreCache).length > 0) {
     return globalThis._pricingStoreCache;
   }
   try {
@@ -23,9 +20,11 @@ function getStore(): Record<string, any> {
       globalThis._pricingStoreCache = JSON.parse(raw);
       return globalThis._pricingStoreCache!;
     }
-    if (fs.existsSync(FALLBACK_STORE_FILE)) {
-      const raw = fs.readFileSync(FALLBACK_STORE_FILE, "utf-8");
+    if (fs.existsSync(CACHE_STORE_FILE)) {
+      const raw = fs.readFileSync(CACHE_STORE_FILE, "utf-8");
       globalThis._pricingStoreCache = JSON.parse(raw);
+      // Migrate to permanent store file immediately
+      saveStore(globalThis._pricingStoreCache!);
       return globalThis._pricingStoreCache!;
     }
   } catch (e) {

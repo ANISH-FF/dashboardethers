@@ -9,6 +9,57 @@ import { Sparkles, RefreshCw } from "lucide-react";
 
 import { useBrand } from "@/components/BrandContext";
 
+const DEFAULT_ITEMS: StrategyItem[] = [
+  {
+    id: "item_1",
+    itemName: "Dal Makhani",
+    myBrandPrice: 100,
+    competitors: [
+      { name: "Dubeys Hotel & Restaurant", price: 130, url: "https://www.swiggy.com/restaurants/dubeys-hotel-and-restaurant-golmuri-jamshedpur-256769" },
+      { name: "Novelty Restaurant", price: 150, url: "https://www.swiggy.com/restaurants/novelty-restaurant-bistupur-jamshedpur-256770" },
+      { name: "Equinox - The Alcor Hotel", price: 185, url: "https://www.swiggy.com/restaurants/equinox-the-alcor-hotel-bistupur-jamshedpur-256771" },
+      { name: "Yellow Sapphire", price: 195, url: "https://www.swiggy.com/restaurants/yellow-sapphire-bistupur-jamshedpur-256772" }
+    ],
+    suggestivePrice: 199
+  },
+  {
+    id: "item_2",
+    itemName: "Paneer Tikka",
+    myBrandPrice: 150,
+    competitors: [
+      { name: "Dubeys Hotel & Restaurant", price: 180, url: "https://www.swiggy.com/restaurants/dubeys-hotel-and-restaurant-golmuri-jamshedpur-256769" },
+      { name: "Novelty Restaurant", price: 210, url: "https://www.swiggy.com/restaurants/novelty-restaurant-bistupur-jamshedpur-256770" },
+      { name: "Equinox - The Alcor Hotel", price: 245, url: "https://www.swiggy.com/restaurants/equinox-the-alcor-hotel-bistupur-jamshedpur-256771" },
+      { name: "Yellow Sapphire", price: 260, url: "https://www.swiggy.com/restaurants/yellow-sapphire-bistupur-jamshedpur-256772" }
+    ],
+    suggestivePrice: 249
+  },
+  {
+    id: "item_3",
+    itemName: "Butter Chicken",
+    myBrandPrice: 220,
+    competitors: [
+      { name: "Dubeys Hotel & Restaurant", price: 280, url: "https://www.swiggy.com/restaurants/dubeys-hotel-and-restaurant-golmuri-jamshedpur-256769" },
+      { name: "Novelty Restaurant", price: 310, url: "https://www.swiggy.com/restaurants/novelty-restaurant-bistupur-jamshedpur-256770" },
+      { name: "Equinox - The Alcor Hotel", price: 360, url: "https://www.swiggy.com/restaurants/equinox-the-alcor-hotel-bistupur-jamshedpur-256771" },
+      { name: "Yellow Sapphire", price: 380, url: "https://www.swiggy.com/restaurants/yellow-sapphire-bistupur-jamshedpur-256772" }
+    ],
+    suggestivePrice: 349
+  },
+  {
+    id: "item_4",
+    itemName: "Veg Dum Biryani",
+    myBrandPrice: 160,
+    competitors: [
+      { name: "Punjab Grill", price: 190, url: "https://www.swiggy.com/restaurants/punjab-grill-jamshedpur-256773" },
+      { name: "Dhaba Est. 1986", price: 220, url: "https://www.swiggy.com/restaurants/dhaba-est-1986-jamshedpur-256774" },
+      { name: "Bukhara Feast", price: 250, url: "https://www.swiggy.com/restaurants/bukhara-feast-jamshedpur-256775" },
+      { name: "Royal Kitchen", price: 270, url: "https://www.swiggy.com/restaurants/royal-kitchen-jamshedpur-256776" }
+    ],
+    suggestivePrice: 247
+  }
+];
+
 export default function PricingStrategyPage() {
   const { activeBrand } = useBrand();
   const terminalEndRef = useRef<HTMLDivElement>(null);
@@ -33,64 +84,16 @@ export default function PricingStrategyPage() {
   // Target profit % for bulk price calculation
   const [targetProfitPct, setTargetProfitPct] = useState<number>(20);
 
-  // Initial seed items matching Excel sheet examples with live verification links
-  const [items, setItems] = useState<StrategyItem[]>([
-    {
-      id: "item_1",
-      itemName: "Dal Makhani",
-      myBrandPrice: 100,
-      competitors: [
-        { name: "Dubeys Hotel & Restaurant", price: 130, url: "https://www.swiggy.com/restaurants/dubeys-hotel-and-restaurant-golmuri-jamshedpur-256769" },
-        { name: "Novelty Restaurant", price: 150, url: "https://www.swiggy.com/restaurants/novelty-restaurant-bistupur-jamshedpur-256770" },
-        { name: "Equinox - The Alcor Hotel", price: 185, url: "https://www.swiggy.com/restaurants/equinox-the-alcor-hotel-bistupur-jamshedpur-256771" },
-        { name: "Yellow Sapphire", price: 195, url: "https://www.swiggy.com/restaurants/yellow-sapphire-bistupur-jamshedpur-256772" }
-      ],
-      suggestivePrice: 199
-    },
-    {
-      id: "item_2",
-      itemName: "Paneer Tikka",
-      myBrandPrice: 150,
-      competitors: [
-        { name: "Dubeys Hotel & Restaurant", price: 180, url: "https://www.swiggy.com/restaurants/dubeys-hotel-and-restaurant-golmuri-jamshedpur-256769" },
-        { name: "Novelty Restaurant", price: 210, url: "https://www.swiggy.com/restaurants/novelty-restaurant-bistupur-jamshedpur-256770" },
-        { name: "Equinox - The Alcor Hotel", price: 245, url: "https://www.swiggy.com/restaurants/equinox-the-alcor-hotel-bistupur-jamshedpur-256771" },
-        { name: "Yellow Sapphire", price: 260, url: "https://www.swiggy.com/restaurants/yellow-sapphire-bistupur-jamshedpur-256772" }
-      ],
-      suggestivePrice: 249
-    },
-    {
-      id: "item_3",
-      itemName: "Butter Chicken",
-      myBrandPrice: 220,
-      competitors: [
-        { name: "Dubeys Hotel & Restaurant", price: 280, url: "https://www.swiggy.com/restaurants/dubeys-hotel-and-restaurant-golmuri-jamshedpur-256769" },
-        { name: "Novelty Restaurant", price: 310, url: "https://www.swiggy.com/restaurants/novelty-restaurant-bistupur-jamshedpur-256770" },
-        { name: "Equinox - The Alcor Hotel", price: 360, url: "https://www.swiggy.com/restaurants/equinox-the-alcor-hotel-bistupur-jamshedpur-256771" },
-        { name: "Yellow Sapphire", price: 380, url: "https://www.swiggy.com/restaurants/yellow-sapphire-bistupur-jamshedpur-256772" }
-      ],
-      suggestivePrice: 349
-    },
-    {
-      id: "item_4",
-      itemName: "Veg Dum Biryani",
-      myBrandPrice: 160,
-      competitors: [
-        { name: "Punjab Grill", price: 190, url: "https://www.swiggy.com/restaurants/punjab-grill-jamshedpur-256773" },
-        { name: "Dhaba Est. 1986", price: 220, url: "https://www.swiggy.com/restaurants/dhaba-est-1986-jamshedpur-256774" },
-        { name: "Bukhara Feast", price: 250, url: "https://www.swiggy.com/restaurants/bukhara-feast-jamshedpur-256775" },
-        { name: "Royal Kitchen", price: 270, url: "https://www.swiggy.com/restaurants/royal-kitchen-jamshedpur-256776" }
-      ],
-      suggestivePrice: 247
-    }
-  ]);
+  // Strategy items state initialized with default items
+  const [items, setItems] = useState<StrategyItem[]>(DEFAULT_ITEMS);
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [terminalLogs, setTerminalLogs] = useState<{ text: string; color?: string }[]>([]);
 
-  // ─── Auto-save debounce refs ──────────────────────────────────────────────
+  // ─── Auto-save debounce refs & brand lock ──────────────────────────────────────
   const saveTimerRef   = useRef<any>(null);
-  const isFirstLoadRef = useRef(true);  // skip save on initial hydration from server
+  const isFirstLoadRef = useRef(true);
+  const currentLoadedBrandIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     let timer: any;
@@ -116,6 +119,9 @@ export default function PricingStrategyPage() {
 
   useEffect(() => {
     if (activeBrand?.id) {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
       isFirstLoadRef.current = true;
       loadBrandPricingStrategy(activeBrand.id);
     }
@@ -123,10 +129,14 @@ export default function PricingStrategyPage() {
 
   const loadBrandPricingStrategy = async (bId: string) => {
     try {
+      currentLoadedBrandIdRef.current = bId;
       const res = await fetch(`/api/pricing-strategy/store?brandId=${bId}`);
       if (res.ok) {
         const json = await res.json();
-        if (json.data) {
+        // Prevent race conditions if brand switch happened while fetching
+        if (currentLoadedBrandIdRef.current !== bId) return;
+
+        if (json.data && json.data.items && Array.isArray(json.data.items) && json.data.items.length > 0) {
           if (json.data.location) setLocation(json.data.location);
           if (json.data.researchMode === "links") setResearchMode("links");
           else setResearchMode("names");
@@ -138,17 +148,32 @@ export default function PricingStrategyPage() {
           if (json.data.adsPct !== undefined) setAdsPct(json.data.adsPct);
           if (json.data.foodCostPct !== undefined) setFoodCostPct(json.data.foodCostPct);
           if (json.data.targetProfitPct !== undefined) setTargetProfitPct(json.data.targetProfitPct);
-          if (json.data.items && Array.isArray(json.data.items) && json.data.items.length > 0) {
-            setItems(json.data.items);
-            itemsRef.current = json.data.items;
-          }
+          if (json.data.priceEnding) setPriceEnding(json.data.priceEnding);
+          setItems(json.data.items);
+          itemsRef.current = json.data.items;
+        } else {
+          // Clean isolation: reset to fresh defaults for this brand so previous brand's data doesn't leak
+          setLocation("Bistupur, Jamshedpur");
+          setResearchMode("names");
+          setManualCompetitors("");
+          setManualCompetitorLinks("");
+          setCompetitorCount(4);
+          setDiscountPct(10);
+          setCommissionPct(30);
+          setAdsPct(5);
+          setFoodCostPct(30);
+          setTargetProfitPct(20);
+          setPriceEnding("9_7_5");
+          setItems(DEFAULT_ITEMS);
+          itemsRef.current = DEFAULT_ITEMS;
         }
       }
     } catch (e) {
       console.error("Failed to load brand pricing strategy:", e);
     } finally {
-      // Allow auto-save to start watching AFTER initial load completes
-      isFirstLoadRef.current = false;
+      if (currentLoadedBrandIdRef.current === bId) {
+        isFirstLoadRef.current = false;
+      }
     }
   };
 
@@ -156,38 +181,49 @@ export default function PricingStrategyPage() {
     terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [terminalLogs]);
 
-  // ─── Auto-save: fires 1.5 s after any items change, or IMMEDIATELY on page switch ─────────
+  // ─── Auto-save: debounced with strict brand-id lock ─────────
   useEffect(() => {
-    if (isFirstLoadRef.current) return;   // still loading — skip
+    if (isFirstLoadRef.current) return;
     if (!activeBrand?.id) return;
+    const targetBrandId = activeBrand.id;
 
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
 
     saveTimerRef.current = setTimeout(() => {
-      saveBrandPricingStrategy(items);
-    }, 1500);
+      saveBrandPricingStrategy(targetBrandId, items);
+    }, 1200);
 
     return () => {
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
-        // Save immediately on page switch / unmount so no data is ever lost!
-        if (!isFirstLoadRef.current && activeBrand?.id) {
-          saveBrandPricingStrategy(itemsRef.current);
-        }
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items]);
+  }, [
+    activeBrand?.id,
+    items,
+    location,
+    researchMode,
+    manualCompetitors,
+    manualCompetitorLinks,
+    competitorCount,
+    discountPct,
+    commissionPct,
+    adsPct,
+    foodCostPct,
+    targetProfitPct,
+    priceEnding
+  ]);
 
-  const saveBrandPricingStrategy = (newItems?: StrategyItem[]) => {
-    if (!activeBrand?.id) return;
+  const saveBrandPricingStrategy = (targetBrandId: string, newItems?: StrategyItem[]) => {
+    if (!targetBrandId) return;
     const targetItems = newItems || itemsRef.current || items;
     fetch("/api/pricing-strategy/store", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        brandId: activeBrand.id,
-        brandName: activeBrand.name,
+        brandId: targetBrandId,
+        brandName: activeBrand?.name || "",
         location,
         researchMode,
         manualCompetitors,
@@ -291,7 +327,9 @@ export default function PricingStrategyPage() {
           }));
 
           setItems(generatedItems);
-          saveBrandPricingStrategy(generatedItems);
+          if (activeBrand?.id) {
+            saveBrandPricingStrategy(activeBrand.id, generatedItems);
+          }
         }
 
         if (data.matchingSummary) {
@@ -340,7 +378,9 @@ export default function PricingStrategyPage() {
     }));
 
     setItems(newItems);
-    saveBrandPricingStrategy(newItems);
+    if (activeBrand?.id) {
+      saveBrandPricingStrategy(activeBrand.id, newItems);
+    }
   };
 
   return (
