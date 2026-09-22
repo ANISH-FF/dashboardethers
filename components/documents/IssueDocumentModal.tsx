@@ -35,6 +35,8 @@ export function IssueDocumentModal({ employees, onClose, onIssueDocument }: Issu
   const [dateOfBirth, setDateOfBirth] = useState("");
   
   const [content, setContent] = useState("");
+  const [rolesResponsibilities, setRolesResponsibilities] = useState("");
+  const [workingModule, setWorkingModule] = useState<"hybrid" | "wfh" | "wfo">("hybrid");
   const [certificateType, setCertificateType] = useState<"internship" | "experience" | "appreciation">("appreciation");
   const [loading, setLoading] = useState(false);
 
@@ -66,7 +68,9 @@ export function IssueDocumentModal({ employees, onClose, onIssueDocument }: Issu
         noticePeriodDays: docType === "employment_terms" ? noticePeriodDays : undefined,
         annualLeaves: docType === "employment_terms" ? annualLeaves : undefined,
         projectTitle: (docType === "completion_letter" || docType === "recommendation_letter") ? projectTitle : undefined,
-        content,
+        content: docType === "offer_letter" ? undefined : content,
+        rolesResponsibilities: docType === "offer_letter" ? (rolesResponsibilities.trim() || undefined) : undefined,
+        workingModule: docType === "offer_letter" ? workingModule : undefined,
         signedBy: "Hemanya Gupta & Tanisha Maity (Co-Founders)"
       });
       onClose();
@@ -246,18 +250,32 @@ export function IssueDocumentModal({ employees, onClose, onIssueDocument }: Issu
             )}
 
             {docType === "offer_letter" && (
-              <div>
-                <label className="label">Duration & Commitment</label>
-                <select
-                  value={probationMonths}
-                  onChange={(e) => setProbationMonths(Number(e.target.value))}
-                  className="input font-mono"
-                >
-                  <option value={3}>3 Months Commitment</option>
-                  <option value={6}>6 Months Commitment</option>
-                  <option value={12}>12 Months Commitment</option>
-                </select>
-              </div>
+              <>
+                <div>
+                  <label className="label">Duration & Commitment</label>
+                  <select
+                    value={probationMonths}
+                    onChange={(e) => setProbationMonths(Number(e.target.value))}
+                    className="input font-mono"
+                  >
+                    <option value={3}>3 Months Commitment</option>
+                    <option value={6}>6 Months Commitment</option>
+                    <option value={12}>12 Months Commitment</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Working Module</label>
+                  <select
+                    value={workingModule}
+                    onChange={(e) => setWorkingModule(e.target.value as "hybrid" | "wfh" | "wfo")}
+                    className="input font-semibold"
+                  >
+                    <option value="hybrid">Hybrid (3 Days Office / 3 Days WFH)</option>
+                    <option value="wfh">Work From Home (Remote / WFH)</option>
+                    <option value="wfo">Work From Office (On-Site / WFO)</option>
+                  </select>
+                </div>
+              </>
             )}
           </div>
 
@@ -398,16 +416,32 @@ export function IssueDocumentModal({ employees, onClose, onIssueDocument }: Issu
           )}
 
           {/* Custom Content / Text Body */}
-          <div>
-            <label className="label">Custom Document Body / Performance Remarks (Optional)</label>
-            <textarea
-              rows={3}
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Add specific remarks, achievements, or custom contractual clauses..."
-              className="input leading-relaxed"
-            />
-          </div>
+          {docType === "offer_letter" ? (
+            <div>
+              <label className="label flex items-center justify-between">
+                <span>Role & Responsibilities Description</span>
+                <span className="text-[10px] text-ink/40 font-normal">Customizable (Marketing, Sales, Tech, Ops, etc.)</span>
+              </label>
+              <textarea
+                rows={4}
+                value={rolesResponsibilities}
+                onChange={(e) => setRolesResponsibilities(e.target.value)}
+                placeholder="Enter specific role responsibilities (e.g. Lead sales outreach, manage partner brand accounts, execute marketing campaigns, optimize client revenue...)"
+                className="input leading-relaxed"
+              />
+            </div>
+          ) : (
+            <div>
+              <label className="label">Custom Document Body / Performance Remarks (Optional)</label>
+              <textarea
+                rows={3}
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Add specific remarks, achievements, or custom contractual clauses..."
+                className="input leading-relaxed"
+              />
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-line">

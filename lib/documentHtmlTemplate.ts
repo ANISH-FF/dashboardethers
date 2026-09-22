@@ -233,8 +233,9 @@ export function generateDocumentHtml(doc: EmployeeDocument): string {
                     <p style="font-family: 'Inter', sans-serif; font-size: 12px; margin-bottom: 12px;"><strong>Private & Confidential</strong><br/>Recipient: <strong>${doc.employeeName}</strong> (${doc.employeeEmail})<br/>Sub: Offer for Employment as <strong>${doc.designation}</strong></p>
                     <p>Dear <span class="highlight">${doc.employeeName}</span>,</p>
                     <p>We are thrilled to invite you to join Ethers Consultancy as our new <span class="highlight">${doc.designation}</span>. At Ethers Consultancy, we focus on building a high-caliber team, and we are certain your contributions will be vital to our continued success.</p>
-                    <p><span class="highlight">Role & Responsibilities:</span> Your role will involve optimizing menus, pricing strategies, managing accounts for partner cloud kitchens, and contributing to marketing initiatives on platforms like Swiggy and Zomato.</p>
+                    <p><span class="highlight">Role & Responsibilities:</span> ${doc.rolesResponsibilities || "Your role at Ethers Consultancy will involve managing client accounts, driving brand growth initiatives, collaborating across teams, and contributing to strategic consulting operations."}</p>
                     <p><span class="highlight">Duration & Commitment:</span> This tenure begins on <span class="highlight">${doc.joiningDate || doc.issueDate}</span> in Kolkata, with a minimum commitment of <span class="highlight">${doc.probationMonths || 3} months</span>.</p>
+                    <p><span class="highlight">${doc.workingModule === "wfh" ? "Working Module (Work From Home):" : doc.workingModule === "wfo" ? "Working Module (Work From Office):" : "Working Module (Hybrid):"}</span> ${doc.workingModule === "wfh" ? "You will operate remotely from home (WFH) on a full-time basis. Daily sync-ups, check-ins, and deliverables will be coordinated with your reporting manager." : doc.workingModule === "wfo" ? "You will operate on-site from our office location. Standard working hours, schedules, and daily operations will be coordinated with your reporting manager." : "You will operate on a hybrid schedule, working 3 days a week on-site from our office and 3 days a week from home (WFH). Specific days will be coordinated with your reporting manager."}</p>
                     <p><span class="highlight">Compensation & Benefits:</span> Fixed monthly payout of <span class="highlight">Rs. ${(doc.salaryDetails?.netSalary || 5000).toLocaleString("en-IN")}/-</span> plus performance incentives.</p>
                     <p>We look forward to having you on board as we continue to grow Ethers Consultancy!</p>
                 ` : ""}
@@ -289,14 +290,23 @@ export function generateDocumentHtml(doc: EmployeeDocument): string {
             </div>
 
             <div class="signatures-grid">
-                <div class="sig-block">
+                <div class="sig-block" style="${doc.type === 'offer_letter' ? 'width: 200px;' : ''}">
                     <img src="${hemanyaSigUri}" alt="Hemanya Gupta Signature" class="sig-img" />
                     <div class="sig-line"></div>
                     <div class="sig-name">Hemanya Gupta</div>
                     <div class="sig-title">Co-Founder & Director</div>
                 </div>
 
-                <div class="sig-block">
+                ${doc.type === "offer_letter" ? `
+                <div class="sig-block" style="width: 200px;">
+                    <div style="height: 75px;"></div>
+                    <div class="sig-line"></div>
+                    <div class="sig-name">${doc.employeeName}</div>
+                    <div class="sig-title">${doc.designation || "Appointee"}</div>
+                </div>
+                ` : ""}
+
+                <div class="sig-block" style="${doc.type === 'offer_letter' ? 'width: 200px;' : ''}">
                     <img src="${tanishaSigUri}" alt="Tanisha Maity Signature" class="sig-img" />
                     <div class="sig-line"></div>
                     <div class="sig-name">Tanisha Maity</div>

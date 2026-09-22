@@ -151,7 +151,7 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
                   </p>
 
                   <p>
-                    <strong className="font-sans font-bold text-[#2F3119]">Role & Responsibilities:</strong> Your role at Ethers Consultancy will involve optimizing menus and pricing strategies, managing accounts for partner restaurants and cloud kitchens, and contributing to marketing initiatives to boost visibility on platforms like Swiggy and Zomato. You will also assist in analyzing performance reports, identifying improvement areas, and collaborating with partners to strengthen their digital presence.
+                    <strong className="font-sans font-bold text-[#2F3119]">Role & Responsibilities:</strong> {doc.rolesResponsibilities || "Your role at Ethers Consultancy will involve managing client accounts, driving brand growth initiatives, collaborating across teams, and contributing to strategic consulting operations."}
                   </p>
 
                   <p>
@@ -159,7 +159,18 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
                   </p>
 
                   <p>
-                    <strong className="font-sans font-bold text-[#2F3119]">Working Module (Hybrid):</strong> You will operate on a hybrid schedule, working 3 days a week on-site from our office and 3 days a week from home (WFH). Specific days will be coordinated with your reporting manager.
+                    <strong className="font-sans font-bold text-[#2F3119]">
+                      {doc.workingModule === "wfh"
+                        ? "Working Module (Work From Home):"
+                        : doc.workingModule === "wfo"
+                        ? "Working Module (Work From Office):"
+                        : "Working Module (Hybrid):"}
+                    </strong>{" "}
+                    {doc.workingModule === "wfh"
+                      ? "You will operate remotely from home (WFH) on a full-time basis. Daily sync-ups, check-ins, and deliverables will be coordinated with your reporting manager."
+                      : doc.workingModule === "wfo"
+                      ? "You will operate on-site from our office location. Standard working hours, schedules, and daily operations will be coordinated with your reporting manager."
+                      : "You will operate on a hybrid schedule, working 3 days a week on-site from our office and 3 days a week from home (WFH). Specific days will be coordinated with your reporting manager."}
                   </p>
 
                   <p>
@@ -366,29 +377,62 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
 
               {/* Bottom Footer Block — Dual Real Scanned Signatures */}
               <div className="pt-6 relative z-10">
-                <div className="flex justify-between items-end w-full px-2 text-center">
-                  <div className="flex flex-col items-center">
-                    <img 
-                      src="/uploads/Hemanyasignature.jpeg" 
-                      alt="Hemanya Gupta Signature" 
-                      className="w-36 sm:w-44 h-16 sm:h-20 object-contain mix-blend-multiply -mb-2.5 max-w-full"
-                    />
-                    <div className="w-36 sm:w-48 h-0.5 bg-[#2F3119] mb-1"></div>
-                    <p className="font-serif font-bold text-sm sm:text-base text-[#2C322C]">Hemanya Gupta</p>
-                    <p className="font-serif text-[11px] sm:text-xs text-zinc-600 font-medium mt-0.5">Co-Founder & Director</p>
-                  </div>
+                {doc.type === "offer_letter" ? (
+                  <div className="grid grid-cols-3 items-end w-full px-1 text-center gap-2 sm:gap-4">
+                    <div className="flex flex-col items-center">
+                      <img 
+                        src="/uploads/Hemanyasignature.jpeg" 
+                        alt="Hemanya Gupta Signature" 
+                        className="w-28 sm:w-36 h-14 sm:h-18 object-contain mix-blend-multiply -mb-2.5 max-w-full"
+                      />
+                      <div className="w-28 sm:w-36 h-0.5 bg-[#2F3119] mb-1"></div>
+                      <p className="font-serif font-bold text-xs sm:text-sm text-[#2C322C]">Hemanya Gupta</p>
+                      <p className="font-serif text-[10px] sm:text-xs text-zinc-600 font-medium mt-0.5">Co-Founder & Director</p>
+                    </div>
 
-                  <div className="flex flex-col items-center">
-                    <img 
-                      src="/uploads/tanishasignature.jpeg" 
-                      alt="Tanisha Maity Signature" 
-                      className="w-36 sm:w-44 h-16 sm:h-20 object-contain mix-blend-multiply -mb-2.5 max-w-full"
-                    />
-                    <div className="w-36 sm:w-48 h-0.5 bg-[#2F3119] mb-1"></div>
-                    <p className="font-serif font-bold text-sm sm:text-base text-[#2C322C]">Tanisha Maity</p>
-                    <p className="font-serif text-[11px] sm:text-xs text-zinc-600 font-medium mt-0.5">Co-Founder & Director</p>
+                    <div className="flex flex-col items-center pb-0.5">
+                      <div className="h-14 sm:h-18"></div>
+                      <div className="w-28 sm:w-36 h-0.5 bg-[#2F3119] mb-1"></div>
+                      <p className="font-serif font-bold text-xs sm:text-sm text-[#2C322C] truncate max-w-full">{doc.employeeName}</p>
+                      <p className="font-serif text-[10px] sm:text-xs text-zinc-600 font-medium mt-0.5 truncate max-w-full">{doc.designation || "Appointee"}</p>
+                    </div>
+
+                    <div className="flex flex-col items-center">
+                      <img 
+                        src="/uploads/tanishasignature.jpeg" 
+                        alt="Tanisha Maity Signature" 
+                        className="w-28 sm:w-36 h-14 sm:h-18 object-contain mix-blend-multiply -mb-2.5 max-w-full"
+                      />
+                      <div className="w-28 sm:w-36 h-0.5 bg-[#2F3119] mb-1"></div>
+                      <p className="font-serif font-bold text-xs sm:text-sm text-[#2C322C]">Tanisha Maity</p>
+                      <p className="font-serif text-[10px] sm:text-xs text-zinc-600 font-medium mt-0.5">Co-Founder & Director</p>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="flex justify-between items-end w-full px-2 text-center">
+                    <div className="flex flex-col items-center">
+                      <img 
+                        src="/uploads/Hemanyasignature.jpeg" 
+                        alt="Hemanya Gupta Signature" 
+                        className="w-36 sm:w-44 h-16 sm:h-20 object-contain mix-blend-multiply -mb-2.5 max-w-full"
+                      />
+                      <div className="w-36 sm:w-48 h-0.5 bg-[#2F3119] mb-1"></div>
+                      <p className="font-serif font-bold text-sm sm:text-base text-[#2C322C]">Hemanya Gupta</p>
+                      <p className="font-serif text-[11px] sm:text-xs text-zinc-600 font-medium mt-0.5">Co-Founder & Director</p>
+                    </div>
+
+                    <div className="flex flex-col items-center">
+                      <img 
+                        src="/uploads/tanishasignature.jpeg" 
+                        alt="Tanisha Maity Signature" 
+                        className="w-36 sm:w-44 h-16 sm:h-20 object-contain mix-blend-multiply -mb-2.5 max-w-full"
+                      />
+                      <div className="w-36 sm:w-48 h-0.5 bg-[#2F3119] mb-1"></div>
+                      <p className="font-serif font-bold text-sm sm:text-base text-[#2C322C]">Tanisha Maity</p>
+                      <p className="font-serif text-[11px] sm:text-xs text-zinc-600 font-medium mt-0.5">Co-Founder & Director</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
             </div>

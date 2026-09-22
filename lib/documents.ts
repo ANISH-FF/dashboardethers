@@ -44,6 +44,9 @@ export type EmployeeDocument = {
   effectiveDate?: string;
   projectTitle?: string;
   dateOfBirth?: string;
+  rolesResponsibilities?: string;
+  workingModule?: "hybrid" | "wfh" | "wfo" | string;
+  workingModuleCustomText?: string;
   hiddenFromAdmin?: boolean;
 };
 
@@ -109,6 +112,9 @@ export function createDocument(partial: Partial<EmployeeDocument>): EmployeeDocu
     effectiveDate: partial.effectiveDate || now,
     projectTitle: partial.projectTitle || "F&B Operations Consulting",
     dateOfBirth: partial.dateOfBirth,
+    rolesResponsibilities: partial.rolesResponsibilities,
+    workingModule: partial.workingModule || "hybrid",
+    workingModuleCustomText: partial.workingModuleCustomText,
   };
   all.unshift(doc);
   saveDocuments(all);
