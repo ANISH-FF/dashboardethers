@@ -176,6 +176,8 @@ export function generateDocumentHtml(doc: EmployeeDocument): string {
             font-size: 15px;
             font-weight: 700;
             color: #2C322C;
+            line-height: 1.2;
+            word-break: break-word;
         }
 
         .sig-title {
@@ -184,6 +186,8 @@ export function generateDocumentHtml(doc: EmployeeDocument): string {
             color: #555555;
             font-weight: 500;
             margin-top: 2px;
+            line-height: 1.25;
+            word-break: break-word;
         }
 
         .table-box {

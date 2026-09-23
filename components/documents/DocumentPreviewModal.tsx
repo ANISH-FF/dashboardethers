@@ -393,8 +393,8 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
                     <div className="flex flex-col items-center pb-0.5">
                       <div className="h-14 sm:h-18"></div>
                       <div className="w-28 sm:w-36 h-0.5 bg-[#2F3119] mb-1"></div>
-                      <p className="font-serif font-bold text-xs sm:text-sm text-[#2C322C] truncate max-w-full">{doc.employeeName}</p>
-                      <p className="font-serif text-[10px] sm:text-xs text-zinc-600 font-medium mt-0.5 truncate max-w-full">{doc.designation || "Appointee"}</p>
+                      <p className="font-serif font-bold text-xs sm:text-sm text-[#2C322C] leading-snug break-words">{doc.employeeName}</p>
+                      <p className="font-serif text-[10px] sm:text-xs text-zinc-600 font-medium mt-0.5 leading-tight break-words">{doc.designation || "Appointee"}</p>
                     </div>
 
                     <div className="flex flex-col items-center">
