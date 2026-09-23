@@ -290,14 +290,14 @@ export function generateDocumentHtml(doc: EmployeeDocument): string {
             </div>
 
             <div class="signatures-grid">
-                <div class="sig-block" style="${doc.type === 'offer_letter' ? 'width: 200px;' : ''}">
+                <div class="sig-block" style="${(doc.type === 'offer_letter' || doc.type === 'employment_terms') ? 'width: 200px;' : ''}">
                     <img src="${hemanyaSigUri}" alt="Hemanya Gupta Signature" class="sig-img" />
                     <div class="sig-line"></div>
                     <div class="sig-name">Hemanya Gupta</div>
                     <div class="sig-title">Co-Founder & Director</div>
                 </div>
 
-                ${doc.type === "offer_letter" ? `
+                ${(doc.type === "offer_letter" || doc.type === "employment_terms") ? `
                 <div class="sig-block" style="width: 200px;">
                     <div style="height: 75px;"></div>
                     <div class="sig-line"></div>
@@ -306,7 +306,7 @@ export function generateDocumentHtml(doc: EmployeeDocument): string {
                 </div>
                 ` : ""}
 
-                <div class="sig-block" style="${doc.type === 'offer_letter' ? 'width: 200px;' : ''}">
+                <div class="sig-block" style="${(doc.type === 'offer_letter' || doc.type === 'employment_terms') ? 'width: 200px;' : ''}">
                     <img src="${tanishaSigUri}" alt="Tanisha Maity Signature" class="sig-img" />
                     <div class="sig-line"></div>
                     <div class="sig-name">Tanisha Maity</div>

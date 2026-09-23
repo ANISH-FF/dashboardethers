@@ -377,7 +377,7 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
 
               {/* Bottom Footer Block — Dual Real Scanned Signatures */}
               <div className="pt-6 relative z-10">
-                {doc.type === "offer_letter" ? (
+                {(doc.type === "offer_letter" || doc.type === "employment_terms") ? (
                   <div className="grid grid-cols-3 items-end w-full px-1 text-center gap-2 sm:gap-4">
                     <div className="flex flex-col items-center">
                       <img 
