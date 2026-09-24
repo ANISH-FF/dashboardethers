@@ -705,7 +705,7 @@ export default function EmployeeHubPage() {
                         <button
                           onClick={() => setDeleteDocTarget(doc)}
                           className="p-2 rounded-lg border border-line text-ink/40 hover:text-rose-400 hover:border-rose-500/30 hover:bg-rose-500/10 transition-all"
-                          title="Dismiss from Admin View"
+                          title="Delete Document"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -1043,8 +1043,8 @@ export default function EmployeeHubPage() {
                   <Trash2 className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-ink">Dismiss Document</h3>
-                  <p className="text-[11px] text-ink/50">Admin View Cleanup</p>
+                  <h3 className="text-sm font-bold text-ink">Delete Document</h3>
+                  <p className="text-[11px] text-ink/50">Permanent Removal</p>
                 </div>
               </div>
               <button
@@ -1063,7 +1063,7 @@ export default function EmployeeHubPage() {
             </div>
 
             <p className="text-xs text-ink/70 leading-relaxed">
-              This will remove the document from your admin overview. It remains fully active and accessible to the employee.
+              Are you sure you want to delete this document? This will permanently delete it for both Admin overview and the Employee portal.
             </p>
 
             <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-line">
@@ -1081,7 +1081,7 @@ export default function EmployeeHubPage() {
                 disabled={isDeletingDoc}
                 className="px-4 py-2 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold shadow-lg shadow-rose-500/20 transition-all disabled:opacity-50"
               >
-                {isDeletingDoc ? "Removing..." : "Remove from Screen"}
+                {isDeletingDoc ? "Deleting..." : "Delete Document"}
               </button>
             </div>
           </div>

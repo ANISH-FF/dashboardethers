@@ -74,16 +74,19 @@ export function saveDocuments(docs: EmployeeDocument[]) {
 
 export function getDocumentsForEmployee(email: string): EmployeeDocument[] {
   const all = getDocuments();
-  return all.filter((d) => d.employeeEmail.toLowerCase() === email.toLowerCase());
+  return all.filter((d) => d.employeeEmail.toLowerCase() === email.toLowerCase() && !d.hiddenFromAdmin);
+}
+
+export function deleteDocument(id: string): boolean {
+  const all = getDocuments();
+  const filtered = all.filter((d) => d.id !== id);
+  if (filtered.length === all.length) return false;
+  saveDocuments(filtered);
+  return true;
 }
 
 export function deleteDocumentForAdmin(id: string): boolean {
-  const all = getDocuments();
-  const target = all.find((d) => d.id === id);
-  if (!target) return false;
-  target.hiddenFromAdmin = true;
-  saveDocuments(all);
-  return true;
+  return deleteDocument(id);
 }
 
 export function createDocument(partial: Partial<EmployeeDocument>): EmployeeDocument {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { getDocuments, getDocumentsForEmployee, createDocument, deleteDocumentForAdmin } from "@/lib/documents";
+import { getDocuments, getDocumentsForEmployee, createDocument, deleteDocument } from "@/lib/documents";
 
 export async function GET(req: NextRequest) {
   try {
@@ -57,7 +57,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Document ID is required" }, { status: 400 });
     }
 
-    deleteDocumentForAdmin(id);
+    deleteDocument(id);
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: "Failed to remove document" }, { status: 500 });
