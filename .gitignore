@@ -18,4 +18,5 @@ __pycache__/
 *.tsbuildinfo
 reporting_backup/
 qwality test/
+data/menutest/
 

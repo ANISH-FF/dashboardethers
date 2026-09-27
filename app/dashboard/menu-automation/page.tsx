@@ -139,6 +139,331 @@ function fileToBase64(file: File): Promise<{ data: string; mediaType: string }> 
   });
 }
 
+function parseSpreadsheetDirectly(buffer: ArrayBuffer, onlineHike: number, halfPct: number): MenuItem[] | null {
+  try {
+    const wb = XLSX.read(buffer, { type: "array" });
+    const parsedItems: MenuItem[] = [];
+
+    for (const sheetName of wb.SheetNames) {
+      const sheet = wb.Sheets[sheetName];
+      if (!sheet) continue;
+      const rawRows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+      if (!rawRows || rawRows.length < 2) continue;
+
+      let headerIdx = -1;
+      let colMap: {
+        nameIdx: number;
+        categoryIdx: number;
+        subcatIdx: number;
+        variantIdx: number;
+        priceIdx: number;
+        descIdx: number;
+        vegIdx: number;
+        qtyIdx: number;
+        spiceIdx: number;
+        addonsIdx: number;
+        customColIndices: { header: string; idx: number }[];
+      } = {
+        nameIdx: -1,
+        categoryIdx: -1,
+        subcatIdx: -1,
+        variantIdx: -1,
+        priceIdx: -1,
+        descIdx: -1,
+        vegIdx: -1,
+        qtyIdx: -1,
+        spiceIdx: -1,
+        addonsIdx: -1,
+        customColIndices: [],
+      };
+
+      for (let r = 0; r < Math.min(rawRows.length, 15); r++) {
+        const row = rawRows[r];
+        if (!Array.isArray(row)) continue;
+
+        let foundName = -1;
+        let foundPrice = -1;
+        let foundCategory = -1;
+        let foundSubcat = -1;
+        let foundVariant = -1;
+        let foundDesc = -1;
+        let foundVeg = -1;
+        let foundQty = -1;
+        let foundSpice = -1;
+        let foundAddons = -1;
+        const customCols: { header: string; idx: number }[] = [];
+
+        row.forEach((cellVal, cIdx) => {
+          const val = String(cellVal || "").trim().toLowerCase().replace(/[\s_\-]+/g, " ");
+          if (!val) return;
+
+          if (
+            foundName === -1 &&
+            (val === "catalogue name" ||
+              val === "cataloguename" ||
+              val === "item name" ||
+              val === "itemname" ||
+              val === "dish name" ||
+              val === "dish" ||
+              val === "product name" ||
+              val === "product" ||
+              val === "item" ||
+              val === "menu item" ||
+              val === "food item" ||
+              val === "name" ||
+              val === "title" ||
+              val === "particulars")
+          ) {
+            foundName = cIdx;
+          } else if (
+            foundCategory === -1 &&
+            (val === "category" ||
+              val === "cat" ||
+              val === "parent category" ||
+              val === "menu category" ||
+              val === "category name" ||
+              val === "main category" ||
+              val === "group")
+          ) {
+            foundCategory = cIdx;
+          } else if (
+            foundSubcat === -1 &&
+            (val === "sub category" ||
+              val === "subcategory" ||
+              val === "sub cat" ||
+              val === "sub_category" ||
+              val === "section" ||
+              val === "menu subcategory" ||
+              val === "subgroup")
+          ) {
+            foundSubcat = cIdx;
+          } else if (
+            foundPrice === -1 &&
+            (val === "current price" ||
+              val === "base price" ||
+              val === "price" ||
+              val === "selling price" ||
+              val === "rate" ||
+              val === "cost" ||
+              val === "mrp" ||
+              val === "amount" ||
+              val === "item price")
+          ) {
+            foundPrice = cIdx;
+          } else if (
+            foundVariant === -1 &&
+            (val === "variant name" ||
+              val === "variant" ||
+              val === "variants" ||
+              val === "portion" ||
+              val === "size" ||
+              val === "portion size" ||
+              val === "options" ||
+              val === "variation" ||
+              val === "sizes")
+          ) {
+            foundVariant = cIdx;
+          } else if (
+            foundDesc === -1 &&
+            (val === "description" ||
+              val === "desc" ||
+              val === "item description" ||
+              val === "details" ||
+              val === "about" ||
+              val === "summary")
+          ) {
+            foundDesc = cIdx;
+          } else if (
+            foundVeg === -1 &&
+            (val === "diet" ||
+              val === "is_veg" ||
+              val === "veg" ||
+              val === "veg/non-veg" ||
+              val === "veg / non veg" ||
+              val === "type" ||
+              val === "food type" ||
+              val === "veg_nonveg")
+          ) {
+            foundVeg = cIdx;
+          } else if (
+            foundQty === -1 &&
+            (val === "quantity" ||
+              val === "qty" ||
+              val === "volume" ||
+              val === "weight" ||
+              val === "serves" ||
+              val === "serving")
+          ) {
+            foundQty = cIdx;
+          } else if (
+            foundSpice === -1 &&
+            (val === "spice" ||
+              val === "spice level" ||
+              val === "spice_level" ||
+              val === "spiciness")
+          ) {
+            foundSpice = cIdx;
+          } else if (
+            foundAddons === -1 &&
+            (val === "addons" ||
+              val === "add-ons" ||
+              val === "add ons" ||
+              val === "extras" ||
+              val === "customizations")
+          ) {
+            foundAddons = cIdx;
+          } else {
+            const rawHeader = String(cellVal || "").trim();
+            if (rawHeader) {
+              customCols.push({ header: rawHeader, idx: cIdx });
+            }
+          }
+        });
+
+        if (foundName !== -1 || (foundPrice !== -1 && foundCategory !== -1)) {
+          headerIdx = r;
+          colMap = {
+            nameIdx: foundName,
+            categoryIdx: foundCategory,
+            subcatIdx: foundSubcat,
+            variantIdx: foundVariant,
+            priceIdx: foundPrice,
+            descIdx: foundDesc,
+            vegIdx: foundVeg,
+            qtyIdx: foundQty,
+            spiceIdx: foundSpice,
+            addonsIdx: foundAddons,
+            customColIndices: customCols,
+          };
+          break;
+        }
+      }
+
+      if (headerIdx === -1 || colMap.nameIdx === -1) {
+        continue;
+      }
+
+      for (let r = headerIdx + 1; r < rawRows.length; r++) {
+        const row = rawRows[r];
+        if (!Array.isArray(row) || row.length === 0) continue;
+
+        const rawName = colMap.nameIdx !== -1 ? String(row[colMap.nameIdx] ?? "").trim() : "";
+        if (!rawName) continue;
+
+        const rawCategory = colMap.categoryIdx !== -1 ? String(row[colMap.categoryIdx] ?? "").trim() : "Main Course";
+        const rawSubcat = colMap.subcatIdx !== -1 ? String(row[colMap.subcatIdx] ?? "").trim() : "";
+        const rawDesc = colMap.descIdx !== -1 ? String(row[colMap.descIdx] ?? "").trim() : "";
+        const rawQty = colMap.qtyIdx !== -1 ? String(row[colMap.qtyIdx] ?? "").trim() : "";
+        const rawSpice = colMap.spiceIdx !== -1 ? String(row[colMap.spiceIdx] ?? "").trim() : "";
+        const rawAddons = colMap.addonsIdx !== -1 ? String(row[colMap.addonsIdx] ?? "").trim() : "";
+        const rawVegVal = colMap.vegIdx !== -1 ? String(row[colMap.vegIdx] ?? "").trim().toLowerCase() : "";
+
+        const rawVariant = colMap.variantIdx !== -1 ? String(row[colMap.variantIdx] ?? "").trim() : "";
+        const rawPrice = colMap.priceIdx !== -1 ? String(row[colMap.priceIdx] ?? "").trim() : "";
+
+        let variantsFormatted = "";
+        let basePriceVal = 0;
+
+        const variantParts = rawVariant ? rawVariant.split(/[\/\,\;]/).map((s) => s.trim()).filter(Boolean) : [];
+        const priceParts = rawPrice
+          ? rawPrice
+              .split(/[\/\,\;]/)
+              .map((s) => {
+                const clean = s.replace(/[^0-9.]/g, "").trim();
+                return clean ? parseFloat(clean) : NaN;
+              })
+              .filter((n) => !isNaN(n))
+          : [];
+
+        if (variantParts.length > 0 && priceParts.length > 0) {
+          if (variantParts.length === priceParts.length) {
+            variantsFormatted = variantParts
+              .map((v, i) => `${v} (₹${priceParts[i]})`)
+              .join(", ");
+            basePriceVal = priceParts[0];
+          } else if (priceParts.length > 1 && variantParts.length > 1) {
+            variantsFormatted = variantParts
+              .map((v, i) => `${v} (₹${priceParts[i] ?? priceParts[0]})`)
+              .join(", ");
+            basePriceVal = priceParts[0];
+          } else if (variantParts.length > 1 && priceParts.length === 1) {
+            variantsFormatted = variantParts
+              .map((v) => `${v} (₹${priceParts[0]})`)
+              .join(", ");
+            basePriceVal = priceParts[0];
+          } else {
+            if (/\(₹?\s*\d+/.test(rawVariant)) {
+              variantsFormatted = rawVariant;
+            } else {
+              variantsFormatted = `${variantParts[0]} (₹${priceParts[0]})`;
+            }
+            basePriceVal = priceParts[0];
+          }
+        } else if (variantParts.length > 0 && priceParts.length === 0) {
+          variantsFormatted = rawVariant;
+          const match = rawVariant.match(/\(₹?\s*(\d+(?:\.\d+)?)\)/);
+          if (match) {
+            basePriceVal = parseFloat(match[1]) || 0;
+          }
+        } else if (priceParts.length > 0) {
+          basePriceVal = priceParts[0];
+          if (priceParts.length > 1) {
+            variantsFormatted = priceParts.map((p, i) => `Option ${i + 1} (₹${p})`).join(", ");
+          }
+        }
+
+        let isVeg = true;
+        if (rawVegVal) {
+          if (/non|egg|meat|chicken|fish|false|0|no/i.test(rawVegVal)) {
+            isVeg = false;
+          } else if (/veg|pure|true|1|yes/i.test(rawVegVal)) {
+            isVeg = true;
+          }
+        } else {
+          if (/chicken|mutton|fish|prawn|egg|lamb|pork|beef|keema|seafood|meat|bacon|crab|shrimp/i.test(rawName)) {
+            isVeg = false;
+          }
+        }
+
+        const custom_columns: Record<string, string> = {};
+        for (const col of colMap.customColIndices) {
+          const val = String(row[col.idx] ?? "").trim();
+          if (val) {
+            custom_columns[col.header] = val;
+          }
+        }
+
+        const online = calcOnline(basePriceVal, onlineHike);
+        const half = calcHalf(online, halfPct);
+
+        parsedItems.push({
+          id: `${Date.now()}-${r}-${Math.random().toString(36).slice(2)}`,
+          name: rawName,
+          category: rawCategory || "Main Course",
+          subcategory: rawSubcat,
+          description: rawDesc,
+          quantity_num: rawQty,
+          quantity_unit: "Unit",
+          spice_level: resolveSpice(rawSpice, rawName),
+          variants: variantsFormatted,
+          base_price: basePriceVal > 0 ? String(basePriceVal) : "",
+          online_price: online,
+          half_price: half,
+          is_veg: isVeg,
+          has_half: false,
+          addons: rawAddons,
+          custom_columns,
+        });
+      }
+    }
+
+    return parsedItems.length > 0 ? parsedItems : null;
+  } catch (err) {
+    console.warn("[parseSpreadsheetDirectly failed, falling back to AI]:", err);
+    return null;
+  }
+}
+
 // ─── Components ────────────────────────────────────────────────────────────
 function SpiceSelector({ level, onChange }: { level: 0 | 1 | 2 | 3; onChange: (v: 0 | 1 | 2 | 3) => void }) {
   const labels = ["Mild", "Medium", "Hot"];
@@ -530,7 +855,18 @@ function determineSmartVariantTitle(selectedItems: MenuItem[]): string {
         let extractPayload: any = {};
 
         if (/\.(xlsx?|csv)$/i.test(file.name)) {
+          setLoadingMsg("Processing spreadsheet: " + file.name);
           const buffer = await file.arrayBuffer();
+
+          // 1. Direct High-Speed Structured Parse (0 AI Token Cost, 100% Precision)
+          const directItems = parseSpreadsheetDirectly(buffer, onlineHike, halfPct);
+          if (directItems && directItems.length > 0) {
+            allItems.push(...directItems);
+            continue; // Successfully extracted all items without using any AI tokens!
+          }
+
+          // 2. Fallback to Gemini AI if headers were unstructured / unparseable
+          setLoadingMsg("AI Extracting: " + file.name);
           const wb = XLSX.read(buffer, { type: "array" });
           let combinedCsv = "";
           wb.SheetNames.forEach((sheetName) => {
@@ -557,7 +893,21 @@ function determineSmartVariantTitle(selectedItems: MenuItem[]): string {
           body: JSON.stringify(extractPayload),
         });
 
-        const json = await res.json();
+        if (res.status === 413) {
+          throw new Error("File payload is too large for VPS Nginx (413 Request Entity Too Large). Please add 'client_max_body_size 50M;' in your VPS Nginx configuration.");
+        }
+        if (res.status === 504) {
+          throw new Error("Server gateway timed out (504). Please increase 'proxy_read_timeout 300s;' in your VPS Nginx configuration.");
+        }
+
+        const resText = await res.text();
+        let json: any = {};
+        try {
+          json = JSON.parse(resText);
+        } catch {
+          throw new Error(`Server returned status ${res.status}: ${resText.slice(0, 120)}`);
+        }
+
         if (json.error) throw new Error(json.error);
 
         (json.items || []).forEach((item: any, idx: number) => {

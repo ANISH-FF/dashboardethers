@@ -6,12 +6,15 @@ export const maxDuration = 300; // 5 Minutes Max Duration for AI Operations
 
 function getGeminiApiKey(): string {
   try {
-    const envPath = path.join(process.cwd(), ".env");
-    if (fs.existsSync(envPath)) {
-      const content = fs.readFileSync(envPath, "utf-8");
-      const match = content.match(/GEMINI_API_KEY\s*=\s*["']?([^"'\r\n]+)["']?/);
-      if (match && match[1] && match[1].trim()) {
-        return match[1].trim();
+    const envFiles = [".env", ".env.local", ".env.production"];
+    for (const file of envFiles) {
+      const envPath = path.join(process.cwd(), file);
+      if (fs.existsSync(envPath)) {
+        const content = fs.readFileSync(envPath, "utf-8");
+        const match = content.match(/GEMINI_API_KEY\s*=\s*["']?([^"'\r\n]+)["']?/);
+        if (match && match[1] && match[1].trim()) {
+          return match[1].trim();
+        }
       }
     }
   } catch (e) {}
