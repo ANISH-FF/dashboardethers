@@ -339,6 +339,19 @@ export default function Home() {
     const rows = items.map((item, idx) => {
       const base = parseFloat(item.base_price || "0") || 0;
       const spiceLabels: Record<number, string> = { 0: "", 1: "Mild", 2: "Medium", 3: "Hot" };
+
+      const parsedVariants = parseVariantPrices(item.variants);
+      const variantPricesList = parsedVariants.filter((v) => v.price > 0).map((v) => v.price);
+      const hasMultipleVariantPrices = variantPricesList.length > 1;
+
+      const basePriceVal = hasMultipleVariantPrices
+        ? variantPricesList.join(" / ")
+        : base > 0 ? base : "";
+
+      const onlinePriceVal = hasMultipleVariantPrices
+        ? variantPricesList.map((p) => calcOnline(p, onlineHike)).join(" / ")
+        : item.online_price > 0 ? item.online_price : "";
+
       return {
         "#": idx + 1,
         Diet: item.is_veg ? "Veg" : "Non-Veg",
@@ -351,8 +364,8 @@ export default function Home() {
         "Spice Level": spiceLabels[item.spice_level] || "",
         "Variants (sizes/options)": item.variants,
         "Add-ons": item.addons,
-        "Base Price": base,
-        [`Online Price (+${onlineHike}%)`]: item.online_price,
+        "Base Price": basePriceVal,
+        [`Online Price (+${onlineHike}%)`]: onlinePriceVal,
         "Half Portion": item.has_half ? item.half_price : "",
         ...item.custom_columns,
       };
