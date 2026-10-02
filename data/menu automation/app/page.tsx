@@ -32,6 +32,22 @@ function calcHalf(online: number, pct: number) {
   return Math.round(online * (pct / 100));
 }
 
+function parseVariantPrices(variantsStr: string): { name: string; price: number }[] {
+  if (!variantsStr || !variantsStr.trim()) return [];
+  const parts = variantsStr.split(",").map((s) => s.trim()).filter(Boolean);
+  const result: { name: string; price: number }[] = [];
+  for (const part of parts) {
+    const match = part.match(/^(.*?)\s*(?:[\(\:\-\/]\s*₹?\s*(\d+(?:\.\d+)?)\)?|\(₹?\s*(\d+(?:\.\d+)?)\))?$/);
+    if (match) {
+      const name = match[1].trim();
+      const priceStr = match[2] || match[3];
+      const price = priceStr ? parseFloat(priceStr) : 0;
+      result.push({ name, price });
+    }
+  }
+  return result;
+}
+
 function detectSpice(name: string): 0 | 1 | 2 | 3 {
   const n = name.toLowerCase();
   if (/extra\s*hot|ghost\s*pepper|schezwan|szechuan|dynamite|blazing|inferno/.test(n)) return 3;
