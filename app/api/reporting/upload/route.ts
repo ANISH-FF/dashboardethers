@@ -106,8 +106,8 @@ function validateSwiggyMath(ocr: Record<string, any>): boolean {
     ocr.net_payout = calculated;
     return true;
   }
-  // Handle case where deductions exceed earnings and Swiggy writes ₹0 on screen
-  if (calculated < 0 && netPayout === 0) {
+  // Handle case where Swiggy writes ₹0 on screen (unsettled hold or deductions exceed earnings)
+  if (netPayout === 0 && (calculated < 0 || A > 0)) {
     ocr.net_payout = Number(calculated.toFixed(2));
     return true;
   }
