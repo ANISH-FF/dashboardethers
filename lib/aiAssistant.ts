@@ -138,10 +138,17 @@ function getLocalDynamicFallback(prompt: string): string {
   return "I am your Ethers AI Copilot. You can ask me how any dashboard module works (Menu, Reporting, Hygiene Check, Pricing, Documents, Brands, and more).";
 }
 
+import { getApiControlStatus } from "@/lib/api-control";
+
 export async function generateEthersAiReply(
   prompt: string,
   history: Array<{ role: string; content: string }> = []
 ): Promise<string> {
+  const apiStatus = getApiControlStatus();
+  if (!apiStatus.enabled) {
+    return apiStatus.message;
+  }
+
   const apiKey = process.env.GEMINI_API_KEY;
   const liveTelemetry = getLiveSystemTelemetry();
   const fullSystemInstruction = `${BASE_SYSTEM_INSTRUCTION}\n\n${liveTelemetry}`;

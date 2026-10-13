@@ -4,8 +4,15 @@ function getGeminiApiKey() {
   return process.env.GEMINI_API_KEY;
 }
 
+import { getApiControlStatus } from "@/lib/api-control";
+
 export async function POST(req: NextRequest) {
   try {
+    const apiStatus = getApiControlStatus();
+    if (!apiStatus.enabled) {
+      return NextResponse.json({ error: apiStatus.message }, { status: 429 });
+    }
+
     const formData = await req.formData();
     const files = formData.getAll("files") as File[];
 

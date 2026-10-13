@@ -69,8 +69,15 @@ function extractJsonArray(text: string): any[] {
   return JSON.parse(cleaned.substring(start, end + 1));
 }
 
+import { getApiControlStatus } from "@/lib/api-control";
+
 export async function POST(req: NextRequest) {
   try {
+    const apiStatus = getApiControlStatus();
+    if (!apiStatus.enabled) {
+      return NextResponse.json({ error: apiStatus.message }, { status: 429 });
+    }
+
     const { items } = await req.json();
 
     const apiKey = getGeminiApiKey();

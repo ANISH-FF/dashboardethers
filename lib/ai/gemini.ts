@@ -21,7 +21,13 @@ function getApiKey(): string {
   return process.env.GEMINI_API_KEY || "";
 }
 
+import { getApiControlStatus } from "@/lib/api-control";
+
 function getClient() {
+  const status = getApiControlStatus();
+  if (!status.enabled) {
+    throw new Error(status.message);
+  }
   const apiKey = getApiKey();
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY is not set. Add it to your .env file.");
@@ -41,6 +47,10 @@ type CallOptions = {
 };
 
 export async function callGemini(prompt: string, options: CallOptions = {}): Promise<string> {
+  const status = getApiControlStatus();
+  if (!status.enabled) {
+    throw new Error(status.message);
+  }
   const genAI = getClient();
 
   const generationConfig: any = {

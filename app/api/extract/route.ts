@@ -21,8 +21,15 @@ function getGeminiApiKey(): string {
   return process.env.GEMINI_API_KEY || "";
 }
 
+import { getApiControlStatus } from "@/lib/api-control";
+
 export async function POST(req: NextRequest) {
   try {
+    const apiStatus = getApiControlStatus();
+    if (!apiStatus.enabled) {
+      return NextResponse.json({ error: apiStatus.message }, { status: 429 });
+    }
+
     const { imageBase64, mediaType, rawText, customPrompt } = await req.json();
 
     const apiKey = getGeminiApiKey();

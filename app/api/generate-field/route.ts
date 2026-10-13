@@ -50,8 +50,15 @@ async function callGeminiForBatch(systemInstruction: string, userContent: string
   throw new Error(`Gemini API error: ${lastErr}`);
 }
 
+import { getApiControlStatus } from "@/lib/api-control";
+
 export async function POST(req: NextRequest) {
   try {
+    const apiStatus = getApiControlStatus();
+    if (!apiStatus.enabled) {
+      return NextResponse.json({ error: apiStatus.message }, { status: 429 });
+    }
+
     const { items, field, count } = await req.json();
 
     const apiKey = getGeminiApiKey();

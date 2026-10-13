@@ -277,8 +277,15 @@ Respond ONLY in valid JSON format with a top-level key "results":
 }
 
 // ─── Main Route ──────────────────────────────────────────────────────────────
+import { getApiControlStatus } from "@/lib/api-control";
+
 export async function POST(req: NextRequest) {
   try {
+    const apiStatus = getApiControlStatus();
+    if (!apiStatus.enabled) {
+      return NextResponse.json({ error: apiStatus.message }, { status: 429 });
+    }
+
     await ensurePricingServerRunning();
     const body = await req.json();
     const {
