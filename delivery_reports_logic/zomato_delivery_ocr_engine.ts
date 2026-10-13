@@ -38,7 +38,7 @@ Extraction Rules:
 - "sub_total": Sum of base item prices.
 - "packaging_charges": Total container/packaging fee collected.
 - "sub_total_with_pkg": Subtotal + Packaging charges.
-- "cancelled_order_refund": Read from "Additions (B)" header or "Cancelled order refunds" line (e.g. 97.97 or 3113.73), else 0.
+- "cancelled_order_refund": Read strictly the total amount from "Additions (B)" header (e.g. 97.97, 3113.73, or 13606.00), which includes Cancelled order refunds, TDS 194H, TDS 194C, or any line items under Additions (B), else 0.
 - "promo_discount": Read strictly from "Restaurant discount (Promos)" line (e.g. 23712.06), else 0.
 - "other_discount": Read strictly from "Restaurant discount (Flat offs, Freebies, Gold, relisted orders and others)" line (e.g. 12480.00), else 0.
 - "discount": Sum of promo discounts and flat offs/other discounts borne by merchant.
@@ -46,7 +46,7 @@ Extraction Rules:
 - "commissionable_value": Read strictly from "Net order value (A)" on Zomato screenshot (e.g. 63905.53), else sub_total + packaging_charges - discount.
 - "order_level_deduction": Read strictly from "Order level deductions (C)" header on Zomato screenshot (e.g. 14667.80), else sum of base service fee, payment mechanism fee, long distance enablement fee.
 - "tax_deduction": Read strictly from "Tax deductions (D)" header on Zomato screenshot (e.g. 5640.95), else sum of GST on service fees, TCS (Sec 52), TDS (Sec 194O), and GST u/s 9(5).
-- "ads": Read from Investments in growth (E) / Online ordering ads spend section (e.g. 14322.78), else 0.
+- "ads": Read strictly from Investments in growth (E) header or Online ordering ads spend / Ads reversal line (e.g. 14322.78 or 422.23), else 0.
 - "hyperpure": Read from Hyperpure spend (F) B2B raw material procurement deduction if present (e.g. 39750.60), else 0.
 - "miscellaneous_deductions": Read strictly from "Miscellaneous deductions (G)" line if present (e.g. 25.36), else 0.
 - "net_payout": Read strictly from "FINAL PAYOUT" or "Est. payout (A + B + C + D + E + F + G)". Include negative sign if red/minus (e.g. -12511.27).

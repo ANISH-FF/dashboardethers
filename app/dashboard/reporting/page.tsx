@@ -1068,10 +1068,20 @@ export default function ReportingPage() {
 
               {/* Messages */}
               {uploadError && (
-                <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{uploadError}</span>
-                </div>
+                uploadError.toLowerCase().includes("administrator") || uploadError.toLowerCase().includes("api") ? (
+                  <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-start gap-3 shadow-lg">
+                    <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="font-semibold text-amber-200 uppercase tracking-wider text-[11px]">API Usage Limit Notice</p>
+                      <p className="text-amber-300/90 leading-relaxed">{uploadError}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{uploadError}</span>
+                  </div>
+                )
               )}
 
               {uploadSuccess && (

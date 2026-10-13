@@ -20,6 +20,7 @@ import {
   SWIGGY_DELIVERY_GEMINI_PROMPT,
   computeSwiggyDeliveryMetrics,
 } from "@/delivery_reports_logic/swiggy_delivery_ocr_engine";
+import { getApiControlStatus } from "@/lib/api-control";
 
 function getGeminiApiKey() {
   return process.env.GEMINI_API_KEY;
@@ -30,7 +31,12 @@ const GEMINI_FALLBACK_MODELS = [
   "gemini-2.5-flash",
 ];
 
-async function singlePass(prompt: string, parts: any[], geminiKey: string, model: string): Promise<Record<string, any> | null> {
+async function singlePass(
+  prompt: string, 
+  parts: any[], 
+  geminiKey: string, 
+  model: string
+): Promise<{ data?: Record<string, any>; quotaError?: string } | null> {
   try {
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
@@ -46,14 +52,30 @@ async function singlePass(prompt: string, parts: any[], geminiKey: string, model
         }),
       }
     );
-    if (!response.ok) return null;
+    if (!response.ok) {
+      const errText = await response.text();
+      console.warn(`[Gemini API Error] Model: ${model}, Status: ${response.status}:`, errText);
+      if (
+        response.status === 429 ||
+        errText.includes("RESOURCE_EXHAUSTED") ||
+        errText.toLowerCase().includes("quota") ||
+        errText.toLowerCase().includes("rate limit")
+      ) {
+        return {
+          quotaError:
+            "You are currently out of API credits. Please contact the administrator to resume the service.",
+        };
+      }
+      return null;
+    }
     const data = await response.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) return null;
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return null;
-    return JSON.parse(jsonMatch[0]);
-  } catch {
+    return { data: JSON.parse(jsonMatch[0]) };
+  } catch (err: any) {
+    console.error("[Gemini Fetch Error]:", err);
     return null;
   }
 }
@@ -69,9 +91,10 @@ function validateZomatoMath(ocr: Record<string, any>): boolean {
   const G = Math.abs(Number(ocr.miscellaneous_deductions || 0));
   let netPayout = Number(ocr.net_payout || 0);
   if (A === 0 && netPayout === 0) return true; // nothing extracted, skip
-  const calculated = A + B - C - D - E - F - G;
   const tolerance = 2.5; // Strict zero-tolerance (<= ₹2.5 for decimal rounding only)
   
+  // 1. Standard Case (95%+ of weeks): Ads (E) is a spend/deduction (- E)
+  const calculated = A + B - C - D - E - F - G;
   if (Math.abs(calculated - netPayout) <= tolerance) {
     return true;
   }
@@ -80,6 +103,17 @@ function validateZomatoMath(ocr: Record<string, any>): boolean {
     ocr.net_payout = calculated;
     return true;
   }
+
+  // 2. Ads Reversal Case: When Investments in growth (E) is an Ads Reversal / credit (+ E)
+  const calculatedWithAdsReversal = A + B - C - D + E - F - G;
+  if (Math.abs(calculatedWithAdsReversal - netPayout) <= tolerance) {
+    return true;
+  }
+  if (Math.abs(calculatedWithAdsReversal + netPayout) <= tolerance) {
+    ocr.net_payout = calculatedWithAdsReversal;
+    return true;
+  }
+
   return false;
 }
 
@@ -120,6 +154,11 @@ async function extractJsonWithGemini(
   imageBase64List: string[], 
   validateFn?: (data: Record<string, any>) => boolean
 ) {
+  const apiStatus = getApiControlStatus();
+  if (!apiStatus.enabled) {
+    throw new Error(apiStatus.message);
+  }
+
   const geminiKey = getGeminiApiKey();
   if (!geminiKey) {
     throw new Error("Missing GEMINI_API_KEY in .env");
@@ -150,20 +189,26 @@ async function extractJsonWithGemini(
 
   // Pass 1: Primary High-Precision Gemini 2.5 Flash
   const pass1 = await singlePass(prompt, parts, geminiKey, "gemini-2.5-flash");
-  if (pass1) {
-    console.log("[OCR Pass 1 Output]:", JSON.stringify(pass1));
-    if (!validateFn || validateFn(pass1)) {
-      return pass1; // ✅ Math verified on Pass 1
+  if (pass1?.quotaError) {
+    throw new Error(pass1.quotaError);
+  }
+  if (pass1?.data) {
+    console.log("[OCR Pass 1 Output]:", JSON.stringify(pass1.data));
+    if (!validateFn || validateFn(pass1.data)) {
+      return pass1.data; // ✅ Math verified on Pass 1
     }
     console.warn("[OCR Math Verification] Pass 1 math validation failed. Triggering automatic high-grade retry...");
   }
 
   // Pass 2: High-Grade Retry Pass with Gemini 2.5 Flash
   const pass2 = await singlePass(prompt, parts, geminiKey, "gemini-2.5-flash");
-  if (pass2) {
-    console.log("[OCR Pass 2 Output]:", JSON.stringify(pass2));
-    if (!validateFn || validateFn(pass2)) {
-      return pass2; // ✅ Math verified on retry
+  if (pass2?.quotaError) {
+    throw new Error(pass2.quotaError);
+  }
+  if (pass2?.data) {
+    console.log("[OCR Pass 2 Output]:", JSON.stringify(pass2.data));
+    if (!validateFn || validateFn(pass2.data)) {
+      return pass2.data; // ✅ Math verified on retry
     }
   }
 
@@ -172,6 +217,14 @@ async function extractJsonWithGemini(
 
 export async function POST(req: NextRequest) {
   try {
+    const apiStatus = getApiControlStatus();
+    if (!apiStatus.enabled) {
+      return NextResponse.json(
+        { error: apiStatus.message, code: "API_QUOTA_EXHAUSTED" },
+        { status: 429 }
+      );
+    }
+
     const formData = await req.formData();
     const platform = (formData.get("platform") as ReportPlatform) || "zomato";
     const type = (formData.get("type") as ReportType) || "delivery";
@@ -507,6 +560,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid platform or report type" }, { status: 400 });
   } catch (err: any) {
     console.error("Upload API Error:", err);
-    return NextResponse.json({ error: err.message || "Failed to process report." }, { status: 500 });
+    const msg = err.message || "Failed to process report.";
+    const isQuota =
+      msg.includes("out of API") ||
+      msg.includes("quota") ||
+      msg.includes("contact the administrator") ||
+      msg.includes("recharge");
+    return NextResponse.json(
+      { error: msg, code: isQuota ? "API_QUOTA_EXHAUSTED" : "UPLOAD_ERROR" },
+      { status: isQuota ? 429 : 500 }
+    );
   }
 }

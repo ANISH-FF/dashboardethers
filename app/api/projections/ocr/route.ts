@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getApiControlStatus } from "@/lib/api-control";
 
 function getGeminiApiKey() {
   return process.env.GEMINI_API_KEY;
 }
 
-async function singleOcrPass(prompt: string, parts: any[], apiKey: string, model: string): Promise<Record<string, any> | null> {
+async function singleOcrPass(
+  prompt: string, 
+  parts: any[], 
+  apiKey: string, 
+  model: string
+): Promise<{ data?: Record<string, any>; quotaError?: string } | null> {
   try {
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
@@ -20,14 +26,30 @@ async function singleOcrPass(prompt: string, parts: any[], apiKey: string, model
         }),
       }
     );
-    if (!response.ok) return null;
+    if (!response.ok) {
+      const errText = await response.text();
+      console.warn(`[Projections OCR Error] Model: ${model}, Status: ${response.status}:`, errText);
+      if (
+        response.status === 429 ||
+        errText.includes("RESOURCE_EXHAUSTED") ||
+        errText.toLowerCase().includes("quota") ||
+        errText.toLowerCase().includes("rate limit")
+      ) {
+        return {
+          quotaError:
+            "You are currently out of API credits. Please contact the administrator to resume the service.",
+        };
+      }
+      return null;
+    }
     const data = await response.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
     if (!text) return null;
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return null;
-    return JSON.parse(jsonMatch[0]);
-  } catch {
+    return { data: JSON.parse(jsonMatch[0]) };
+  } catch (err: any) {
+    console.error("[Projections OCR Fetch Error]:", err);
     return null;
   }
 }
@@ -69,9 +91,10 @@ function validateZomatoMath(ocr: Record<string, any>): boolean {
   const G = Math.abs(Number(ocr.miscellaneous_deductions || 0));
   let netPayout = Number(ocr.net_payout || 0);
   if (A === 0 && netPayout === 0) return true;
-  const calculated = A + B - C - D - E - F - G;
   const tolerance = 2.5; // Strict <= ₹2.5
   
+  // 1. Standard Case (95%+ of weeks): Ads (E) is a spend/deduction (- E)
+  const calculated = A + B - C - D - E - F - G;
   if (Math.abs(calculated - netPayout) <= tolerance) {
     return true;
   }
@@ -80,6 +103,17 @@ function validateZomatoMath(ocr: Record<string, any>): boolean {
     ocr.net_payout = calculated;
     return true;
   }
+
+  // 2. Ads Reversal Case: When Investments in growth (E) is an Ads Reversal / credit (+ E)
+  const calculatedWithAdsReversal = A + B - C - D + E - F - G;
+  if (Math.abs(calculatedWithAdsReversal - netPayout) <= tolerance) {
+    return true;
+  }
+  if (Math.abs(calculatedWithAdsReversal + netPayout) <= tolerance) {
+    ocr.net_payout = calculatedWithAdsReversal;
+    return true;
+  }
+
   return false;
 }
 
@@ -112,6 +146,11 @@ async function extractJsonWithGemini(
   imageBase64List: string[], 
   validateFn?: (data: Record<string, any>) => boolean
 ) {
+  const apiStatus = getApiControlStatus();
+  if (!apiStatus.enabled) {
+    throw new Error(apiStatus.message);
+  }
+
   const apiKey = getGeminiApiKey();
   if (!apiKey) {
     throw new Error("Missing GEMINI_API_KEY in .env");
@@ -137,20 +176,26 @@ async function extractJsonWithGemini(
 
   // Pass 1 — Primary High-Precision Gemini 2.5 Flash
   const pass1 = await singleOcrPass(prompt, parts, apiKey, "gemini-2.5-flash");
-  if (pass1) {
-    console.log("[Projections OCR Pass 1 Output]:", JSON.stringify(pass1));
-    if (!validateFn || validateFn(pass1)) {
-      return pass1; // ✅ Math verified on Pass 1
+  if (pass1?.quotaError) {
+    throw new Error(pass1.quotaError);
+  }
+  if (pass1?.data) {
+    console.log("[Projections OCR Pass 1 Output]:", JSON.stringify(pass1.data));
+    if (!validateFn || validateFn(pass1.data)) {
+      return pass1.data; // ✅ Math verified on Pass 1
     }
     console.warn("[Projections OCR Math] Pass 1 math validation failed. Retrying...");
   }
 
   // Pass 2 — Automatic Retry Pass with Gemini 2.5 Flash
   const pass2 = await singleOcrPass(prompt, parts, apiKey, "gemini-2.5-flash");
-  if (pass2) {
-    console.log("[Projections OCR Pass 2 Output]:", JSON.stringify(pass2));
-    if (!validateFn || validateFn(pass2)) {
-      return pass2; // ✅ Math verified on retry
+  if (pass2?.quotaError) {
+    throw new Error(pass2.quotaError);
+  }
+  if (pass2?.data) {
+    console.log("[Projections OCR Pass 2 Output]:", JSON.stringify(pass2.data));
+    if (!validateFn || validateFn(pass2.data)) {
+      return pass2.data; // ✅ Math verified on retry
     }
   }
 
@@ -159,6 +204,14 @@ async function extractJsonWithGemini(
 
 export async function POST(req: NextRequest) {
   try {
+    const apiStatus = getApiControlStatus();
+    if (!apiStatus.enabled) {
+      return NextResponse.json(
+        { error: apiStatus.message, code: "API_QUOTA_EXHAUSTED" },
+        { status: 429 }
+      );
+    }
+
     const formData = await req.formData();
     const platform = (formData.get("platform") as string) || "zomato";
     const monthName = (formData.get("monthName") as string) || "Historical Month";
@@ -203,7 +256,7 @@ Rules:
 - "sub_total": Sum of base item prices.
 - "packaging_charges": Total container/packaging fee collected.
 - "sub_total_with_pkg": Subtotal + Packaging charges.
-- "cancelled_order_refund": Read from "Additions (B)" header or "Cancelled order refunds" line (e.g. 97.97 or 3113.73), else 0.
+- "cancelled_order_refund": Read strictly the total amount from "Additions (B)" header (e.g. 97.97, 3113.73, or 13606.00), which includes Cancelled order refunds, TDS 194H, TDS 194C, or any line items under Additions (B), else 0.
 - "promo_discount": Read strictly from "Restaurant discount (Promos)" line (e.g. 23712.06), else 0.
 - "other_discount": Read strictly from "Restaurant discount (Flat offs, Freebies, Gold, relisted orders and others)" line (e.g. 12480.00), else 0.
 - "discount": Sum of promo discounts and flat offs/other discounts borne by merchant.
@@ -212,7 +265,7 @@ Rules:
 - "order_level_deduction": Read strictly from "Order level deductions (C)" header on Zomato screenshot (e.g. 14667.80), else sum of base service fee, payment mechanism fee, long distance enablement fee.
 - "gst_on_service_fees": Read strictly from "GST on service and payment mechanism fees @18%" line under Tax deductions (D) (e.g. 14264.50 or 2640.24), else 0.
 - "tax_deduction": Read strictly from "Tax deductions (D)" header on Zomato screenshot (e.g. 5640.95), else sum of GST on service fees, TCS (Sec 52), TDS (Sec 194O), and GST u/s 9(5).
-- "ads": Read from Investments in growth (E) / Online ordering ads spend section (e.g. 14322.78), else 0.
+- "ads": Read strictly from Investments in growth (E) header or Online ordering ads spend / Ads reversal line (e.g. 14322.78 or 422.23), else 0.
 - "hyperpure": Read from Hyperpure spend (F) B2B raw material procurement deduction if present (e.g. 39750.60), else 0.
 - "miscellaneous_deductions": Read strictly from "Miscellaneous deductions (G)" line if present (e.g. 25.36), else 0.
 - "net_payout": Read strictly from "FINAL PAYOUT" or "Est. payout (A + B + C + D + E + F + G)". Include negative sign if red/minus (e.g. -12511.27).`;
@@ -443,6 +496,15 @@ Rules:
     return NextResponse.json({ error: "Invalid platform" }, { status: 400 });
   } catch (err: any) {
     console.error("[Projections OCR Error]:", err);
-    return NextResponse.json({ error: err.message || "Failed to process payout screenshot." }, { status: 500 });
+    const msg = err.message || "Failed to process payout screenshot.";
+    const isQuota =
+      msg.includes("out of API") ||
+      msg.includes("quota") ||
+      msg.includes("contact the administrator") ||
+      msg.includes("recharge");
+    return NextResponse.json(
+      { error: msg, code: isQuota ? "API_QUOTA_EXHAUSTED" : "OCR_ERROR" },
+      { status: isQuota ? 429 : 500 }
+    );
   }
 }
