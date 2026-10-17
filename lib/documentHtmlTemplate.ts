@@ -240,7 +240,7 @@ export function generateDocumentHtml(doc: EmployeeDocument): string {
                     <p><span class="highlight">Role & Responsibilities:</span> ${doc.rolesResponsibilities || "Your role at Ethers Consultancy will involve managing client accounts, driving brand growth initiatives, collaborating across teams, and contributing to strategic consulting operations."}</p>
                     <p><span class="highlight">Duration & Commitment:</span> This tenure begins on <span class="highlight">${doc.joiningDate || doc.issueDate}</span> in Kolkata, with a minimum commitment of <span class="highlight">${doc.probationMonths || 3} months</span>.</p>
                     <p><span class="highlight">${doc.workingModule === "wfh" ? "Working Module (Work From Home):" : doc.workingModule === "wfo" ? "Working Module (Work From Office):" : "Working Module (Hybrid):"}</span> ${doc.workingModule === "wfh" ? "You will operate remotely from home (WFH) on a full-time basis. Daily sync-ups, check-ins, and deliverables will be coordinated with your reporting manager." : doc.workingModule === "wfo" ? "You will operate on-site from our office location. Standard working hours, schedules, and daily operations will be coordinated with your reporting manager." : "You will operate on a hybrid schedule, working 3 days a week on-site from our office and 3 days a week from home (WFH). Specific days will be coordinated with your reporting manager."}</p>
-                    <p><span class="highlight">Compensation & Benefits:</span> Fixed monthly payout of <span class="highlight">Rs. ${(doc.salaryDetails?.netSalary || 5000).toLocaleString("en-IN")}/-</span> plus performance incentives.</p>
+                    <p><span class="highlight">Compensation & Benefits:</span> ${doc.compensationBenefits ? doc.compensationBenefits : `Fixed monthly payout of <span class="highlight">Rs. ${(doc.salaryDetails?.netSalary || 5000).toLocaleString("en-IN")}/-</span> plus performance incentives.`}</p>
                     <p>We look forward to having you on board as we continue to grow Ethers Consultancy!</p>
                 ` : ""}
 
@@ -269,7 +269,7 @@ export function generateDocumentHtml(doc: EmployeeDocument): string {
                 ${doc.type === "employment_terms" ? `
                     <p style="font-family: 'Inter', sans-serif; font-size: 12px; margin-bottom: 12px;"><strong>Employment Terms & Conditions — ${doc.employeeName} (${doc.designation})</strong></p>
                     <p>1. <strong>Position & Joining:</strong> Effective date <strong>${doc.joiningDate || doc.issueDate}</strong>.</p>
-                    <p>2. <strong>Compensation:</strong> Fixed monthly net payout of <strong>Rs. ${(doc.salaryDetails?.netSalary || 0).toLocaleString("en-IN")} / month</strong>.</p>
+                    <p>2. <strong>Compensation & Salary Schedule:</strong> ${doc.content ? doc.content : `Fixed monthly net payout of <strong>Rs. ${(doc.salaryDetails?.netSalary || 0).toLocaleString("en-IN")} / month</strong>.`}</p>
                     <p>3. <strong>Probation & Notice:</strong> Probation: ${doc.probationMonths || 3} months. Notice Period: ${doc.noticePeriodDays || 30} days.</p>
                     <p>4. <strong>Confidentiality & Data Protection:</strong> The employee agrees to maintain strict confidentiality regarding brand metrics and trade secrets. Any data breach will result in immediate termination and legal action.</p>
                 ` : ""}

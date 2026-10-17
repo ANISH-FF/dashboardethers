@@ -36,6 +36,7 @@ export function IssueDocumentModal({ employees, onClose, onIssueDocument }: Issu
   
   const [content, setContent] = useState("");
   const [rolesResponsibilities, setRolesResponsibilities] = useState("");
+  const [compensationBenefits, setCompensationBenefits] = useState("");
   const [workingModule, setWorkingModule] = useState<"hybrid" | "wfh" | "wfo">("hybrid");
   const [certificateType, setCertificateType] = useState<"internship" | "experience" | "appreciation">("appreciation");
   const [loading, setLoading] = useState(false);
@@ -68,8 +69,9 @@ export function IssueDocumentModal({ employees, onClose, onIssueDocument }: Issu
         noticePeriodDays: docType === "employment_terms" ? noticePeriodDays : undefined,
         annualLeaves: docType === "employment_terms" ? annualLeaves : undefined,
         projectTitle: (docType === "completion_letter" || docType === "recommendation_letter") ? projectTitle : undefined,
-        content: docType === "offer_letter" ? undefined : content,
+        content: docType === "offer_letter" ? undefined : (content.trim() || undefined),
         rolesResponsibilities: docType === "offer_letter" ? (rolesResponsibilities.trim() || undefined) : undefined,
+        compensationBenefits: docType === "offer_letter" ? (compensationBenefits.trim() || undefined) : undefined,
         workingModule: docType === "offer_letter" ? workingModule : undefined,
         signedBy: "Hemanya Gupta & Tanisha Maity (Co-Founders)"
       });
@@ -417,16 +419,46 @@ export function IssueDocumentModal({ employees, onClose, onIssueDocument }: Issu
 
           {/* Custom Content / Text Body */}
           {docType === "offer_letter" ? (
+            <div className="space-y-4">
+              <div>
+                <label className="label flex items-center justify-between">
+                  <span>Role & Responsibilities Description</span>
+                  <span className="text-[10px] text-ink/40 font-normal">Customizable (Marketing, Sales, Tech, Ops, etc.)</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={rolesResponsibilities}
+                  onChange={(e) => setRolesResponsibilities(e.target.value)}
+                  placeholder="Enter specific role responsibilities (e.g. Lead sales outreach, manage partner brand accounts, execute marketing campaigns, optimize client revenue...)"
+                  className="input leading-relaxed"
+                />
+              </div>
+
+              <div>
+                <label className="label flex items-center justify-between">
+                  <span>Compensation & Benefits</span>
+                  <span className="text-[10px] text-ink/40 font-normal">Customizable payout & perks description</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={compensationBenefits}
+                  onChange={(e) => setCompensationBenefits(e.target.value)}
+                  placeholder="Enter custom compensation & benefits (e.g. Fixed monthly payout of Rs. 15,000/- plus 10% performance incentives and travel allowance...)"
+                  className="input leading-relaxed"
+                />
+              </div>
+            </div>
+          ) : docType === "employment_terms" ? (
             <div>
               <label className="label flex items-center justify-between">
-                <span>Role & Responsibilities Description</span>
-                <span className="text-[10px] text-ink/40 font-normal">Customizable (Marketing, Sales, Tech, Ops, etc.)</span>
+                <span>Compensation & Salary Schedule</span>
+                <span className="text-[10px] text-ink/40 font-normal">Customizable payout terms, schedule & incentives</span>
               </label>
               <textarea
                 rows={4}
-                value={rolesResponsibilities}
-                onChange={(e) => setRolesResponsibilities(e.target.value)}
-                placeholder="Enter specific role responsibilities (e.g. Lead sales outreach, manage partner brand accounts, execute marketing campaigns, optimize client revenue...)"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Enter specific compensation breakdown, monthly disbursement schedule, bonuses, deductions, or custom remuneration terms..."
                 className="input leading-relaxed"
               />
             </div>

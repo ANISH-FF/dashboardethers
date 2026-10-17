@@ -45,6 +45,7 @@ export type EmployeeDocument = {
   projectTitle?: string;
   dateOfBirth?: string;
   rolesResponsibilities?: string;
+  compensationBenefits?: string;
   workingModule?: "hybrid" | "wfh" | "wfo" | string;
   workingModuleCustomText?: string;
   hiddenFromAdmin?: boolean;
@@ -116,6 +117,7 @@ export function createDocument(partial: Partial<EmployeeDocument>): EmployeeDocu
     projectTitle: partial.projectTitle || "F&B Operations Consulting",
     dateOfBirth: partial.dateOfBirth,
     rolesResponsibilities: partial.rolesResponsibilities,
+    compensationBenefits: partial.compensationBenefits,
     workingModule: partial.workingModule || "hybrid",
     workingModuleCustomText: partial.workingModuleCustomText,
   };

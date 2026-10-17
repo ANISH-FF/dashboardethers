@@ -174,7 +174,14 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
                   </p>
 
                   <p>
-                    <strong className="font-sans font-bold text-[#2F3119]">Compensation & Benefits:</strong> You will receive a fixed monthly payout of <strong className="font-sans font-bold font-mono text-zinc-900">Rs. {(doc.salaryDetails?.netSalary || 5000).toLocaleString("en-IN")}/-</strong>. Additionally, you are eligible for performance incentives attributed to your work, processed upon payment receipt.
+                    <strong className="font-sans font-bold text-[#2F3119]">Compensation & Benefits:</strong>{" "}
+                    {doc.compensationBenefits ? (
+                      doc.compensationBenefits
+                    ) : (
+                      <>
+                        You will receive a fixed monthly payout of <strong className="font-sans font-bold font-mono text-zinc-900">Rs. {(doc.salaryDetails?.netSalary || 5000).toLocaleString("en-IN")}/-</strong>. Additionally, you are eligible for performance incentives attributed to your work, processed upon payment receipt.
+                      </>
+                    )}
                   </p>
 
                   <p>
@@ -203,7 +210,15 @@ export function DocumentPreviewModal({ document: doc, onClose }: ModalProps) {
 
                     <div className="p-3 bg-white border border-zinc-200 rounded-lg">
                       <p className="font-bold text-[#2F3119] text-xs">2. Compensation & Salary Schedule</p>
-                      <p className="text-zinc-700 mt-0.5">Fixed monthly net payout is set to <strong className="font-mono text-zinc-900">₹{(doc.salaryDetails?.netSalary || 0).toLocaleString("en-IN")} / month</strong>, payable on or before the 5th of every calendar month via Direct Bank Transfer.</p>
+                      <p className="text-zinc-700 mt-0.5 leading-relaxed">
+                        {doc.content ? (
+                          doc.content
+                        ) : (
+                          <>
+                            Fixed monthly net payout is set to <strong className="font-mono text-zinc-900">₹{(doc.salaryDetails?.netSalary || 0).toLocaleString("en-IN")} / month</strong>, payable on or before the 5th of every calendar month via Direct Bank Transfer.
+                          </>
+                        )}
+                      </p>
                     </div>
 
                     <div className="p-3 bg-white border border-zinc-200 rounded-lg">
